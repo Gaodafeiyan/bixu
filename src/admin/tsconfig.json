@@ -1,7 +1,23 @@
 {
   "extends": "@strapi/typescript-utils/tsconfigs/admin",
   "compilerOptions": {
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "noImplicitAny": false,
+    "strict": false,
+    "noEmitOnError": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "moduleResolution": "node",
+    "target": "ES2020",
+    "module": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ES6"],
+    "declaration": false,
+    "sourceMap": false,
+    "removeComments": true,
+    "noImplicitReturns": false,
+    "noFallthroughCasesInSwitch": false,
+    "noUncheckedIndexedAccess": false,
+    "exactOptionalPropertyTypes": false
   },
   "include": [
     "../plugins/**/admin/src/**/*",
