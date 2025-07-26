@@ -22,11 +22,15 @@ yarn add react@^18.0.0 react-dom@^18.0.0 react-router-dom@^5.2.0 styled-componen
 echo "📊 安装 decimal.js..."
 yarn add decimal.js
 
-# 6. 清理构建缓存
+# 6. 安装PostgreSQL驱动
+echo "🐘 安装 PostgreSQL 驱动..."
+yarn add pg@^8.11.3
+
+# 7. 清理构建缓存
 echo "🗑️ 清理构建缓存..."
 yarn build --clean
 
-# 7. 重新生成类型定义
+# 8. 重新生成类型定义
 echo "🔄 重新生成类型定义..."
 yarn strapi ts:generate-types
 
