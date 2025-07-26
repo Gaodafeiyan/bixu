@@ -38,23 +38,37 @@ export default factories.createCoreController(
         
         const userId = ctx.state.user.id;
         
+        // 确保strapi.entityService存在
+        if (!strapi || !strapi.entityService) {
+          console.error('strapi.entityService is undefined');
+          return ctx.throw(500, '系统服务不可用');
+        }
+        
+        // 查找用户钱包
         const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-          filters: { user: userId }
+          filters: { user: userId },
+          populate: ['user']
         });
         
-        let wallet = wallets[0];
+        let wallet = wallets && wallets.length > 0 ? wallets[0] : null;
+        
         if (!wallet) {
           // 如果钱包不存在，创建钱包
-          wallet = await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
-            data: {
-              usdtYue: '0',
-              aiYue: '0',
-              aiTokenBalances: '{}',
-              user: userId
-            }
-          });
-          
-          console.log(`为用户 ${userId} 创建新钱包`);
+          try {
+            wallet = await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
+              data: {
+                usdtYue: '0',
+                aiYue: '0',
+                aiTokenBalances: '{}',
+                user: userId
+              }
+            });
+            
+            console.log(`为用户 ${userId} 创建新钱包`);
+          } catch (createError) {
+            console.error('创建钱包失败:', createError);
+            return ctx.throw(500, `创建钱包失败: ${createError.message}`);
+          }
         }
         
         ctx.body = {
@@ -77,6 +91,12 @@ export default factories.createCoreController(
           return ctx.unauthorized('用户未认证');
         }
         
+        // 确保strapi.entityService存在
+        if (!strapi || !strapi.entityService) {
+          console.error('strapi.entityService is undefined');
+          return ctx.throw(500, '系统服务不可用');
+        }
+        
         // 输入验证
         if (usdtYue !== undefined && (isNaN(Number(usdtYue)) || Number(usdtYue) < 0)) {
           return ctx.badRequest('USDT余额必须是大于等于0的数字');
@@ -90,17 +110,22 @@ export default factories.createCoreController(
           filters: { user: userId }
         });
         
-        let wallet = wallets[0];
+        let wallet = wallets && wallets.length > 0 ? wallets[0] : null;
         if (!wallet) {
           // 如果钱包不存在，创建钱包
-          wallet = await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
-            data: {
-              usdtYue: '0',
-              aiYue: '0',
-              aiTokenBalances: '{}',
-              user: userId
-            }
-          });
+          try {
+            wallet = await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
+              data: {
+                usdtYue: '0',
+                aiYue: '0',
+                aiTokenBalances: '{}',
+                user: userId
+              }
+            });
+          } catch (createError) {
+            console.error('创建钱包失败:', createError);
+            return ctx.throw(500, `创建钱包失败: ${createError.message}`);
+          }
         }
 
         // 更新钱包余额
