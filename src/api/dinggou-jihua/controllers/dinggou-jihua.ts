@@ -6,11 +6,11 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
   async find(ctx) {
     try {
       // 直接使用strapi.entityService
-      const { data, meta } = await strapi.entityService.findPage('api::dinggou-jihua.dinggou-jihua', {
+      const result = await strapi.entityService.findPage('api::dinggou-jihua.dinggou-jihua', {
         ...ctx.query,
         populate: ['*']
       });
-      return { data, meta };
+      return result;
     } catch (error) {
       console.error('获取认购计划列表失败:', error);
       ctx.throw(500, `获取认购计划列表失败: ${error.message}`);
