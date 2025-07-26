@@ -175,7 +175,7 @@ export default factories.createCoreController(
         
         // 检查用户是否已有钱包
         const existingWallet = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-          filters: { user: userId }
+          filters: { user: data.user }
         }) as any[];
         
         if (existingWallet.length > 0) {

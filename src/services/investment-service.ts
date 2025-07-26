@@ -114,7 +114,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
     try {
       // 获取用户的所有订单
       const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
-        filters: { user: userId },
+        filters: { user: userId } as any,
         populate: ['jihua']
       }) as any[];
 

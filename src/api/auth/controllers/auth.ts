@@ -120,7 +120,7 @@ export default factories.createCoreController(
             invitedBy: { $in: directReferrals.map(user => user.id) }
           },
           sort: { createdAt: 'desc' }
-        }) as any[];
+        } as any) as any[];
 
         ctx.body = {
           success: true,

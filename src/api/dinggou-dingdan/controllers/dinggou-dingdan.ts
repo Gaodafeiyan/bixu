@@ -17,18 +17,19 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         populate: ['jihua'],
         pagination: {
           page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize)),
-          total: (orders as any[]).length
+          pageSize: parseInt(String(pageSize))
         }
       }) as any[];
 
       ctx.body = {
         success: true,
-        data: orders,
-        pagination: {
-          page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize)),
-          total: orders.length
+        data: {
+          orders,
+          pagination: {
+            page: parseInt(String(page)),
+            pageSize: parseInt(String(pageSize)),
+            total: orders.length
+          }
         }
       };
     } catch (error) {

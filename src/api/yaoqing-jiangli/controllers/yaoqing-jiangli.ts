@@ -74,19 +74,20 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         populate: ['laiyuanRen', 'laiyuanDan'],
         pagination: {
           page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize)),
-          total: (rewards as any[]).length
+          pageSize: parseInt(String(pageSize))
         },
         sort: { createdAt: 'desc' }
       }) as any[];
 
       ctx.body = {
         success: true,
-        data: rewards,
-        pagination: {
-          page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize)),
-          total: rewards.length
+        data: {
+          rewards,
+          pagination: {
+            page: parseInt(String(page)),
+            pageSize: parseInt(String(pageSize)),
+            total: rewards.length
+          }
         }
       };
     } catch (error) {
@@ -110,7 +111,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         filters: { 
           invitedBy: { $in: directReferrals.map(user => user.id) }
         }
-      }) as any[];
+      } as any) as any[];
 
       // 获取邀请奖励总额
       const rewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
