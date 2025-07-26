@@ -49,16 +49,19 @@ export default factories.createCoreController(
           return ctx.badRequest('系统错误：未找到默认角色');
         }
 
-        // 使用Strapi用户服务创建用户，确保密码正确加密
-        const newUser = await strapi.plugin('users-permissions').service('user').add({
-          username,
-          email,
-          password,
-          inviteCode: generateInviteCode(),
-          invitedBy: inviteUser[0].id,
-          confirmed: true,  // 自动确认用户
-          blocked: false,
-          role: authenticatedRole.id  // 使用正确的角色ID
+        // 使用Strapi实体服务创建用户，确保密码正确加密
+        const newUser = await strapi.entityService.create('plugin::users-permissions.user', {
+          data: {
+            username,
+            email,
+            password,
+            provider: 'local',
+            confirmed: true,  // 自动确认用户
+            blocked: false,
+            inviteCode: generateInviteCode(),
+            invitedBy: inviteUser[0].id,
+            role: authenticatedRole.id  // 使用正确的角色ID
+          }
         });
 
         // 确保用户有正确的角色
