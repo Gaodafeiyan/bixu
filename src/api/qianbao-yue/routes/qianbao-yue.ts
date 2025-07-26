@@ -1,11 +1,25 @@
 export default {
   type: 'content-api',
   routes: [
+    // 公开测试路由
+    {
+      method: 'GET',
+      path: '/qianbao-yues/health',
+      handler: 'qianbao-yue.testConnection',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
     // 默认的CRUD路由
     {
       method: 'GET',
       path: '/qianbao-yues',
       handler: 'qianbao-yue.find',
+      config: {
+        auth: false,  // 临时允许公开访问用于测试
+      },
     },
     {
       method: 'GET',

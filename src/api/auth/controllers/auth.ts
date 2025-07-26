@@ -39,15 +39,16 @@ export default factories.createCoreController(
           return ctx.badRequest('邮箱已存在');
         }
 
-        // 创建新用户
-        const newUser = await strapi.entityService.create('plugin::users-permissions.user', {
-          data: {
-            username,
-            email,
-            password,
-            inviteCode: generateInviteCode(),
-            invitedBy: inviteUser[0].id
-          }
+        // 使用Strapi用户服务创建用户，确保密码正确加密
+        const newUser = await strapi.plugin('users-permissions').service('user').add({
+          username,
+          email,
+          password,
+          inviteCode: generateInviteCode(),
+          invitedBy: inviteUser[0].id,
+          confirmed: true,  // 自动确认用户
+          blocked: false,
+          role: 1  // 默认用户角色
         });
 
         // 创建用户钱包

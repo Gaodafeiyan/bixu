@@ -2,9 +2,23 @@ import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
 
 export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua', ({ strapi }) => ({
+  // 测试连接方法
+  async testConnection(ctx) {
+    ctx.body = {
+      success: true,
+      message: '认购计划API连接正常',
+      timestamp: new Date().toISOString()
+    };
+  },
+
   // 投资认购计划
   async invest(ctx) {
     try {
+      // 检查用户是否已认证
+      if (!ctx.state.user || !ctx.state.user.id) {
+        return ctx.unauthorized('用户未认证');
+      }
+      
       const { planId } = ctx.params;
       const userId = ctx.state.user.id;
 

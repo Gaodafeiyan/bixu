@@ -16,11 +16,12 @@ export default factories.createCoreController(
     // 获取用户钱包
     async getUserWallet(ctx) {
       try {
-        const userId = ctx.state.user.id;
-        
-        if (!userId) {
+        // 检查用户是否已认证
+        if (!ctx.state.user || !ctx.state.user.id) {
           return ctx.unauthorized('用户未认证');
         }
+        
+        const userId = ctx.state.user.id;
         
         const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
           filters: { user: userId }
