@@ -29,8 +29,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('认购计划槽位已满');
       }
 
-      // 使用计划中预设的投资金额 - 修复字段名
-      const investmentAmount = new Decimal(plan.benjinUSDT || plan.benjin_usdt || 0);
+      // 使用计划中预设的投资金额 - 使用正确的字段名
+      const investmentAmount = new Decimal(plan.benjinUSDT || 0);
       if (investmentAmount.isZero()) {
         return ctx.badRequest('认购计划金额未设置');
       }
@@ -58,10 +58,10 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           jihua: planId,
           amount: investmentAmount.toString(),
           principal: investmentAmount.toString(),
-          yield_rate: plan.jingtaiBili || plan.jingtai_bili,
-          cycle_days: plan.zhouQiTian || plan.zhou_qi_tian,
+          yield_rate: plan.jingtaiBili,
+          cycle_days: plan.zhouQiTian,
           start_at: new Date(),
-          end_at: new Date(Date.now() + (plan.zhouQiTian || plan.zhou_qi_tian) * 24 * 60 * 60 * 1000),
+          end_at: new Date(Date.now() + plan.zhouQiTian * 24 * 60 * 60 * 1000),
           status: 'pending'
         }
       });
@@ -85,7 +85,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           orderId: order.id,
           investmentAmount: investmentAmount.toString(),
           planName: plan.name,
-          planCode: plan.jihuaCode || plan.jihua_code,
+          planCode: plan.jihuaCode,
           newBalance: walletBalance.minus(investmentAmount).toString()
         },
         message: '投资成功'
@@ -159,10 +159,10 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         });
       }
 
-      // 更新订单状态
+      // 更新订单状态 - 使用允许的状态值
       await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
         data: {
-          status: 'redeemed',
+          status: 'cancelled', // 使用允许的状态值
           redeemed_at: new Date(),
           payout_amount: totalPayout.toString()
         }
