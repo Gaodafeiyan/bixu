@@ -6,12 +6,11 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
   async invest(ctx) {
     try {
       const { planId } = ctx.params;
-      const { amount } = ctx.request.body;
       const userId = ctx.state.user.id;
 
-      // 验证投资金额
-      if (!amount || parseFloat(amount) <= 0) {
-        return ctx.badRequest('投资金额必须大于0');
+      // 输入验证
+      if (!planId || isNaN(Number(planId))) {
+        return ctx.badRequest('无效的计划ID');
       }
 
       // 获取计划信息
@@ -25,50 +24,51 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('认购计划已暂停');
       }
 
-      // 检查用户钱包余额
-      const wallet = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: userId }
-      }) as any[];
-
-      if (!wallet || wallet.length === 0) {
-        return ctx.badRequest('用户钱包不存在');
+      // 检查槽位是否已满
+      if (plan.current_slots >= plan.max_slots) {
+        return ctx.badRequest('认购计划槽位已满');
       }
 
-      const userWallet = wallet[0];
-      const investmentAmount = new Decimal(amount);
-      const walletBalance = new Decimal(userWallet.usdtYue || 0);
-
-      if (walletBalance.lessThan(investmentAmount)) {
-        return ctx.badRequest('钱包余额不足');
+      // 使用计划中预设的投资金额
+      const investmentAmount = new Decimal(plan.benjinUSDT || 0);
+      if (investmentAmount.isZero()) {
+        return ctx.badRequest('认购计划金额未设置');
       }
 
-      // 创建投资订单
-      const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
-        data: {
-          user: userId,
-          jihua: planId,
-          amount: investmentAmount.toString(),
-          principal: investmentAmount.toString(),
-          yield_rate: plan.jingtaiBili,
-          cycle_days: plan.zhouQiTian,
-          start_at: new Date(),
-          end_at: new Date(Date.now() + plan.zhouQiTian * 24 * 60 * 60 * 1000),
-          status: 'pending'
-        }
-      });
+      // 使用事务服务执行投资操作
+      const transactionService = strapi.service('api::transaction-service.transaction-service');
+      const result = await transactionService.executeInvestmentTransaction(
+        userId, 
+        Number(planId), 
+        investmentAmount
+      );
 
-      // 扣除钱包余额
-      await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-        data: { usdtYue: walletBalance.minus(investmentAmount).toString() }
-      });
+      // 记录操作日志
+      console.log(`用户 ${userId} 投资计划 ${planId}，金额: ${investmentAmount.toString()} USDT`);
 
       ctx.body = {
         success: true,
-        data: order,
+        data: {
+          orderId: result.orderId,
+          investmentAmount: investmentAmount.toString(),
+          planName: result.planName,
+          planCode: result.planCode,
+          newBalance: result.newBalance
+        },
         message: '投资成功'
       };
     } catch (error) {
       console.error('投资失败:', error);
+      
+      // 统一错误处理
+      if (error.message.includes('钱包余额不足')) {
+        return ctx.badRequest('钱包余额不足');
+      } else if (error.message.includes('认购计划不存在')) {
+        return ctx.notFound('认购计划不存在');
+      } else if (error.message.includes('用户钱包不存在')) {
+        return ctx.badRequest('用户钱包不存在');
+      }
+      
       ctx.throw(500, `投资失败: ${error.message}`);
     }
   },
@@ -79,76 +79,43 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       const { orderId } = ctx.params;
       const userId = ctx.state.user.id;
 
-      // 获取订单信息
-      const order = await strapi.entityService.findOne('api::dinggou-dingdan.dinggou-dingdan', orderId, {
-        populate: ['user', 'jihua']
-      });
-
-      if (!order) {
-        return ctx.notFound('订单不存在');
+      // 输入验证
+      if (!orderId || isNaN(Number(orderId))) {
+        return ctx.badRequest('无效的订单ID');
       }
 
-      // 验证订单所有者
-      if (order.user.id !== userId) {
-        return ctx.forbidden('无权操作此订单');
-      }
+      // 使用事务服务执行赎回操作
+      const transactionService = strapi.service('api::transaction-service.transaction-service');
+      const result = await transactionService.executeRedemptionTransaction(
+        Number(orderId), 
+        userId
+      );
 
-      // 检查订单状态
-      if (order.status !== 'finished') {
-        return ctx.badRequest('订单尚未完成，无法赎回');
-      }
-
-      // 计算收益
-      const investmentAmount = new Decimal(order.amount);
-      const yieldRate = new Decimal(order.jihua.jingtaiBili);
-      const cycleDays = order.cycle_days;
-      
-      // 计算静态收益
-      const staticYield = investmentAmount.mul(yieldRate).mul(cycleDays).div(365);
-      
-      // 计算AI代币收益（如果有）
-      const aiTokenYield = new Decimal(0); // 这里可以根据实际AI代币逻辑计算
-      
-      const totalYield = staticYield.plus(aiTokenYield);
-      const totalPayout = investmentAmount.plus(totalYield);
-
-      // 更新钱包余额
-      const wallet = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: userId }
-      }) as any[];
-
-      if (wallet && wallet.length > 0) {
-        const userWallet = wallet[0];
-        const currentBalance = new Decimal(userWallet.usdtYue || 0);
-        
-        await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-          data: { usdtYue: currentBalance.plus(totalPayout).toString() }
-        });
-      }
-
-      // 更新订单状态
-      await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
-        data: {
-          status: 'finished',
-          redeemed_at: new Date(),
-          payout_amount: totalPayout.toString()
-        }
-      });
+      // 记录操作日志
+      console.log(`用户 ${userId} 赎回订单 ${orderId}，总收益: ${result.totalPayout} USDT`);
 
       ctx.body = {
         success: true,
         data: {
-          orderId,
-          investmentAmount: investmentAmount.toString(),
-          staticYield: staticYield.toString(),
-          aiTokenYield: aiTokenYield.toString(),
-          totalYield: totalYield.toString(),
-          totalPayout: totalPayout.toString()
+          orderId: result.orderId,
+          investmentAmount: result.investmentAmount,
+          staticYield: result.staticYield,
+          totalPayout: result.totalPayout
         },
         message: '赎回成功'
       };
     } catch (error) {
       console.error('赎回失败:', error);
+      
+      // 统一错误处理
+      if (error.message.includes('订单不存在')) {
+        return ctx.notFound('订单不存在');
+      } else if (error.message.includes('订单尚未完成')) {
+        return ctx.badRequest('订单尚未完成，无法赎回');
+      } else if (error.message.includes('无权操作')) {
+        return ctx.forbidden('无权操作此订单');
+      }
+      
       ctx.throw(500, `赎回失败: ${error.message}`);
     }
   },
@@ -157,6 +124,11 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
   async getPlanStats(ctx) {
     try {
       const { planId } = ctx.params;
+
+      // 输入验证
+      if (!planId || isNaN(Number(planId))) {
+        return ctx.badRequest('无效的计划ID');
+      }
 
       // 获取计划信息
       const plan = await strapi.entityService.findOne('api::dinggou-jihua.dinggou-jihua', planId);
@@ -175,7 +147,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return sum + parseFloat(order.amount || 0);
       }, 0);
 
-      const activeOrders = (orders as any[]).filter(order => order.status === 'active');
+      const activeOrders = (orders as any[]).filter(order => order.status === 'running');
       const completedOrders = (orders as any[]).filter(order => order.status === 'finished');
 
       const totalYield = completedOrders.reduce((sum, order) => {
@@ -209,12 +181,20 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       const userId = ctx.state.user.id;
       const { page = 1, pageSize = 10 } = ctx.query;
 
+      // 输入验证
+      const pageNum = parseInt(String(page));
+      const pageSizeNum = parseInt(String(pageSize));
+      
+      if (isNaN(pageNum) || isNaN(pageSizeNum) || pageNum < 1 || pageSizeNum < 1) {
+        return ctx.badRequest('无效的分页参数');
+      }
+
       const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { user: userId },
         populate: ['jihua'],
         pagination: {
-          page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize))
+          page: pageNum,
+          pageSize: pageSizeNum
         }
       }) as any[];
 
@@ -223,8 +203,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         data: {
           orders,
           pagination: {
-            page: parseInt(String(page)),
-            pageSize: parseInt(String(pageSize)),
+            page: pageNum,
+            pageSize: pageSizeNum,
             total: orders.length
           }
         }
@@ -241,6 +221,18 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       const { planId } = ctx.params;
       const { page = 1, pageSize = 20 } = ctx.query;
 
+      // 输入验证
+      if (!planId || isNaN(Number(planId))) {
+        return ctx.badRequest('无效的计划ID');
+      }
+
+      const pageNum = parseInt(String(page));
+      const pageSizeNum = parseInt(String(pageSize));
+      
+      if (isNaN(pageNum) || isNaN(pageSizeNum) || pageNum < 1 || pageSizeNum < 1) {
+        return ctx.badRequest('无效的分页参数');
+      }
+
       // 获取计划信息
       const plan = await strapi.entityService.findOne('api::dinggou-jihua.dinggou-jihua', planId);
       if (!plan) {
@@ -252,8 +244,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         filters: { jihua: planId },
         populate: ['user'],
         pagination: {
-          page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize))
+          page: pageNum,
+          pageSize: pageSizeNum
         },
         sort: { createdAt: 'desc' }
       });
@@ -273,8 +265,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         data: {
           participants: formattedParticipants,
           pagination: {
-            page: parseInt(String(page)),
-            pageSize: parseInt(String(pageSize)),
+            page: pageNum,
+            pageSize: pageSizeNum,
             total: (participants as any[]).length
           }
         }

@@ -18,6 +18,10 @@ export default factories.createCoreController(
       try {
         const userId = ctx.state.user.id;
         
+        if (!userId) {
+          return ctx.unauthorized('用户未认证');
+        }
+        
         const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
           filters: { user: userId }
         });
@@ -33,6 +37,8 @@ export default factories.createCoreController(
               user: userId
             }
           });
+          
+          console.log(`为用户 ${userId} 创建新钱包`);
         }
         
         ctx.body = {
@@ -50,6 +56,19 @@ export default factories.createCoreController(
       try {
         const userId = ctx.state.user.id;
         const { usdtYue, aiYue, aiTokenBalances } = ctx.request.body;
+        
+        if (!userId) {
+          return ctx.unauthorized('用户未认证');
+        }
+        
+        // 输入验证
+        if (usdtYue !== undefined && (isNaN(Number(usdtYue)) || Number(usdtYue) < 0)) {
+          return ctx.badRequest('USDT余额必须是大于等于0的数字');
+        }
+        
+        if (aiYue !== undefined && (isNaN(Number(aiYue)) || Number(aiYue) < 0)) {
+          return ctx.badRequest('AI代币余额必须是大于等于0的数字');
+        }
         
         const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
           filters: { user: userId }
@@ -78,6 +97,8 @@ export default factories.createCoreController(
           data: updateData
         });
 
+        console.log(`用户 ${userId} 更新钱包余额: USDT=${usdtYue}, AI=${aiYue}`);
+
         ctx.body = {
           success: true,
           data: updatedWallet
@@ -99,6 +120,15 @@ export default factories.createCoreController(
 
         if (!data.user) {
           return ctx.badRequest('缺少用户ID');
+        }
+
+        // 输入验证
+        if (data.usdtYue !== undefined && (isNaN(Number(data.usdtYue)) || Number(data.usdtYue) < 0)) {
+          return ctx.badRequest('USDT充值金额必须是大于等于0的数字');
+        }
+        
+        if (data.aiYue !== undefined && (isNaN(Number(data.aiYue)) || Number(data.aiYue) < 0)) {
+          return ctx.badRequest('AI代币充值金额必须是大于等于0的数字');
         }
 
         // 验证用户是否存在
@@ -127,12 +157,12 @@ export default factories.createCoreController(
         // 更新钱包余额
         const updateData: any = {};
         if (data.usdtYue !== undefined) {
-          const currentUsdt = parseFloat(wallet.usdtYue || '0');
-          updateData.usdtYue = (currentUsdt + parseFloat(data.usdtYue)).toString();
+          const currentUsdt = new Decimal(wallet.usdtYue || 0);
+          updateData.usdtYue = currentUsdt.plus(new Decimal(data.usdtYue)).toString();
         }
         if (data.aiYue !== undefined) {
-          const currentAi = parseFloat(wallet.aiYue || '0');
-          updateData.aiYue = (currentAi + parseFloat(data.aiYue)).toString();
+          const currentAi = new Decimal(wallet.aiYue || 0);
+          updateData.aiYue = currentAi.plus(new Decimal(data.aiYue)).toString();
         }
         if (data.aiTokenBalances !== undefined) {
           updateData.aiTokenBalances = data.aiTokenBalances;
@@ -141,6 +171,8 @@ export default factories.createCoreController(
         const updatedWallet = await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
           data: updateData
         });
+
+        console.log(`用户 ${data.user} 充值钱包: USDT=${data.usdtYue}, AI=${data.aiYue}`);
 
         ctx.body = {
           success: true,
@@ -182,6 +214,15 @@ export default factories.createCoreController(
           return ctx.badRequest('用户已存在钱包');
         }
         
+        // 验证余额字段
+        if (data.usdtYue !== undefined && (isNaN(Number(data.usdtYue)) || Number(data.usdtYue) < 0)) {
+          return ctx.badRequest('USDT余额必须是大于等于0的数字');
+        }
+        
+        if (data.aiYue !== undefined && (isNaN(Number(data.aiYue)) || Number(data.aiYue) < 0)) {
+          return ctx.badRequest('AI代币余额必须是大于等于0的数字');
+        }
+        
         const wallet = await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
           data: {
             usdtYue: data.usdtYue || '0',
@@ -190,6 +231,8 @@ export default factories.createCoreController(
             user: data.user
           }
         });
+        
+        console.log(`为用户 ${data.user} 创建钱包`);
         
         ctx.body = { 
           success: true,

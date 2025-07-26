@@ -26,11 +26,15 @@ yarn add decimal.js
 echo "🐘 安装 PostgreSQL 驱动..."
 yarn add pg@^8.11.3
 
-# 7. 清理构建缓存
+# 7. 安装类型定义
+echo "📝 安装类型定义..."
+yarn add @types/minimatch --dev
+
+# 8. 清理构建缓存
 echo "🗑️ 清理构建缓存..."
 yarn build --clean
 
-# 8. 重新生成类型定义
+# 9. 重新生成类型定义
 echo "🔄 重新生成类型定义..."
 yarn strapi ts:generate-types
 
