@@ -14,15 +14,19 @@ rm -rf node_modules yarn.lock
 echo "📥 安装 Strapi v4 依赖..."
 yarn install
 
-# 4. 安装decimal.js
+# 4. 安装React依赖
+echo "⚛️ 安装 React 依赖..."
+yarn add react@^18.0.0 react-dom@^18.0.0 react-router-dom@^5.2.0 styled-components@^5.2.1
+
+# 5. 安装decimal.js
 echo "📊 安装 decimal.js..."
 yarn add decimal.js
 
-# 5. 清理构建缓存
+# 6. 清理构建缓存
 echo "🗑️ 清理构建缓存..."
 yarn build --clean
 
-# 6. 重新生成类型定义
+# 7. 重新生成类型定义
 echo "🔄 重新生成类型定义..."
 yarn strapi ts:generate-types
 
