@@ -61,8 +61,8 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       // 更新邀请人钱包余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: user.invitedBy.id }
-      });
+        filters: { user: (user as any).invitedBy.id }
+      }) as any[];
 
       if (wallets && wallets.length > 0) {
         const wallet = wallets[0];
@@ -94,13 +94,13 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         populate: ['user', 'jihua']
       });
 
-      console.log(`发现 ${expiredOrders.length} 个到期订单`);
+      console.log(`发现 ${(expiredOrders as any[]).length} 个到期订单`);
 
       for (const order of expiredOrders as any[]) {
         try {
           await this.handleInvestmentCompletion(order.id);
         } catch (error) {
-          console.error(`处理到期订单失败: ${order.id}`, error);
+          console.error(`处理到期订单 ${order.id} 时出错:`, error);
         }
       }
     } catch (error) {
@@ -116,16 +116,16 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { user: userId },
         populate: ['jihua']
-      });
+      }) as any[];
 
       // 计算统计数据
-      const totalInvestment = orders.reduce((sum, order) => {
+      const totalInvestment = (orders as any[]).reduce((sum, order) => {
         return sum + parseFloat(order.amount || 0);
       }, 0);
 
-      const activeOrders = orders.filter(order => order.status === 'running');
-      const completedOrders = orders.filter(order => order.status === 'finished');
-      const redeemableOrders = orders.filter(order => order.status === 'redeemable');
+      const activeOrders = (orders as any[]).filter(order => order.status === 'running');
+      const completedOrders = (orders as any[]).filter(order => order.status === 'finished');
+      const redeemableOrders = (orders as any[]).filter(order => order.status === 'redeemable');
 
       const totalYield = completedOrders.reduce((sum, order) => {
         return sum + parseFloat(order.payout_amount || 0);
@@ -133,7 +133,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       return {
         totalInvestment,
-        totalOrders: orders.length,
+        totalOrders: (orders as any[]).length,
         activeOrders: activeOrders.length,
         completedOrders: completedOrders.length,
         redeemableOrders: redeemableOrders.length,

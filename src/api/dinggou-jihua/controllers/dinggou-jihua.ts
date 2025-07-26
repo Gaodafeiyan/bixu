@@ -28,7 +28,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       // 检查用户钱包余额
       const wallet = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: userId }
-      });
+      }) as any[];
 
       if (!wallet || wallet.length === 0) {
         return ctx.badRequest('用户钱包不存在');
@@ -115,7 +115,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       // 更新钱包余额
       const wallet = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: userId }
-      });
+      }) as any[];
 
       if (wallet && wallet.length > 0) {
         const userWallet = wallet[0];
@@ -171,12 +171,12 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       });
 
       // 计算统计数据
-      const totalInvestment = orders.reduce((sum, order) => {
+      const totalInvestment = (orders as any[]).reduce((sum, order) => {
         return sum + parseFloat(order.amount || 0);
       }, 0);
 
-      const activeOrders = orders.filter(order => order.status === 'active');
-      const completedOrders = orders.filter(order => order.status === 'finished');
+      const activeOrders = (orders as any[]).filter(order => order.status === 'active');
+      const completedOrders = (orders as any[]).filter(order => order.status === 'finished');
 
       const totalYield = completedOrders.reduce((sum, order) => {
         return sum + parseFloat(order.payout_amount || 0);
@@ -185,16 +185,16 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       ctx.body = {
         success: true,
         data: {
-          planId,
+          planId: plan.id,
           planName: plan.jihuaCode,
           totalInvestment,
-          totalParticipants: orders.length,
+          totalParticipants: (orders as any[]).length,
           activeParticipants: activeOrders.length,
           completedParticipants: completedOrders.length,
           totalYield,
           maxSlots: plan.max_slots || 100,
-          currentSlots: orders.length,
-          availableSlots: (plan.max_slots || 100) - orders.length
+          currentSlots: (orders as any[]).length,
+          availableSlots: (plan.max_slots || 100) - (orders as any[]).length
         }
       };
     } catch (error) {
@@ -214,10 +214,10 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         populate: ['jihua'],
         pagination: {
           page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize))
-        },
-        sort: { createdAt: 'desc' }
-      });
+          pageSize: parseInt(String(pageSize)),
+          total: (orders as any[]).length
+        }
+      }) as any[];
 
       ctx.body = {
         success: true,
@@ -258,26 +258,23 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       });
 
       // 格式化参与者信息
-      const formattedParticipants = participants.map(order => ({
+      const formattedParticipants = (participants as any[]).map(order => ({
         userId: order.user.id,
         username: order.user.username,
         email: order.user.email,
-        investmentAmount: order.amount,
-        investmentDate: order.createdAt,
+        amount: order.amount,
         status: order.status,
-        orderId: order.id
+        createdAt: order.createdAt
       }));
 
       ctx.body = {
         success: true,
         data: {
-          planId,
-          planName: plan.jihuaCode,
           participants: formattedParticipants,
           pagination: {
             page: parseInt(String(page)),
             pageSize: parseInt(String(pageSize)),
-            total: participants.length
+            total: (participants as any[]).length
           }
         }
       };

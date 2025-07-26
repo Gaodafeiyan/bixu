@@ -13,14 +13,14 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
       }
 
       const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
-        filters,
+        filters: { user: userId },
         populate: ['jihua'],
         pagination: {
           page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize))
-        },
-        sort: { createdAt: 'desc' }
-      });
+          pageSize: parseInt(String(pageSize)),
+          total: (orders as any[]).length
+        }
+      }) as any[];
 
       ctx.body = {
         success: true,
@@ -51,7 +51,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
       }
 
       // 验证订单所有者
-      if (order.user !== userId) {
+      if ((order as any).user !== userId) {
         return ctx.forbidden('无权操作此订单');
       }
 

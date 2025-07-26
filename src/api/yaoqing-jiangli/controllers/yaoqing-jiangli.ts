@@ -41,7 +41,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       const rewardAmount = new Decimal(data.shouyiUSDT);
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: data.tuijianRen }
-      });
+      }) as any[];
 
       if (wallets && wallets.length > 0) {
         const wallet = wallets[0];
@@ -74,10 +74,11 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         populate: ['laiyuanRen', 'laiyuanDan'],
         pagination: {
           page: parseInt(String(page)),
-          pageSize: parseInt(String(pageSize))
+          pageSize: parseInt(String(pageSize)),
+          total: (rewards as any[]).length
         },
         sort: { createdAt: 'desc' }
-      });
+      }) as any[];
 
       ctx.body = {
         success: true,
@@ -109,14 +110,14 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         filters: { 
           invitedBy: { $in: directReferrals.map(user => user.id) }
         }
-      });
+      }) as any[];
 
       // 获取邀请奖励总额
       const rewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
         filters: { tuijianRen: userId }
       });
 
-      const totalRewards = rewards.reduce((sum, reward) => {
+      const totalRewards = (rewards as any[]).reduce((sum, reward) => {
         return sum + parseFloat(reward.shouyiUSDT || 0);
       }, 0);
 
