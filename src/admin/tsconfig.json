@@ -1,5 +1,8 @@
 {
   "extends": "@strapi/typescript-utils/tsconfigs/admin",
+  "compilerOptions": {
+    "skipLibCheck": true
+  },
   "include": [
     "../plugins/**/admin/src/**/*",
     "./"
