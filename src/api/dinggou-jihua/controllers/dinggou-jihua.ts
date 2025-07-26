@@ -29,19 +29,52 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('认购计划槽位已满');
       }
 
-      // 使用计划中预设的投资金额
-      const investmentAmount = new Decimal(plan.benjinUSDT || 0);
+      // 使用计划中预设的投资金额 - 修复字段名
+      const investmentAmount = new Decimal(plan.benjinUSDT || plan.benjin_usdt || 0);
       if (investmentAmount.isZero()) {
         return ctx.badRequest('认购计划金额未设置');
       }
 
-      // 使用事务服务执行投资操作
-      const transactionService = strapi.service('api::transaction-service.transaction-service');
-      const result = await transactionService.executeInvestmentTransaction(
-        userId, 
-        Number(planId), 
-        investmentAmount
-      );
+      // 检查用户钱包余额
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: userId }
+      }) as any[];
+
+      if (!wallets || wallets.length === 0) {
+        return ctx.badRequest('用户钱包不存在');
+      }
+
+      const userWallet = wallets[0];
+      const walletBalance = new Decimal(userWallet.usdtYue || 0);
+
+      if (walletBalance.lessThan(investmentAmount)) {
+        return ctx.badRequest('钱包余额不足');
+      }
+
+      // 创建投资订单
+      const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
+        data: {
+          user: userId,
+          jihua: planId,
+          amount: investmentAmount.toString(),
+          principal: investmentAmount.toString(),
+          yield_rate: plan.jingtaiBili || plan.jingtai_bili,
+          cycle_days: plan.zhouQiTian || plan.zhou_qi_tian,
+          start_at: new Date(),
+          end_at: new Date(Date.now() + (plan.zhouQiTian || plan.zhou_qi_tian) * 24 * 60 * 60 * 1000),
+          status: 'pending'
+        }
+      });
+
+      // 扣除钱包余额
+      await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+        data: { usdtYue: walletBalance.minus(investmentAmount).toString() }
+      });
+
+      // 更新计划当前槽位
+      await strapi.entityService.update('api::dinggou-jihua.dinggou-jihua', planId, {
+        data: { current_slots: (plan.current_slots || 0) + 1 }
+      });
 
       // 记录操作日志
       console.log(`用户 ${userId} 投资计划 ${planId}，金额: ${investmentAmount.toString()} USDT`);
@@ -49,11 +82,11 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       ctx.body = {
         success: true,
         data: {
-          orderId: result.orderId,
+          orderId: order.id,
           investmentAmount: investmentAmount.toString(),
-          planName: result.planName,
-          planCode: result.planCode,
-          newBalance: result.newBalance
+          planName: plan.name,
+          planCode: plan.jihuaCode || plan.jihua_code,
+          newBalance: walletBalance.minus(investmentAmount).toString()
         },
         message: '投资成功'
       };
@@ -84,23 +117,67 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('无效的订单ID');
       }
 
-      // 使用事务服务执行赎回操作
-      const transactionService = strapi.service('api::transaction-service.transaction-service');
-      const result = await transactionService.executeRedemptionTransaction(
-        Number(orderId), 
-        userId
-      );
+      // 获取订单信息
+      const order = await strapi.entityService.findOne('api::dinggou-dingdan.dinggou-dingdan', orderId, {
+        populate: ['user', 'jihua']
+      });
+
+      if (!order) {
+        return ctx.notFound('订单不存在');
+      }
+
+      // 验证订单所有者
+      if (order.user.id !== userId) {
+        return ctx.forbidden('无权操作此订单');
+      }
+
+      // 检查订单状态
+      if (order.status !== 'finished') {
+        return ctx.badRequest('订单尚未完成，无法赎回');
+      }
+
+      // 计算收益
+      const investmentAmount = new Decimal(order.amount);
+      const yieldRate = new Decimal(order.yield_rate);
+      const cycleDays = order.cycle_days;
+      
+      // 计算静态收益
+      const staticYield = investmentAmount.mul(yieldRate).mul(cycleDays).div(365);
+      const totalPayout = investmentAmount.plus(staticYield);
+
+      // 更新钱包余额
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: userId }
+      }) as any[];
+
+      if (wallets && wallets.length > 0) {
+        const userWallet = wallets[0];
+        const currentBalance = new Decimal(userWallet.usdtYue || 0);
+        
+        await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+          data: { usdtYue: currentBalance.plus(totalPayout).toString() }
+        });
+      }
+
+      // 更新订单状态
+      await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
+        data: {
+          status: 'redeemed',
+          redeemed_at: new Date(),
+          payout_amount: totalPayout.toString()
+        }
+      });
 
       // 记录操作日志
-      console.log(`用户 ${userId} 赎回订单 ${orderId}，总收益: ${result.totalPayout} USDT`);
+      console.log(`用户 ${userId} 赎回订单 ${orderId}，总收益: ${totalPayout.toString()} USDT`);
 
       ctx.body = {
         success: true,
         data: {
-          orderId: result.orderId,
-          investmentAmount: result.investmentAmount,
-          staticYield: result.staticYield,
-          totalPayout: result.totalPayout
+          orderId: order.id,
+          investmentAmount: investmentAmount.toString(),
+          staticYield: staticYield.toString(),
+          totalPayout: totalPayout.toString()
         },
         message: '赎回成功'
       };

@@ -4,7 +4,7 @@ import Decimal from 'decimal.js';
 export default ({ strapi }: { strapi: Strapi }) => ({
   // 执行投资事务
   async executeInvestmentTransaction(userId: number, planId: number, investmentAmount: Decimal) {
-    const knex = strapi.connection;
+    const knex = strapi.db.connection;
     
     return await knex.transaction(async (trx) => {
       try {
@@ -74,7 +74,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
   
   // 执行赎回事务
   async executeRedemptionTransaction(orderId: number, userId: number) {
-    const knex = strapi.connection;
+    const knex = strapi.db.connection;
     
     return await knex.transaction(async (trx) => {
       try {
@@ -148,7 +148,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
   
   // 执行邀请奖励事务
   async executeInvitationRewardTransaction(tuijianRenId: number, laiyuanRenId: number, rewardAmount: Decimal, orderId: number) {
-    const knex = strapi.connection;
+    const knex = strapi.db.connection;
     
     return await knex.transaction(async (trx) => {
       try {
