@@ -65,7 +65,8 @@ export default factories.createCoreController(
         });
 
         // 确保用户有正确的角色
-        if (!newUser.role) {
+        const userWithRole = newUser as any;
+        if (!userWithRole.role) {
           // 如果没有角色，手动设置默认角色
           await strapi.plugin('users-permissions').service('user').edit(newUser.id, {
             role: authenticatedRole.id
