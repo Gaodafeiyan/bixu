@@ -16,7 +16,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       // 更新订单状态为可赎回
       await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
-        status: 'redeemable'
+        data: { status: 'redeemable' }
       });
 
       // 处理邀请奖励
@@ -69,7 +69,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         const currentBalance = new Decimal(wallet.usdtYue || 0);
         
         await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
-          usdtYue: currentBalance.plus(rewardAmount).toString()
+          data: { usdtYue: currentBalance.plus(rewardAmount).toString() }
         });
       }
 

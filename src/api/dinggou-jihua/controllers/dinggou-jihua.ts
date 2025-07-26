@@ -59,7 +59,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 扣除钱包余额
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-        usdtYue: walletBalance.minus(investmentAmount).toString()
+        data: { usdtYue: walletBalance.minus(investmentAmount).toString() }
       });
 
       ctx.body = {
@@ -122,15 +122,17 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         const currentBalance = new Decimal(userWallet.usdtYue || 0);
         
         await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-          usdtYue: currentBalance.plus(totalPayout).toString()
+          data: { usdtYue: currentBalance.plus(totalPayout).toString() }
         });
       }
 
       // 更新订单状态
       await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
-        status: 'finished',
-        redeemed_at: new Date(),
-        payout_amount: totalPayout.toString()
+        data: {
+          status: 'finished',
+          redeemed_at: new Date(),
+          payout_amount: totalPayout.toString()
+        }
       });
 
       ctx.body = {
