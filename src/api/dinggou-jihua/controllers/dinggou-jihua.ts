@@ -5,8 +5,11 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
   // 继承默认的find方法
   async find(ctx) {
     try {
-      // 调用父类的find方法
-      const { data, meta } = await super.find(ctx);
+      // 直接使用strapi.entityService
+      const { data, meta } = await strapi.entityService.findPage('api::dinggou-jihua.dinggou-jihua', {
+        ...ctx.query,
+        populate: ['*']
+      });
       return { data, meta };
     } catch (error) {
       console.error('获取认购计划列表失败:', error);

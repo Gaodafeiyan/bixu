@@ -39,6 +39,16 @@ export default factories.createCoreController(
           return ctx.badRequest('邮箱已存在');
         }
 
+        // 获取authenticated角色
+        const [authenticatedRole] = await strapi.entityService.findMany('plugin::users-permissions.role', {
+          filters: { type: 'authenticated' },
+          limit: 1
+        }) as any[];
+
+        if (!authenticatedRole) {
+          return ctx.badRequest('系统错误：未找到默认角色');
+        }
+
         // 使用Strapi用户服务创建用户，确保密码正确加密
         const newUser = await strapi.plugin('users-permissions').service('user').add({
           username,
@@ -48,14 +58,14 @@ export default factories.createCoreController(
           invitedBy: inviteUser[0].id,
           confirmed: true,  // 自动确认用户
           blocked: false,
-          role: 1  // 默认用户角色
+          role: authenticatedRole.id  // 使用正确的角色ID
         });
 
         // 确保用户有正确的角色
         if (!newUser.role) {
           // 如果没有角色，手动设置默认角色
           await strapi.plugin('users-permissions').service('user').edit(newUser.id, {
-            role: 1
+            role: authenticatedRole.id
           });
         }
 
