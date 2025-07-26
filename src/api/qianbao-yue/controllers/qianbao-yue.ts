@@ -4,6 +4,21 @@ import Decimal from 'decimal.js';
 export default factories.createCoreController(
   'api::qianbao-yue.qianbao-yue',
   ({ strapi }) => ({
+    // 重写find方法
+    async find(ctx) {
+      try {
+        // 直接使用strapi.entityService
+        const result = await strapi.entityService.findPage('api::qianbao-yue.qianbao-yue', {
+          ...ctx.query,
+          populate: ['*']
+        });
+        return result;
+      } catch (error) {
+        console.error('获取钱包列表失败:', error);
+        ctx.throw(500, `获取钱包列表失败: ${error.message}`);
+      }
+    },
+
     // 测试连接方法
     async testConnection(ctx) {
       ctx.body = {
