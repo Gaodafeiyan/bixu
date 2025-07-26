@@ -51,6 +51,14 @@ export default factories.createCoreController(
           role: 1  // 默认用户角色
         });
 
+        // 确保用户有正确的角色
+        if (!newUser.role) {
+          // 如果没有角色，手动设置默认角色
+          await strapi.plugin('users-permissions').service('user').edit(newUser.id, {
+            role: 1
+          });
+        }
+
         // 创建用户钱包
         await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
           data: {

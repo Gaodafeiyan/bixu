@@ -2,6 +2,18 @@ import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
 
 export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua', ({ strapi }) => ({
+  // 继承默认的find方法
+  async find(ctx) {
+    try {
+      // 调用父类的find方法
+      const { data, meta } = await super.find(ctx);
+      return { data, meta };
+    } catch (error) {
+      console.error('获取认购计划列表失败:', error);
+      ctx.throw(500, `获取认购计划列表失败: ${error.message}`);
+    }
+  },
+
   // 测试连接方法
   async testConnection(ctx) {
     ctx.body = {
