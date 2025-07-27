@@ -8,6 +8,12 @@ export default {
   'dinggou-dingdan': () => import('./dinggou-dingdan/routes/dinggou-dingdan'),
   // 邀请奖励路由
   'yaoqing-jiangli': () => import('./yaoqing-jiangli/routes/yaoqing-jiangli'),
+  // 抽奖奖品路由
+  'choujiang-jiangpin': () => import('./choujiang-jiangpin/routes/choujiang-jiangpin'),
+  // 抽奖机会路由
+  'choujiang-jihui': () => import('./choujiang-jihui/routes/choujiang-jihui'),
+  // 抽奖记录路由
+  'choujiang-ji-lu': () => import('./choujiang-ji-lu/routes/choujiang-ji-lu'),
   // 认证路由
   'auth': () => import('./auth/routes/auth'),
 }; 
