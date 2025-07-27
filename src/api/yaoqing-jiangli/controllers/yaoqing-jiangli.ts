@@ -260,6 +260,57 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
     }
   },
 
+  // 获取用户团队统计（兼容性方法，复制V2版本逻辑）
+  async getTeamStats(ctx) {
+    try {
+      const userId = ctx.state.user.id;
+
+      // 获取直接推荐人数
+      const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
+        filters: { invitedBy: userId }
+      }) as any[];
+
+      // 获取间接推荐人数
+      const indirectReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
+        filters: { 
+          invitedBy: { $in: directReferrals.map(user => user.id) }
+        }
+      } as any) as any[];
+
+      // 获取总收益
+      const totalRewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+        filters: { tuijianRen: userId }
+      }) as any[];
+
+      const totalEarnings = totalRewards.reduce((sum, reward) => {
+        return sum + new Decimal(reward.shouyiUSDT || 0).toNumber();
+      }, 0);
+
+      // 获取用户当前档位
+      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const currentTier = await rewardConfigService.getUserCurrentTier(userId);
+
+      ctx.body = {
+        success: true,
+        data: {
+          directReferrals: directReferrals.length,
+          indirectReferrals: indirectReferrals.length,
+          totalReferrals: directReferrals.length + indirectReferrals.length,
+          totalEarnings: totalEarnings.toString(),
+          currentTier: currentTier ? {
+            name: currentTier.name,
+            staticRate: currentTier.staticRate,
+            referralRate: currentTier.referralRate,
+            maxCommission: currentTier.maxCommission
+          } : null
+        }
+      };
+    } catch (error) {
+      console.error('获取团队统计失败:', error);
+      ctx.throw(500, `获取团队统计失败: ${error.message}`);
+    }
+  },
+
   // 获取用户团队统计（V2版本，支持档位封顶计算）
   async getTeamStatsV2(ctx) {
     try {
