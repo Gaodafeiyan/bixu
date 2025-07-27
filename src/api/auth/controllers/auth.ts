@@ -99,12 +99,88 @@ export default factories.createCoreController(
       }
     },
 
+    // 用户登录 - 添加缺失的登录方法
+    async local(ctx) {
+      try {
+        const { identifier, password } = ctx.request.body;
+        
+        if (!identifier || !password) {
+          return ctx.badRequest('用户名/邮箱和密码不能为空');
+        }
+
+        // 使用Strapi的users-permissions插件进行认证
+        const userService = strapi.plugin('users-permissions').service('user');
+        const jwtService = strapi.plugin('users-permissions').service('jwt');
+        
+        // 查找用户
+        const user = await userService.fetch({ username: identifier });
+        if (!user) {
+          // 尝试用邮箱查找
+          const userByEmail = await userService.fetch({ email: identifier });
+          if (!userByEmail) {
+            return ctx.badRequest('用户名或密码错误');
+          }
+        }
+
+        const targetUser = user || await userService.fetch({ email: identifier });
+        
+        // 验证密码
+        const validPassword = await userService.validatePassword(password, targetUser.password);
+        if (!validPassword) {
+          return ctx.badRequest('用户名或密码错误');
+        }
+
+        // 检查用户状态
+        if (targetUser.blocked) {
+          return ctx.badRequest('账户已被禁用');
+        }
+
+        if (!targetUser.confirmed) {
+          return ctx.badRequest('账户未确认');
+        }
+
+        // 生成JWT token
+        const token = jwtService.issue({ id: targetUser.id });
+
+        // 获取用户角色信息
+        const role = await strapi.entityService.findOne('plugin::users-permissions.role', targetUser.role);
+
+        // 获取用户钱包信息
+        const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+          filters: { user: targetUser.id }
+        }) as any[];
+
+        const wallet = wallets && wallets.length > 0 ? wallets[0] : null;
+
+        ctx.body = {
+          jwt: token,
+          user: {
+            id: targetUser.id,
+            username: targetUser.username,
+            email: targetUser.email,
+            confirmed: targetUser.confirmed,
+            blocked: targetUser.blocked,
+            role: role,
+            inviteCode: targetUser.inviteCode,
+            invitedBy: targetUser.invitedBy,
+            qianbao: wallet,
+            createdAt: targetUser.createdAt,
+            updatedAt: targetUser.updatedAt
+          }
+        };
+      } catch (error) {
+        console.error('登录失败:', error);
+        ctx.throw(500, `登录失败: ${error.message}`);
+      }
+    },
+
     // 获取我的邀请码
     async getMyInviteCode(ctx) {
       try {
         const userId = ctx.state.user.id;
         
         const user = await strapi.entityService.findOne('plugin::users-permissions.user', userId);
+        
         if (!user) {
           return ctx.notFound('用户不存在');
         }

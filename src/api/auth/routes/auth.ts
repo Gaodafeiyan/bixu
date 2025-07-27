@@ -13,6 +13,18 @@ export default {
         middlewares: [],
       },
     },
+    // 用户登录 - 添加缺失的登录路由
+    {
+      method: 'POST',
+      path: '/auth/local',
+      handler: 'auth.local',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
     // 获取我的邀请码
     {
       method: 'GET',
