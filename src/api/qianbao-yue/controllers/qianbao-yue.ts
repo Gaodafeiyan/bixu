@@ -19,6 +19,47 @@ export default factories.createCoreController(
       }
     },
 
+    // 添加默认的findOne方法
+    async findOne(ctx) {
+      try {
+        const { id } = ctx.params;
+        const result = await strapi.entityService.findOne('api::qianbao-yue.qianbao-yue', id, {
+          populate: ['*']
+        });
+        return result;
+      } catch (error) {
+        console.error('获取钱包详情失败:', error);
+        ctx.throw(500, `获取钱包详情失败: ${error.message}`);
+      }
+    },
+
+    // 添加默认的update方法
+    async update(ctx) {
+      try {
+        const { id } = ctx.params;
+        const { data } = ctx.request.body;
+        const result = await strapi.entityService.update('api::qianbao-yue.qianbao-yue', id, {
+          data
+        });
+        return result;
+      } catch (error) {
+        console.error('更新钱包失败:', error);
+        ctx.throw(500, `更新钱包失败: ${error.message}`);
+      }
+    },
+
+    // 添加默认的delete方法
+    async delete(ctx) {
+      try {
+        const { id } = ctx.params;
+        const result = await strapi.entityService.delete('api::qianbao-yue.qianbao-yue', id);
+        return result;
+      } catch (error) {
+        console.error('删除钱包失败:', error);
+        ctx.throw(500, `删除钱包失败: ${error.message}`);
+      }
+    },
+
     // 测试连接方法
     async testConnection(ctx) {
       ctx.body = {

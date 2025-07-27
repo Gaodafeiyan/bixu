@@ -1,6 +1,75 @@
 import { factories } from '@strapi/strapi';
 
 export default factories.createCoreController('api::dinggou-dingdan.dinggou-dingdan', ({ strapi }) => ({
+  // 添加默认的find方法
+  async find(ctx) {
+    try {
+      const result = await strapi.entityService.findPage('api::dinggou-dingdan.dinggou-dingdan', {
+        ...ctx.query,
+        populate: ['*']
+      });
+      return result;
+    } catch (error) {
+      console.error('获取订单列表失败:', error);
+      ctx.throw(500, `获取订单列表失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的findOne方法
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.entityService.findOne('api::dinggou-dingdan.dinggou-dingdan', id, {
+        populate: ['*']
+      });
+      return result;
+    } catch (error) {
+      console.error('获取订单详情失败:', error);
+      ctx.throw(500, `获取订单详情失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的create方法
+  async create(ctx) {
+    try {
+      const { data } = ctx.request.body;
+      const result = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
+        data
+      });
+      return result;
+    } catch (error) {
+      console.error('创建订单失败:', error);
+      ctx.throw(500, `创建订单失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的update方法
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      const result = await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', id, {
+        data
+      });
+      return result;
+    } catch (error) {
+      console.error('更新订单失败:', error);
+      ctx.throw(500, `更新订单失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的delete方法
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.entityService.delete('api::dinggou-dingdan.dinggou-dingdan', id);
+      return result;
+    } catch (error) {
+      console.error('删除订单失败:', error);
+      ctx.throw(500, `删除订单失败: ${error.message}`);
+    }
+  },
+
   // 获取用户订单
   async getUserOrders(ctx) {
     try {
@@ -106,13 +175,11 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
     try {
       const { data } = ctx.request.body;
       
-      // 验证data字段
       if (!data) {
         return ctx.badRequest('缺少data字段');
       }
       
-      // 验证必要字段
-      if (!data.user || !data.jihua || !data.amount) {
+      if (!data.user || !data.jihua || !data.jine) {
         return ctx.badRequest('缺少必要字段');
       }
       
@@ -123,28 +190,30 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
       }
       
       // 验证计划是否存在
-      const plan = await strapi.entityService.findOne('api::dinggou-jihua.dinggou-jihua', data.jihua);
-      if (!plan) {
+      const jihua = await strapi.entityService.findOne('api::dinggou-jihua.dinggou-jihua', data.jihua);
+      if (!jihua) {
         return ctx.badRequest('认购计划不存在');
+      }
+      
+      // 验证金额
+      if (isNaN(Number(data.jine)) || Number(data.jine) <= 0) {
+        return ctx.badRequest('金额必须是大于0的数字');
       }
       
       const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
         data: {
           user: data.user,
           jihua: data.jihua,
-          amount: data.amount,
-          principal: data.principal || data.amount,
-          yield_rate: data.yield_rate || plan.jingtaiBili,
-          cycle_days: data.cycle_days || plan.zhouQiTian,
-          start_at: data.start_at || new Date(),
-          end_at: data.end_at || new Date(Date.now() + (data.cycle_days || plan.zhouQiTian) * 24 * 60 * 60 * 1000),
-          status: data.status || 'pending'
+          jine: data.jine,
+          status: data.status || 'pending',
+          beizhu: data.beizhu || ''
         }
       });
       
-      ctx.body = { 
+      ctx.body = {
         success: true,
-        data: order 
+        data: order,
+        message: '订单创建成功'
       };
     } catch (error) {
       console.error('创建订单失败:', error);

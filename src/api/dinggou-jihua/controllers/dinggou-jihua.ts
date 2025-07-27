@@ -17,6 +17,61 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
     }
   },
 
+  // 添加默认的findOne方法
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.entityService.findOne('api::dinggou-jihua.dinggou-jihua', id, {
+        populate: ['*']
+      });
+      return result;
+    } catch (error) {
+      console.error('获取认购计划详情失败:', error);
+      ctx.throw(500, `获取认购计划详情失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的create方法
+  async create(ctx) {
+    try {
+      const { data } = ctx.request.body;
+      const result = await strapi.entityService.create('api::dinggou-jihua.dinggou-jihua', {
+        data
+      });
+      return result;
+    } catch (error) {
+      console.error('创建认购计划失败:', error);
+      ctx.throw(500, `创建认购计划失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的update方法
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      const result = await strapi.entityService.update('api::dinggou-jihua.dinggou-jihua', id, {
+        data
+      });
+      return result;
+    } catch (error) {
+      console.error('更新认购计划失败:', error);
+      ctx.throw(500, `更新认购计划失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的delete方法
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.entityService.delete('api::dinggou-jihua.dinggou-jihua', id);
+      return result;
+    } catch (error) {
+      console.error('删除认购计划失败:', error);
+      ctx.throw(500, `删除认购计划失败: ${error.message}`);
+    }
+  },
+
   // 测试连接方法
   async testConnection(ctx) {
     ctx.body = {
