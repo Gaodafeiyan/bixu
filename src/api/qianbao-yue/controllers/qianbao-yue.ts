@@ -39,9 +39,14 @@ export default factories.createCoreController(
         const userId = ctx.state.user.id;
         
         // 确保strapi.entityService存在
-        if (!strapi || !strapi.entityService) {
-          console.error('strapi.entityService is undefined');
+        if (!strapi) {
+          console.error('strapi is undefined');
           return ctx.throw(500, '系统服务不可用');
+        }
+        
+        if (!strapi.entityService) {
+          console.error('strapi.entityService is undefined');
+          return ctx.throw(500, '实体服务不可用');
         }
         
         // 查找用户钱包
