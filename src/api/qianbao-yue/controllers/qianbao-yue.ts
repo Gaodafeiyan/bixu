@@ -10,7 +10,7 @@ export default factories.createCoreController(
         // 直接使用strapi.entityService
         const result = await strapi.entityService.findPage('api::qianbao-yue.qianbao-yue', {
           ...ctx.query,
-          populate: ['*']
+          populate: ['user']
         });
         return result;
       } catch (error) {
@@ -24,7 +24,7 @@ export default factories.createCoreController(
       try {
         const { id } = ctx.params;
         const result = await strapi.entityService.findOne('api::qianbao-yue.qianbao-yue', id, {
-          populate: ['*']
+          populate: ['user']
         });
         return result;
       } catch (error) {

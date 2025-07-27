@@ -7,7 +7,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
     try {
       const result = await strapi.entityService.findPage('api::yaoqing-jiangli.yaoqing-jiangli', {
         ...ctx.query,
-        populate: ['*']
+        populate: ['tuijianRen', 'laiyuanRen', 'laiyuanDan']
       });
       return result;
     } catch (error) {
@@ -21,26 +21,12 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
     try {
       const { id } = ctx.params;
       const result = await strapi.entityService.findOne('api::yaoqing-jiangli.yaoqing-jiangli', id, {
-        populate: ['*']
+        populate: ['tuijianRen', 'laiyuanRen', 'laiyuanDan']
       });
       return result;
     } catch (error) {
       console.error('获取邀请奖励详情失败:', error);
       ctx.throw(500, `获取邀请奖励详情失败: ${error.message}`);
-    }
-  },
-
-  // 添加默认的create方法
-  async create(ctx) {
-    try {
-      const { data } = ctx.request.body;
-      const result = await strapi.entityService.create('api::yaoqing-jiangli.yaoqing-jiangli', {
-        data
-      });
-      return result;
-    } catch (error) {
-      console.error('创建邀请奖励失败:', error);
-      ctx.throw(500, `创建邀请奖励失败: ${error.message}`);
     }
   },
 

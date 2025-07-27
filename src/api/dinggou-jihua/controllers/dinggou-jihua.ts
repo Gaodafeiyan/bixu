@@ -8,7 +8,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       // 直接使用strapi.entityService
       const result = await strapi.entityService.findPage('api::dinggou-jihua.dinggou-jihua', {
         ...ctx.query,
-        populate: ['*']
+        populate: ['user']
       });
       return result;
     } catch (error) {
@@ -22,7 +22,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
     try {
       const { id } = ctx.params;
       const result = await strapi.entityService.findOne('api::dinggou-jihua.dinggou-jihua', id, {
-        populate: ['*']
+        populate: ['user']
       });
       return result;
     } catch (error) {

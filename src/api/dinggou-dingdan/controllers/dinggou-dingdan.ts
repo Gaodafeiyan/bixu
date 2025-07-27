@@ -6,7 +6,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
     try {
       const result = await strapi.entityService.findPage('api::dinggou-dingdan.dinggou-dingdan', {
         ...ctx.query,
-        populate: ['*']
+        populate: ['user', 'jihua']
       });
       return result;
     } catch (error) {
@@ -20,26 +20,12 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
     try {
       const { id } = ctx.params;
       const result = await strapi.entityService.findOne('api::dinggou-dingdan.dinggou-dingdan', id, {
-        populate: ['*']
+        populate: ['user', 'jihua']
       });
       return result;
     } catch (error) {
       console.error('获取订单详情失败:', error);
       ctx.throw(500, `获取订单详情失败: ${error.message}`);
-    }
-  },
-
-  // 添加默认的create方法
-  async create(ctx) {
-    try {
-      const { data } = ctx.request.body;
-      const result = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
-        data
-      });
-      return result;
-    } catch (error) {
-      console.error('创建订单失败:', error);
-      ctx.throw(500, `创建订单失败: ${error.message}`);
     }
   },
 
@@ -179,7 +165,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         return ctx.badRequest('缺少data字段');
       }
       
-      if (!data.user || !data.jihua || !data.jine) {
+      if (!data.user || !data.jihua || !data.amount) {
         return ctx.badRequest('缺少必要字段');
       }
       
@@ -196,7 +182,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
       }
       
       // 验证金额
-      if (isNaN(Number(data.jine)) || Number(data.jine) <= 0) {
+      if (isNaN(Number(data.amount)) || Number(data.amount) <= 0) {
         return ctx.badRequest('金额必须是大于0的数字');
       }
       
@@ -204,7 +190,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         data: {
           user: data.user,
           jihua: data.jihua,
-          jine: data.jine,
+          amount: data.amount,
           status: data.status || 'pending',
           beizhu: data.beizhu || ''
         }
