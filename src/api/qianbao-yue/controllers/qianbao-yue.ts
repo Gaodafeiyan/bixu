@@ -72,8 +72,13 @@ export default factories.createCoreController(
     // 获取用户钱包
     async getUserWallet(ctx) {
       try {
+        // 调试信息：检查JWT解析情况
+        console.log('>>> ctx.state.user', ctx.state.user);
+        console.log('>>> ctx.request.headers.authorization', ctx.request.headers.authorization);
+        
         // 检查用户是否已认证
         if (!ctx.state.user || !ctx.state.user.id) {
+          console.log('>>> 用户未认证，返回401');
           return ctx.unauthorized('用户未认证');
         }
         
