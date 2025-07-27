@@ -115,17 +115,19 @@ export default factories.createCoreController(
         // 查找用户 - 使用正确的查询方式
         let targetUser = null;
         
-        // 先尝试用用户名查找
+        // 先尝试用用户名查找，包含角色信息
         const usersByUsername = await strapi.entityService.findMany('plugin::users-permissions.user', {
-          filters: { username: identifier }
+          filters: { username: identifier },
+          populate: ['role']
         }) as any[];
         
         if (usersByUsername.length > 0) {
           targetUser = usersByUsername[0];
         } else {
-          // 如果用户名没找到，尝试用邮箱查找
+          // 如果用户名没找到，尝试用邮箱查找，包含角色信息
           const usersByEmail = await strapi.entityService.findMany('plugin::users-permissions.user', {
-            filters: { email: identifier }
+            filters: { email: identifier },
+            populate: ['role']
           }) as any[];
           
           if (usersByEmail.length > 0) {
@@ -155,15 +157,36 @@ export default factories.createCoreController(
         // 生成JWT token
         const token = jwtService.issue({ id: targetUser.id });
 
-        // 获取用户角色信息
-        const role = await strapi.entityService.findOne('plugin::users-permissions.role', targetUser.role);
+        // 安全地获取用户角色信息
+        let role = targetUser.role;
+        if (!role) {
+          // 如果没有角色信息，使用默认角色
+          role = {
+            id: 1,
+            name: 'Authenticated',
+            description: 'Default role given to authenticated user.',
+            type: 'authenticated'
+          };
+        }
 
-        // 获取用户钱包信息
-        const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-          filters: { user: targetUser.id }
-        }) as any[];
+        // 安全地获取用户钱包信息
+        let wallet = null;
+        try {
+          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+            filters: { user: targetUser.id }
+          }) as any[];
 
-        const wallet = wallets && wallets.length > 0 ? wallets[0] : null;
+          wallet = wallets && wallets.length > 0 ? wallets[0] : null;
+        } catch (walletError) {
+          console.warn('获取钱包信息失败:', walletError);
+          // 如果获取钱包失败，创建默认钱包信息
+          wallet = {
+            id: null,
+            usdtYue: '0',
+            aiYue: '0',
+            aiTokenBalances: '{}'
+          };
+        }
 
         ctx.body = {
           jwt: token,
