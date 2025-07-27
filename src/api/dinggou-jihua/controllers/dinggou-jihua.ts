@@ -415,25 +415,19 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('无效的分页参数');
       }
 
-      const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+      const result = await strapi.entityService.findPage('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { user: { id: userId } },
         populate: ['jihua'],
         pagination: {
           page: pageNum,
           pageSize: pageSizeNum
-        }
-      }) as any[];
+        },
+        sort: { createdAt: 'desc' }
+      });
 
       ctx.body = {
         success: true,
-        data: {
-          orders,
-          pagination: {
-            page: pageNum,
-            pageSize: pageSizeNum,
-            total: orders.length
-          }
-        }
+        data: result
       };
     } catch (error) {
       console.error('获取我的投资失败:', error);
