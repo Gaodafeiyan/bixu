@@ -112,17 +112,30 @@ export default factories.createCoreController(
         const userService = strapi.plugin('users-permissions').service('user');
         const jwtService = strapi.plugin('users-permissions').service('jwt');
         
-        // 查找用户
-        const user = await userService.fetch({ username: identifier });
-        if (!user) {
-          // 尝试用邮箱查找
-          const userByEmail = await userService.fetch({ email: identifier });
-          if (!userByEmail) {
-            return ctx.badRequest('用户名或密码错误');
+        // 查找用户 - 使用正确的查询方式
+        let targetUser = null;
+        
+        // 先尝试用用户名查找
+        const usersByUsername = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { username: identifier }
+        }) as any[];
+        
+        if (usersByUsername.length > 0) {
+          targetUser = usersByUsername[0];
+        } else {
+          // 如果用户名没找到，尝试用邮箱查找
+          const usersByEmail = await strapi.entityService.findMany('plugin::users-permissions.user', {
+            filters: { email: identifier }
+          }) as any[];
+          
+          if (usersByEmail.length > 0) {
+            targetUser = usersByEmail[0];
           }
         }
-
-        const targetUser = user || await userService.fetch({ email: identifier });
+        
+        if (!targetUser) {
+          return ctx.badRequest('用户名或密码错误');
+        }
         
         // 验证密码
         const validPassword = await userService.validatePassword(password, targetUser.password);
