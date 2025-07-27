@@ -12,36 +12,7 @@ export default {
         middlewares: [],
       },
     },
-    // 默认的CRUD路由
-    {
-      method: 'GET',
-      path: '/qianbao-yues',
-      handler: 'qianbao-yue.find',
-      config: {
-        auth: false,  // 临时允许公开访问用于测试
-      },
-    },
-    {
-      method: 'GET',
-      path: '/qianbao-yues/:id',
-      handler: 'qianbao-yue.findOne',
-    },
-    {
-      method: 'POST',
-      path: '/qianbao-yues',
-      handler: 'qianbao-yue.create',
-    },
-    {
-      method: 'PUT',
-      path: '/qianbao-yues/:id',
-      handler: 'qianbao-yue.update',
-    },
-    {
-      method: 'DELETE',
-      path: '/qianbao-yues/:id',
-      handler: 'qianbao-yue.delete',
-    },
-    // 自定义路由
+    // 自定义路由 - 必须放在默认CRUD路由之前
     {
       method: 'GET',
       path: '/qianbao-yues/test',
@@ -87,6 +58,35 @@ export default {
         policies: [],
         middlewares: [],
       },
+    },
+    // 默认的CRUD路由 - 放在自定义路由之后
+    {
+      method: 'GET',
+      path: '/qianbao-yues',
+      handler: 'qianbao-yue.find',
+      config: {
+        auth: false,  // 临时允许公开访问用于测试
+      },
+    },
+    {
+      method: 'POST',
+      path: '/qianbao-yues',
+      handler: 'qianbao-yue.create',
+    },
+    {
+      method: 'GET',
+      path: '/qianbao-yues/:id',
+      handler: 'qianbao-yue.findOne',
+    },
+    {
+      method: 'PUT',
+      path: '/qianbao-yues/:id',
+      handler: 'qianbao-yue.update',
+    },
+    {
+      method: 'DELETE',
+      path: '/qianbao-yues/:id',
+      handler: 'qianbao-yue.delete',
     },
   ],
 }; 
