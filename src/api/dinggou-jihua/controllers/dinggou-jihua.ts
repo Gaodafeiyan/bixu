@@ -141,6 +141,9 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       }
 
       // 创建投资订单 - 状态设置为running
+      const beijingTime = new Date(Date.now() + 8 * 60 * 60 * 1000); // 北京时间 UTC+8
+      const endTime = new Date(beijingTime.getTime() + planData.zhouQiTian * 24 * 60 * 60 * 1000);
+      
       const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
         data: {
           user: userId,
@@ -149,8 +152,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           principal: investmentAmount.toString(),
           yield_rate: planData.jingtaiBili,
           cycle_days: planData.zhouQiTian,
-          start_at: new Date(),
-          end_at: new Date(Date.now() + planData.zhouQiTian * 24 * 60 * 60 * 1000),
+          start_at: beijingTime,
+          end_at: endTime,
           status: 'running' // 直接设置为running状态
         }
       });
