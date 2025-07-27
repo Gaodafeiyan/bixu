@@ -8,7 +8,9 @@ export default {
       handler: 'dinggou-dingdan.getUserOrders',
       config: { 
         type: 'content-api',
-        auth: true
+        auth: {
+          scope: ['authenticated']
+        }
       },
     },
     {
@@ -17,7 +19,9 @@ export default {
       handler: 'dinggou-dingdan.updateOrderStatus',
       config: { 
         type: 'content-api',
-        auth: true
+        auth: {
+          scope: ['authenticated']
+        }
       },
     },
     {
@@ -26,7 +30,9 @@ export default {
       handler: 'dinggou-dingdan.getOrderDetail',
       config: { 
         type: 'content-api',
-        auth: true
+        auth: {
+          scope: ['authenticated']
+        }
       },
     },
     // 标准CRUD路由

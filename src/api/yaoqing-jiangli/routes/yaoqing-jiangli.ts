@@ -8,7 +8,9 @@ export default {
       handler: 'yaoqing-jiangli.createReward',
       config: { 
         type: 'content-api',
-        auth: true
+        auth: {
+          scope: ['authenticated']
+        }
       },
     },
     {
@@ -17,7 +19,9 @@ export default {
       handler: 'yaoqing-jiangli.getUserRewards',
       config: { 
         type: 'content-api',
-        auth: true
+        auth: {
+          scope: ['authenticated']
+        }
       },
     },
     {
@@ -26,7 +30,9 @@ export default {
       handler: 'yaoqing-jiangli.getTeamStats',
       config: { 
         type: 'content-api',
-        auth: true
+        auth: {
+          scope: ['authenticated']
+        }
       },
     },
     // 标准CRUD路由

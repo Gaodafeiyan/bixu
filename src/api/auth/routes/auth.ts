@@ -32,7 +32,9 @@ export default {
       handler: 'auth.getMyInviteCode',
       config: {
         type: 'content-api',
-        auth: true,
+        auth: {
+          scope: ['authenticated']
+        },
         policies: [],
         middlewares: [],
       },
@@ -44,7 +46,9 @@ export default {
       handler: 'auth.getMyTeam',
       config: {
         type: 'content-api',
-        auth: true,
+        auth: {
+          scope: ['authenticated']
+        },
         policies: [],
         middlewares: [],
       },
