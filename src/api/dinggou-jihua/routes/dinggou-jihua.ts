@@ -7,6 +7,7 @@ export default {
       path: '/dinggou-jihuas/health',
       handler: 'dinggou-jihua.testConnection',
       config: {
+        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -17,32 +18,47 @@ export default {
       method: 'POST',
       path: '/dinggou-jihuas/:planId/invest',
       handler: 'dinggou-jihua.invest',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     {
       method: 'POST',
       path: '/dinggou-jihuas/:orderId/redeem',
       handler: 'dinggou-jihua.redeem',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     {
       method: 'GET',
       path: '/dinggou-jihuas/:planId/stats',
       handler: 'dinggou-jihua.getPlanStats',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     {
       method: 'GET',
       path: '/dinggou-jihuas/my-investments',
       handler: 'dinggou-jihua.getMyInvestments',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     // 获取计划参与者列表
     {
       method: 'GET',
       path: '/dinggou-jihuas/:planId/participants',
       handler: 'dinggou-jihua.getPlanParticipants',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     // 默认的CRUD路由
     {

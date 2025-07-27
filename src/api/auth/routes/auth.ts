@@ -7,6 +7,7 @@ export default {
       path: '/auth/invite-register',
       handler: 'auth.inviteRegister',
       config: {
+        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -18,6 +19,7 @@ export default {
       path: '/auth/my-invite-code',
       handler: 'auth.getMyInviteCode',
       config: {
+        type: 'content-api',
         auth: {
           scope: ['authenticated'],
         },
@@ -31,6 +33,7 @@ export default {
       path: '/auth/my-team',
       handler: 'auth.getMyTeam',
       config: {
+        type: 'content-api',
         auth: {
           scope: ['authenticated'],
         },
@@ -44,6 +47,7 @@ export default {
       path: '/auth/validate-invite-code/:inviteCode',
       handler: 'auth.validateInviteCode',
       config: {
+        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],

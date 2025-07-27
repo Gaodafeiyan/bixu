@@ -6,19 +6,28 @@ export default {
       method: 'POST',
       path: '/yaoqing-jianglis/create-reward',
       handler: 'yaoqing-jiangli.createReward',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     {
       method: 'GET',
       path: '/yaoqing-jianglis/user-rewards',
       handler: 'yaoqing-jiangli.getUserRewards',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     {
       method: 'GET',
       path: '/yaoqing-jianglis/team-stats',
       handler: 'yaoqing-jiangli.getTeamStats',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     // 标准CRUD路由
     {

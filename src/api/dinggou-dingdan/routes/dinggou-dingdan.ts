@@ -6,19 +6,28 @@ export default {
       method: 'GET',
       path: '/dinggou-dingdans/user-orders',
       handler: 'dinggou-dingdan.getUserOrders',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     {
       method: 'PUT',
       path: '/dinggou-dingdans/:orderId/status',
       handler: 'dinggou-dingdan.updateOrderStatus',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     {
       method: 'GET',
       path: '/dinggou-dingdans/:orderId/detail',
       handler: 'dinggou-dingdan.getOrderDetail',
-      config: { auth: { scope: ['authenticated'] } },
+      config: { 
+        type: 'content-api',
+        auth: { scope: ['authenticated'] } 
+      },
     },
     // 标准CRUD路由
     {

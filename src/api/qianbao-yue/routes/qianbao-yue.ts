@@ -7,6 +7,7 @@ export default {
       path: '/qianbao-yues/health',
       handler: 'qianbao-yue.testConnection',
       config: {
+        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -18,6 +19,7 @@ export default {
       path: '/qianbao-yues/test',
       handler: 'qianbao-yue.testConnection',
       config: {
+        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -28,6 +30,7 @@ export default {
       path: '/qianbao-yues/user-wallet',
       handler: 'qianbao-yue.getUserWallet',
       config: {
+        type: 'content-api',
         auth: {
           scope: ['authenticated'],
         },
@@ -40,6 +43,7 @@ export default {
       path: '/qianbao-yues/update-wallet',
       handler: 'qianbao-yue.updateWallet',
       config: {
+        type: 'content-api',
         auth: {
           scope: ['authenticated'],
         },
@@ -52,6 +56,7 @@ export default {
       path: '/qianbao-yues/recharge',
       handler: 'qianbao-yue.rechargeWallet',
       config: {
+        type: 'content-api',
         auth: {
           scope: ['authenticated'],
         },
