@@ -191,8 +191,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
           user: data.user,
           jihua: data.jihua,
           amount: data.amount,
-          status: data.status || 'pending',
-          beizhu: data.beizhu || ''
+          status: data.status || 'pending'
         }
       });
       
