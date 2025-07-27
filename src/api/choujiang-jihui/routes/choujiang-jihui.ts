@@ -7,9 +7,7 @@ export default {
       path: '/choujiang-jihuis/give-chance',
       handler: 'choujiang-jihui.giveChance',
       config: {
-        auth: {
-          scope: ['admin::is-authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -17,9 +15,7 @@ export default {
       path: '/choujiang-jihuis/my-chances',
       handler: 'choujiang-jihui.getUserChances',
       config: {
-        auth: {
-          scope: ['authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -27,9 +23,7 @@ export default {
       path: '/choujiang-jihuis/draw',
       handler: 'choujiang-jihui.draw',
       config: {
-        auth: {
-          scope: ['authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     
@@ -39,9 +33,7 @@ export default {
       path: '/choujiang-jihuis',
       handler: 'choujiang-jihui.find',
       config: {
-        auth: {
-          scope: ['admin::is-authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -49,9 +41,7 @@ export default {
       path: '/choujiang-jihuis/:id',
       handler: 'choujiang-jihui.findOne',
       config: {
-        auth: {
-          scope: ['admin::is-authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     {

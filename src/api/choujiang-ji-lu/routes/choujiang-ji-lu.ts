@@ -7,9 +7,7 @@ export default {
       path: '/choujiang-ji-lus/my-history',
       handler: 'choujiang-ji-lu.getUserHistory',
       config: {
-        auth: {
-          scope: ['authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -17,9 +15,7 @@ export default {
       path: '/choujiang-ji-lus/stats',
       handler: 'choujiang-ji-lu.getDrawStats',
       config: {
-        auth: {
-          scope: ['admin::is-authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     
@@ -29,9 +25,7 @@ export default {
       path: '/choujiang-ji-lus',
       handler: 'choujiang-ji-lu.find',
       config: {
-        auth: {
-          scope: ['admin::is-authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -39,9 +33,7 @@ export default {
       path: '/choujiang-ji-lus/:id',
       handler: 'choujiang-ji-lu.findOne',
       config: {
-        auth: {
-          scope: ['admin::is-authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     {

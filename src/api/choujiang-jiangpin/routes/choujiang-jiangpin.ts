@@ -15,9 +15,7 @@ export default {
       path: '/choujiang-jiangpins/stats',
       handler: 'choujiang-jiangpin.getPrizeStats',
       config: {
-        auth: {
-          scope: ['admin::is-authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -25,9 +23,7 @@ export default {
       path: '/choujiang-jiangpins/:id/quantity',
       handler: 'choujiang-jiangpin.updatePrizeQuantity',
       config: {
-        auth: {
-          scope: ['admin::is-authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
       },
     },
     
