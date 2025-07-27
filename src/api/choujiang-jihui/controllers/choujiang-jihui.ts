@@ -81,8 +81,20 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
     // 继承默认的find方法
     async find(ctx) {
       try {
+        // 处理查询参数，将"me"替换为当前用户ID
+        const query = { ...ctx.query };
+        
+        // 检查是否有filters[user][id]=me的情况
+        if (query.filters && query.filters.user && query.filters.user.id === 'me') {
+          if (ctx.state.user && ctx.state.user.id) {
+            query.filters.user.id = ctx.state.user.id;
+          } else {
+            return ctx.unauthorized('用户未登录');
+          }
+        }
+        
         const result = await strapi.entityService.findPage('api::choujiang-jihui.choujiang-jihui' as any, {
-          ...ctx.query,
+          ...query,
           populate: ['user', 'jiangpin']
         });
         return result;
@@ -204,10 +216,16 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         const userId = ctx.state.user.id;
         const { active = true } = ctx.query;
 
+        console.log(`=== 调试: 获取用户抽奖机会 ===`);
+        console.log(`用户ID: ${userId}`);
+        console.log(`查询参数:`, ctx.query);
+
         const filters: any = {
           user: { id: userId },
           isActive: active === 'true'
         };
+
+        console.log(`查询过滤器:`, JSON.stringify(filters, null, 2));
 
         // 如果只查询有效机会，添加有效期过滤
         if (active === 'true') {
@@ -223,10 +241,15 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
           sort: { createdAt: 'desc' }
         }) as any[];
 
+        console.log(`查询结果: 找到 ${chances.length} 个抽奖机会`);
+        console.log(`抽奖机会详情:`, JSON.stringify(chances, null, 2));
+
         // 计算总可用次数
         const totalAvailable = chances.reduce((sum, chance) => {
           return sum + (chance.count - (chance.usedCount || 0));
         }, 0);
+
+        console.log(`总可用次数: ${totalAvailable}`);
 
         ctx.body = {
           success: true,
