@@ -235,9 +235,9 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       // 获取计划信息
       const planData = order.jihua as any;
       
-      // 计算收益 - 修复：改为固定收益，不是年化
+      // 计算收益 - 修复：收益率是百分比，需要除以100
       const investmentAmount = new Decimal(order.amount);
-      const yieldRate = new Decimal(order.yield_rate);
+      const yieldRate = new Decimal(order.yield_rate).div(100); // 转换为小数
       
       // 计算静态收益 - 固定收益：本金 × 收益率
       const staticYield = investmentAmount.mul(yieldRate);
@@ -263,7 +263,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 处理AI代币奖励
       if (planData.aiBili) {
-        const aiTokenReward = investmentAmount.mul(planData.aiBili);
+        const aiTokenReward = investmentAmount.mul(new Decimal(planData.aiBili).div(100)); // 转换为小数
         
         // 更新用户AI代币余额
         if (wallets && wallets.length > 0) {
@@ -278,9 +278,38 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         }
       }
 
-      // 处理抽奖机会 - 这里需要根据实际的抽奖系统来实现
-      const lotteryChances = planData.lottery_chances || 3;
-      console.log(`赠送抽奖次数: ${lotteryChances} 次`);
+      // 处理抽奖机会 - 实际赠送抽奖次数
+      const lotteryChances = planData.lottery_chances || 0;
+      if (lotteryChances > 0) {
+        try {
+          // 检查是否有默认奖品
+          const defaultPrizes = await strapi.entityService.findMany('api::choujiang-jiangpin.choujiang-jiangpin', {
+            filters: { kaiQi: true },
+            sort: { paiXuShunXu: 'asc' },
+            limit: 1
+          }) as any[];
+          
+          if (defaultPrizes.length > 0) {
+            const defaultPrize = defaultPrizes[0];
+            
+            // 调用抽奖服务赠送抽奖机会
+            await strapi.service('api::choujiang-jihui.choujiang-jihui').giveChance({
+              userId: userId,
+              jiangpinId: defaultPrize.id,
+              count: lotteryChances,
+              reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
+              type: 'investment_redeem'
+            });
+            
+            console.log(`成功赠送 ${lotteryChances} 次抽奖机会给用户 ${userId}`);
+          } else {
+            console.log('没有可用的抽奖奖品，跳过抽奖次数赠送');
+          }
+        } catch (lotteryError) {
+          console.error('赠送抽奖次数失败:', lotteryError);
+          // 抽奖次数赠送失败不影响主流程
+        }
+      }
 
       // 更新订单状态
       await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
