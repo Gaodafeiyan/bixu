@@ -173,7 +173,7 @@ export default factories.createCoreController(
         let wallet = null;
         try {
           const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: { $eq: targetUser.id } }
+            filters: { user: targetUser.id }
           }) as any[];
 
           wallet = wallets && wallets.length > 0 ? wallets[0] : null;

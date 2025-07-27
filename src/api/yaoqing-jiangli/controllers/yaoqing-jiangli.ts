@@ -115,7 +115,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
 
       // 更新推荐人钱包余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: { $eq: data.tuijianRen } }
+        filters: { user: data.tuijianRen }
       }) as any[];
 
       if (wallets && wallets.length > 0) {

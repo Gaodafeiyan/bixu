@@ -49,7 +49,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       // 获取用户所有正在运行的订单
       const activeOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { 
-          user: { $eq: userId },
+          user: userId,
           status: 'running'
         },
         populate: ['jihua']
