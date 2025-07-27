@@ -20,7 +20,7 @@ export default {
       handler: 'dinggou-jihua.invest',
       config: { 
         type: 'content-api',
-        auth: { scope: ['authenticated'] } 
+        auth: true
       },
     },
     {
@@ -29,7 +29,7 @@ export default {
       handler: 'dinggou-jihua.redeem',
       config: { 
         type: 'content-api',
-        auth: { scope: ['authenticated'] } 
+        auth: true
       },
     },
     {
@@ -38,7 +38,7 @@ export default {
       handler: 'dinggou-jihua.getPlanStats',
       config: { 
         type: 'content-api',
-        auth: { scope: ['authenticated'] } 
+        auth: true
       },
     },
     {
@@ -47,7 +47,7 @@ export default {
       handler: 'dinggou-jihua.getMyInvestments',
       config: { 
         type: 'content-api',
-        auth: { scope: ['authenticated'] } 
+        auth: true
       },
     },
     // 获取计划参与者列表
@@ -57,7 +57,7 @@ export default {
       handler: 'dinggou-jihua.getPlanParticipants',
       config: { 
         type: 'content-api',
-        auth: { scope: ['authenticated'] } 
+        auth: true
       },
     },
     // 默认的CRUD路由

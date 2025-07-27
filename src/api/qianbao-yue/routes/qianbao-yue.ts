@@ -31,9 +31,7 @@ export default {
       handler: 'qianbao-yue.getUserWallet',
       config: {
         type: 'content-api',
-        auth: {
-          scope: ['authenticated'],
-        },
+        auth: true,
         policies: [],
         middlewares: [],
       },
@@ -44,9 +42,7 @@ export default {
       handler: 'qianbao-yue.updateWallet',
       config: {
         type: 'content-api',
-        auth: {
-          scope: ['authenticated'],
-        },
+        auth: true,
         policies: [],
         middlewares: [],
       },
@@ -57,9 +53,7 @@ export default {
       handler: 'qianbao-yue.rechargeWallet',
       config: {
         type: 'content-api',
-        auth: {
-          scope: ['authenticated'],
-        },
+        auth: true,
         policies: [],
         middlewares: [],
       },
