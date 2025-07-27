@@ -4,8 +4,20 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
   // 继承默认的find方法
   async find(ctx) {
     try {
+      // 处理查询参数，将"me"替换为当前用户ID
+      const query = { ...ctx.query };
+      
+      // 检查是否有filters[user][id]=me的情况
+      if (query.filters && query.filters.user && query.filters.user.id === 'me') {
+        if (ctx.state.user && ctx.state.user.id) {
+          query.filters.user.id = ctx.state.user.id;
+        } else {
+          return ctx.unauthorized('用户未登录');
+        }
+      }
+      
       const result = await strapi.entityService.findPage('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
-        ...ctx.query,
+        ...query,
         populate: ['user', 'jiangpin', 'chance']
       });
       return result;
