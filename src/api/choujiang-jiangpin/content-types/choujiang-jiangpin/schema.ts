@@ -1,6 +1,5 @@
-import { factories } from '@strapi/strapi';
-
-export default factories.createCoreSchema('api::choujiang-jiangpin.choujiang-jiangpin', {
+export default {
+  kind: 'collectionType',
   collectionName: 'choujiang_jiangpins',
   info: {
     singularName: 'choujiang-jiangpin',
@@ -98,4 +97,4 @@ export default factories.createCoreSchema('api::choujiang-jiangpin.choujiang-jia
       default: 0,
     },
   },
-}); 
+} as const; 

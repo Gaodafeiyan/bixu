@@ -1,6 +1,5 @@
-import { factories } from '@strapi/strapi';
-
-export default factories.createCoreSchema('api::choujiang-ji-lu.choujiang-ji-lu', {
+export default {
+  kind: 'collectionType',
   collectionName: 'choujiang_ji_lus',
   info: {
     singularName: 'choujiang-ji-lu',
@@ -70,4 +69,4 @@ export default factories.createCoreSchema('api::choujiang-ji-lu.choujiang-ji-lu'
       required: false,
     },
   },
-}); 
+} as const; 

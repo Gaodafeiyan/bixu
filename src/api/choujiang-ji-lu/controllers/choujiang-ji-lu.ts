@@ -7,7 +7,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
       const userId = ctx.state.user.id;
       const { page = 1, pageSize = 20, isWon } = ctx.query;
 
-      const filters = {
+      const filters: any = {
         user: { id: userId }
       };
 
@@ -63,7 +63,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
     try {
       const { startDate, endDate } = ctx.query;
 
-      const filters = {};
+      const filters: any = {};
       
       // 添加日期范围过滤
       if (startDate || endDate) {
@@ -92,8 +92,8 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
         filters
       });
 
-      const typeStats = {};
-      prizeTypeStats.forEach(record => {
+      const typeStats: any = {};
+      prizeTypeStats.forEach((record: any) => {
         const type = record.jiangpin?.jiangpinType || 'unknown';
         if (!typeStats[type]) {
           typeStats[type] = { total: 0, wins: 0 };

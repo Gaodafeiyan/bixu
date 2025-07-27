@@ -6,7 +6,7 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
     try {
       const { category, rarity } = ctx.query;
       
-      const filters = {
+      const filters: any = {
         kaiQi: true,
         $or: [
           { maxQuantity: 0 }, // 无限制数量
@@ -49,18 +49,19 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
         filters: { kaiQi: true }
       });
 
-      // 按稀有度统计
-      const rarityStats = await strapi.db.query('api::choujiang-jiangpin.choujiang-jiangpin').findMany({
-        select: ['rarity'],
-        groupBy: ['rarity']
-      });
+      // 按稀有度统计 - 使用原生SQL查询替代groupBy
+      const rarityStats = await strapi.db.connection.raw(`
+        SELECT rarity, COUNT(*) as count 
+        FROM choujiang_jiangpins 
+        GROUP BY rarity
+      `);
 
       ctx.body = {
         success: true,
         data: {
           totalPrizes,
           activePrizes,
-          rarityStats
+          rarityStats: rarityStats.rows || []
         },
         message: '获取奖品统计成功'
       };
@@ -85,7 +86,7 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
         return ctx.notFound('奖品不存在');
       }
 
-      const newQuantity = Math.max(0, (prize.currentQuantity || 0) + quantity);
+      const newQuantity = Math.max(0, ((prize as any).currentQuantity || 0) + quantity);
       
       await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin', id, {
         data: { currentQuantity: newQuantity }

@@ -14,12 +14,12 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
 
       // 检查奖品是否存在且可用
       const prize = await strapi.entityService.findOne('api::choujiang-jiangpin.choujiang-jiangpin', jiangpinId);
-      if (!prize || !prize.kaiQi) {
+      if (!prize || !(prize as any).kaiQi) {
         return ctx.badRequest('奖品不存在或已停用');
       }
 
       // 检查库存
-      if (prize.maxQuantity > 0 && (prize.currentQuantity || 0) >= prize.maxQuantity) {
+      if ((prize as any).maxQuantity > 0 && ((prize as any).currentQuantity || 0) >= (prize as any).maxQuantity) {
         return ctx.badRequest('奖品库存不足');
       }
 
@@ -40,7 +40,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         data: chanceData
       });
 
-      console.log(`用户 ${userId} 获得 ${count} 次抽奖机会，奖品: ${prize.name}`);
+      console.log(`用户 ${userId} 获得 ${count} 次抽奖机会，奖品: ${(prize as any).name}`);
 
       ctx.body = {
         success: true,
@@ -59,7 +59,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       const userId = ctx.state.user.id;
       const { active = true } = ctx.query;
 
-      const filters = {
+      const filters: any = {
         user: { id: userId },
         isActive: active === 'true'
       };
@@ -76,7 +76,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         filters,
         populate: ['jiangpin'],
         sort: { createdAt: 'desc' }
-      });
+      }) as any[];
 
       // 计算总可用次数
       const totalAvailable = chances.reduce((sum, chance) => {
@@ -111,7 +111,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       // 获取抽奖机会
       const chance = await strapi.entityService.findOne('api::choujiang-jihui.choujiang-jihui', chanceId, {
         populate: ['jiangpin', 'user']
-      });
+      }) as any;
 
       if (!chance) {
         return ctx.notFound('抽奖机会不存在');
@@ -170,7 +170,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       });
 
       // 记录抽奖记录
-      await this.recordDrawResult(userId, chance, prize, isWon);
+      await this.recordDrawResult(ctx, userId, chance, prize, isWon);
 
       ctx.body = {
         success: true,
@@ -188,14 +188,14 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
   },
 
   // 执行抽奖算法
-  async performDraw(prize) {
+  async performDraw(prize: any) {
     const winRate = new Decimal(prize.zhongJiangLv || 1);
     const random = Math.random() * 100;
     return random <= winRate.toNumber();
   },
 
   // 发放奖品
-  async grantPrize(userId, prize) {
+  async grantPrize(userId: any, prize: any) {
     try {
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: { id: userId } }
@@ -235,7 +235,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
   },
 
   // 记录抽奖结果
-  async recordDrawResult(userId, chance, prize, isWon) {
+  async recordDrawResult(ctx: any, userId: any, chance: any, prize: any, isWon: boolean) {
     try {
       // 创建抽奖记录
       const recordData = {
