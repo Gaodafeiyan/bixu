@@ -83,7 +83,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       }
 
       // 获取邀请奖励配置服务
-      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const rewardConfigService = strapi.service('api::yaoqing-jiangli.yaoqing-jiangli');
       
       // 获取推荐人的当前最高有效档位
       const parentTier = await rewardConfigService.getUserCurrentTier(data.tuijianRen);
@@ -168,7 +168,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       }
 
       // 获取邀请奖励配置服务
-      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const rewardConfigService = strapi.service('api::yaoqing-jiangli.yaoqing-jiangli');
       
       // 获取推荐人的当前最高有效档位
       const parentTier = await rewardConfigService.getUserCurrentTier(data.tuijianRen);
@@ -287,7 +287,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       }, 0);
 
       // 获取用户当前档位
-      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const rewardConfigService = strapi.service('api::yaoqing-jiangli.yaoqing-jiangli');
       const currentTier = await rewardConfigService.getUserCurrentTier(userId);
 
       ctx.body = {
@@ -338,7 +338,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       }, 0);
 
       // 获取用户当前档位
-      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const rewardConfigService = strapi.service('api::yaoqing-jiangli.yaoqing-jiangli');
       const currentTier = await rewardConfigService.getUserCurrentTier(userId);
 
       ctx.body = {
@@ -365,7 +365,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
   // 获取邀请奖励档位配置
   async getRewardTiers(ctx) {
     try {
-      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const rewardConfigService = strapi.service('api::yaoqing-jiangli.yaoqing-jiangli');
       const tiers = rewardConfigService.getAllTiers();
       const isValid = rewardConfigService.validateTierConfig();
 
