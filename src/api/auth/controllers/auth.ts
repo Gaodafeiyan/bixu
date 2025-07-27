@@ -23,7 +23,7 @@ export default factories.createCoreController(
 
         // 检查用户名是否已存在
         const existingUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
-          filters: { username }
+          filters: { username } as any
         });
 
         if (existingUser.length > 0) {
