@@ -120,6 +120,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('认购计划金额未设置');
       }
 
+      console.log(`用户 ${userId} 投资计划 ${planId}，计划金额: ${investmentAmount.toString()} USDT`);
+
       // 检查用户钱包余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: userId }
@@ -132,11 +134,13 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       const userWallet = wallets[0];
       const walletBalance = new Decimal(userWallet.usdtYue || 0);
 
+      console.log(`用户钱包余额: ${walletBalance.toString()} USDT`);
+
       if (walletBalance.lessThan(investmentAmount)) {
         return ctx.badRequest('钱包余额不足');
       }
 
-      // 创建投资订单
+      // 创建投资订单 - 状态设置为running
       const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
         data: {
           user: userId,
@@ -147,7 +151,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           cycle_days: planData.zhouQiTian,
           start_at: new Date(),
           end_at: new Date(Date.now() + planData.zhouQiTian * 24 * 60 * 60 * 1000),
-          status: 'pending'
+          status: 'running' // 直接设置为running状态
         }
       });
 
@@ -162,7 +166,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       });
 
       // 记录操作日志
-      console.log(`用户 ${userId} 投资计划 ${planId}，金额: ${investmentAmount.toString()} USDT`);
+      console.log(`用户 ${userId} 投资计划 ${planId}，金额: ${investmentAmount.toString()} USDT，订单ID: ${order.id}`);
 
       ctx.body = {
         success: true,
@@ -171,7 +175,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           investmentAmount: investmentAmount.toString(),
           planName: plan.name,
           planCode: planData.jihuaCode,
-          newBalance: walletBalance.minus(investmentAmount).toString()
+          newBalance: walletBalance.minus(investmentAmount).toString(),
+          status: 'running'
         },
         message: '投资成功'
       };
@@ -217,20 +222,24 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       }
 
       // 检查订单状态
-      if (order.status !== 'finished') {
-        return ctx.badRequest('订单尚未完成，无法赎回');
+      if (order.status !== 'redeemable') {
+        return ctx.badRequest('订单尚未到期，无法赎回');
       }
 
-      // 计算收益
+      // 获取计划信息
+      const planData = order.jihua as any;
+      
+      // 计算收益 - 修复：改为固定收益，不是年化
       const investmentAmount = new Decimal(order.amount);
       const yieldRate = new Decimal(order.yield_rate);
-      const cycleDays = order.cycle_days;
       
-      // 计算静态收益
-      const staticYield = investmentAmount.mul(yieldRate).mul(cycleDays).div(365);
+      // 计算静态收益 - 固定收益：本金 × 收益率
+      const staticYield = investmentAmount.mul(yieldRate);
       const totalPayout = investmentAmount.plus(staticYield);
 
-      // 更新钱包余额
+      console.log(`赎回计算: 本金 ${investmentAmount.toString()}, 收益率 ${yieldRate.toString()}, 静态收益 ${staticYield.toString()}, 总收益 ${totalPayout.toString()}`);
+
+      // 更新钱包余额 - 本金+收益
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: userId }
       }) as any[];
@@ -242,12 +251,35 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
           data: { usdtYue: currentBalance.plus(totalPayout).toString() }
         });
+
+        console.log(`钱包余额更新: ${currentBalance.toString()} -> ${currentBalance.plus(totalPayout).toString()}`);
       }
 
-      // 更新订单状态 - 使用允许的状态值
+      // 处理AI代币奖励
+      if (planData.aiBili) {
+        const aiTokenReward = investmentAmount.mul(planData.aiBili);
+        
+        // 更新用户AI代币余额
+        if (wallets && wallets.length > 0) {
+          const userWallet = wallets[0];
+          const currentAiBalance = new Decimal(userWallet.aiYue || 0);
+          
+          await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+            data: { aiYue: currentAiBalance.plus(aiTokenReward).toString() }
+          });
+
+          console.log(`AI代币奖励: ${aiTokenReward.toString()}, 余额更新: ${currentAiBalance.toString()} -> ${currentAiBalance.plus(aiTokenReward).toString()}`);
+        }
+      }
+
+      // 处理抽奖机会 - 这里需要根据实际的抽奖系统来实现
+      const lotteryChances = planData.lottery_chances || 3;
+      console.log(`赠送抽奖次数: ${lotteryChances} 次`);
+
+      // 更新订单状态
       await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
         data: {
-          status: 'cancelled', // 使用允许的状态值
+          status: 'cancelled',
           redeemed_at: new Date(),
           payout_amount: totalPayout.toString()
         }
@@ -262,7 +294,9 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           orderId: order.id,
           investmentAmount: investmentAmount.toString(),
           staticYield: staticYield.toString(),
-          totalPayout: totalPayout.toString()
+          totalPayout: totalPayout.toString(),
+          aiTokenReward: planData.aiBili ? investmentAmount.mul(planData.aiBili).toString() : '0',
+          lotteryChances: lotteryChances
         },
         message: '赎回成功'
       };
@@ -272,8 +306,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       // 统一错误处理
       if (error.message.includes('订单不存在')) {
         return ctx.notFound('订单不存在');
-      } else if (error.message.includes('订单尚未完成')) {
-        return ctx.badRequest('订单尚未完成，无法赎回');
+      } else if (error.message.includes('订单尚未到期')) {
+        return ctx.badRequest('订单尚未到期，无法赎回');
       } else if (error.message.includes('无权操作')) {
         return ctx.forbidden('无权操作此订单');
       }

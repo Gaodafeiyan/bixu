@@ -14,10 +14,20 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         throw new Error('订单不存在');
       }
 
+      console.log(`处理投资完成: 订单 ${orderId}, 当前状态: ${order.status}`);
+
+      // 只有running状态的订单才能转为redeemable
+      if (order.status !== 'running') {
+        console.log(`订单 ${orderId} 状态不是running，跳过处理`);
+        return;
+      }
+
       // 更新订单状态为可赎回
       await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
         data: { status: 'redeemable' }
       });
+
+      console.log(`订单 ${orderId} 状态更新为 redeemable`);
 
       // 处理邀请奖励
       await this.processInvitationReward(order);
