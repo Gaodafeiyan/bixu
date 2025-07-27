@@ -1,6 +1,6 @@
 export default {
   // 定时任务配置
-  cron: '0 */6 * * *', // 每6小时执行一次
+  cron: '*/5 * * * *', // 每5分钟执行一次
   
   // 任务处理函数
   async handler({ strapi }) {

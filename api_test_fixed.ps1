@@ -118,7 +118,7 @@ $myInviteCode = Test-API -Name "获取我的邀请码" -Method "GET" -Url "$base
 
 # 5. 获取我的团队
 Write-Host "=== 5. 获取我的团队 ===" -ForegroundColor Magenta
-$myTeam = Test-API -Name "获取我的团队" -Method "GET" -Url "$baseUrl/api/auth/my-team?page=1&pageSize=10" -Headers $headers
+$myTeam = Test-API -Name "获取我的团队" -Method "GET" -Url "$baseUrl/api/auth/my-team?page=1`&pageSize=10" -Headers $headers
 
 # 6. 获取用户钱包
 Write-Host "=== 6. 获取用户钱包 ===" -ForegroundColor Magenta
