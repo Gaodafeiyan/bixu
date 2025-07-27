@@ -32,7 +32,7 @@ export default {
       handler: 'auth.getMyInviteCode',
       config: {
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     // 获取我的团队
@@ -42,7 +42,7 @@ export default {
       handler: 'auth.getMyTeam',
       config: {
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     // 验证邀请码

@@ -31,7 +31,7 @@ export default {
       handler: 'qianbao-yue.getUserWallet',
       config: {
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -40,7 +40,7 @@ export default {
       handler: 'qianbao-yue.updateWallet',
       config: {
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -49,7 +49,7 @@ export default {
       handler: 'qianbao-yue.rechargeWallet',
       config: {
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     // 默认的CRUD路由 - 放在自定义路由之后

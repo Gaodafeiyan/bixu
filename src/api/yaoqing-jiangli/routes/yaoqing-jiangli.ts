@@ -8,7 +8,7 @@ export default {
       handler: 'yaoqing-jiangli.createReward',
       config: { 
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -17,7 +17,7 @@ export default {
       handler: 'yaoqing-jiangli.getUserRewards',
       config: { 
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -26,7 +26,7 @@ export default {
       handler: 'yaoqing-jiangli.getTeamStats',
       config: { 
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     // 标准CRUD路由

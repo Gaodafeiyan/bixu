@@ -8,16 +8,16 @@ export default {
       handler: 'dinggou-dingdan.getUserOrders',
       config: { 
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
       method: 'PUT',
       path: '/dinggou-dingdans/:orderId/status',
       handler: 'dinggou-dingdan.updateOrderStatus',
-      config: { 
+      config: {
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     {
@@ -26,7 +26,7 @@ export default {
       handler: 'dinggou-dingdan.getOrderDetail',
       config: { 
         type: 'content-api',
-        auth: true,  // 简化为只要求登录
+        auth: {},  // 空对象表示需要登录
       },
     },
     // 标准CRUD路由
