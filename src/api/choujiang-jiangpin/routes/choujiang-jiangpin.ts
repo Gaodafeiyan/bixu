@@ -37,7 +37,7 @@ export default {
     // 自定义路由
     {
       method: 'GET',
-      path: '/choujiang-jiangpins/available',
+      path: '/choujiang-jiangpins/available-prizes',
       handler: 'choujiang-jiangpin.getAvailablePrizes',
       config: {
         auth: false,
