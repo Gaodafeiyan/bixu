@@ -57,11 +57,85 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
     }
   },
 
-  // 创建邀请奖励（兼容性方法，调用V2版本）
+  // 创建邀请奖励（兼容性方法，复制V2版本逻辑）
   async createReward(ctx) {
     try {
-      // 直接调用V2版本的方法，保持向后兼容性
-      return await this.createRewardV2(ctx);
+      const { data } = ctx.request.body;
+      
+      if (!data) {
+        return ctx.badRequest('缺少data字段');
+      }
+
+      if (!data.tuijianRen || !data.laiyuanRen || !data.childPrincipal) {
+        return ctx.badRequest('缺少必要字段');
+      }
+
+      // 验证推荐人是否存在
+      const tuijianUser = await strapi.entityService.findOne('plugin::users-permissions.user', data.tuijianRen);
+      if (!tuijianUser) {
+        return ctx.badRequest('推荐人不存在');
+      }
+
+      // 验证来源人是否存在
+      const laiyuanUser = await strapi.entityService.findOne('plugin::users-permissions.user', data.laiyuanRen);
+      if (!laiyuanUser) {
+        return ctx.badRequest('来源人不存在');
+      }
+
+      // 获取邀请奖励配置服务
+      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      
+      // 获取推荐人的当前最高有效档位
+      const parentTier = await rewardConfigService.getUserCurrentTier(data.tuijianRen);
+      
+      if (!parentTier) {
+        return ctx.badRequest('推荐人没有有效的投资档位');
+      }
+
+      // 计算邀请奖励
+      const childPrincipal = parseFloat(data.childPrincipal);
+      const rewardCalculation = rewardConfigService.calculateReferralReward(parentTier, childPrincipal);
+      const rewardAmount = new Decimal(rewardCalculation.rewardAmount);
+
+      // 创建奖励记录
+      const reward = await strapi.entityService.create('api::yaoqing-jiangli.yaoqing-jiangli', {
+        data: {
+          shouyiUSDT: rewardAmount.toString(),
+          tuijianRen: data.tuijianRen,
+          laiyuanRen: data.laiyuanRen,
+          laiyuanDan: data.laiyuanDan || null,
+          calculation: rewardCalculation.calculation,
+          parentTier: parentTier.name,
+          childPrincipal: childPrincipal.toString(),
+          commissionablePrincipal: Math.min(childPrincipal, parentTier.maxCommission).toString(),
+          rewardLevel: data.rewardLevel || 1,
+          rewardType: data.rewardType || 'referral'
+        }
+      });
+
+      // 更新推荐人钱包余额
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: { id: data.tuijianRen } }
+      }) as any[];
+
+      if (wallets && wallets.length > 0) {
+        const wallet = wallets[0];
+        const currentBalance = new Decimal(wallet.usdtYue || 0);
+        
+        await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+          data: { usdtYue: currentBalance.plus(rewardAmount).toString() }
+        });
+      }
+
+      ctx.body = {
+        success: true,
+        data: {
+          reward,
+          calculation: rewardCalculation.calculation,
+          parentTier: parentTier.name
+        },
+        message: '邀请奖励创建成功'
+      };
     } catch (error) {
       console.error('创建邀请奖励失败:', error);
       ctx.throw(500, `创建邀请奖励失败: ${error.message}`);
