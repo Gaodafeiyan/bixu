@@ -12,7 +12,7 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
           { maxQuantity: 0 }, // 无限制数量
           { currentQuantity: { $lt: { $ref: 'maxQuantity' } } } // 当前数量小于最大数量
         ]
-      };
+      } as any;
 
       // 添加分类过滤
       if (category) {
@@ -46,7 +46,7 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
     try {
       const totalPrizes = await strapi.entityService.count('api::choujiang-jiangpin.choujiang-jiangpin' as any);
       const activePrizes = await strapi.entityService.count('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
-        filters: { kaiQi: true }
+        filters: { kaiQi: true } as any
       });
 
       // 按稀有度统计 - 使用原生SQL查询替代groupBy

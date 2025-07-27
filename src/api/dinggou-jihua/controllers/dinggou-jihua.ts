@@ -284,7 +284,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         try {
           // 检查是否有默认奖品
           const defaultPrizes = await strapi.entityService.findMany('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
-            filters: { kaiQi: true },
+            filters: { kaiQi: true } as any,
             sort: { paiXuShunXu: 'asc' },
             limit: 1
           }) as any[];

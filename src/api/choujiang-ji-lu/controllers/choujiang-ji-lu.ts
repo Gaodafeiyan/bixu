@@ -28,14 +28,14 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
 
       // 计算统计信息
       const totalDraws = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
-        filters: { user: { id: userId } }
+        filters: { user: { id: userId } } as any
       });
 
       const totalWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
         filters: { 
           user: { id: userId },
           isWon: true
-        }
+        } as any
       });
 
       const winRate = totalDraws > 0 ? (totalWins / totalDraws * 100).toFixed(2) : '0.00';

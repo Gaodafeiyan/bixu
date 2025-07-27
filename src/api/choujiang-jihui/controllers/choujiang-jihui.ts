@@ -1,9 +1,85 @@
 import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
 
-export default factories.createCoreController('api::choujiang-jihui.choujiang-jihui' as any, ({ strapi }) => ({
-  // 赠送抽奖机会
-  async giveChance(ctx) {
+export default factories.createCoreController('api::choujiang-jihui.choujiang-jihui' as any, ({ strapi }) => {
+  // 执行抽奖算法
+  const performDraw = async (prize: any) => {
+    const winRate = new Decimal(prize.zhongJiangLv || 1);
+    const random = Math.random() * 100;
+    return random <= winRate.toNumber();
+  };
+
+  // 发放奖品
+  const grantPrize = async (userId: any, prize: any) => {
+    try {
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: { id: userId } }
+      }) as any[];
+
+      if (wallets && wallets.length > 0) {
+        const userWallet = wallets[0];
+
+        switch (prize.jiangpinType) {
+          case 'usdt':
+            const currentBalance = new Decimal(userWallet.usdtYue || 0);
+            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+              data: { usdtYue: currentBalance.plus(prize.value).toString() }
+            });
+            console.log(`用户 ${userId} 获得 USDT 奖励: ${prize.value}`);
+            break;
+
+          case 'ai_token':
+            const currentAiBalance = new Decimal(userWallet.aiYue || 0);
+            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+              data: { aiYue: currentAiBalance.plus(prize.value).toString() }
+            });
+            console.log(`用户 ${userId} 获得 AI代币 奖励: ${prize.value}`);
+            break;
+
+          case 'physical':
+          case 'virtual':
+            // 这里可以添加实物奖品或虚拟奖品的发放逻辑
+            console.log(`用户 ${userId} 获得 ${prize.jiangpinType} 奖品: ${prize.name}`);
+            break;
+        }
+      }
+    } catch (error) {
+      console.error('发放奖品失败:', error);
+      throw error;
+    }
+  };
+
+  // 记录抽奖结果
+  const recordDrawResult = async (ctx: any, userId: any, chance: any, prize: any, isWon: boolean) => {
+    try {
+      // 创建抽奖记录
+      const recordData = {
+        user: userId,
+        jiangpin: prize.id,
+        chance: chance.id,
+        isWon: isWon,
+        drawTime: new Date(),
+        prizeValue: isWon ? prize.value : null,
+        sourceType: chance.type,
+        sourceOrder: chance.sourceOrder,
+        ipAddress: ctx.request.ip,
+        userAgent: ctx.request.headers['user-agent']
+      };
+
+      await strapi.entityService.create('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
+        data: recordData
+      });
+
+      console.log(`记录抽奖结果: 用户 ${userId}, 奖品 ${prize.name}, 中奖: ${isWon}`);
+    } catch (error) {
+      console.error('记录抽奖结果失败:', error);
+      throw error;
+    }
+  };
+
+  return {
+    // 赠送抽奖机会
+    async giveChance(ctx) {
     try {
       const { userId, jiangpinId, count, reason, type, sourceOrderId, validUntil } = ctx.request.body;
 
@@ -150,11 +226,11 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       }
 
       // 执行抽奖逻辑
-      const isWon = await this.performDraw(prize);
+      const isWon = await performDraw(prize);
       
       if (isWon) {
         // 中奖：发放奖品
-        await this.grantPrize(userId, prize);
+        await grantPrize(userId, prize);
         
         // 更新奖品库存
         if (prize.maxQuantity > 0) {
@@ -170,7 +246,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       });
 
       // 记录抽奖记录
-      await this.recordDrawResult(ctx, userId, chance, prize, isWon);
+      await recordDrawResult(ctx, userId, chance, prize, isWon);
 
       ctx.body = {
         success: true,
