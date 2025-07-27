@@ -1,7 +1,7 @@
 import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
 
-export default factories.createCoreController('api::choujiang-jihui.choujiang-jihui', ({ strapi }) => ({
+export default factories.createCoreController('api::choujiang-jihui.choujiang-jihui' as any, ({ strapi }) => ({
   // 赠送抽奖机会
   async giveChance(ctx) {
     try {
@@ -13,7 +13,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       }
 
       // 检查奖品是否存在且可用
-      const prize = await strapi.entityService.findOne('api::choujiang-jiangpin.choujiang-jiangpin', jiangpinId);
+      const prize = await strapi.entityService.findOne('api::choujiang-jiangpin.choujiang-jiangpin' as any, jiangpinId);
       if (!prize || !(prize as any).kaiQi) {
         return ctx.badRequest('奖品不存在或已停用');
       }
@@ -36,7 +36,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         sourceOrder: sourceOrderId || null
       };
 
-      const chance = await strapi.entityService.create('api::choujiang-jihui.choujiang-jihui', {
+      const chance = await strapi.entityService.create('api::choujiang-jihui.choujiang-jihui' as any, {
         data: chanceData
       });
 
@@ -72,7 +72,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         ];
       }
 
-      const chances = await strapi.entityService.findMany('api::choujiang-jihui.choujiang-jihui', {
+      const chances = await strapi.entityService.findMany('api::choujiang-jihui.choujiang-jihui' as any, {
         filters,
         populate: ['jiangpin'],
         sort: { createdAt: 'desc' }
@@ -109,7 +109,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       }
 
       // 获取抽奖机会
-      const chance = await strapi.entityService.findOne('api::choujiang-jihui.choujiang-jihui', chanceId, {
+      const chance = await strapi.entityService.findOne('api::choujiang-jihui.choujiang-jihui' as any, chanceId, {
         populate: ['jiangpin', 'user']
       }) as any;
 
@@ -158,14 +158,14 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         
         // 更新奖品库存
         if (prize.maxQuantity > 0) {
-          await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin', prize.id, {
+          await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin' as any, prize.id, {
             data: { currentQuantity: (prize.currentQuantity || 0) + 1 }
           });
         }
       }
 
       // 更新抽奖机会使用次数
-      await strapi.entityService.update('api::choujiang-jihui.choujiang-jihui', chanceId, {
+      await strapi.entityService.update('api::choujiang-jihui.choujiang-jihui' as any, chanceId, {
         data: { usedCount: (chance.usedCount || 0) + 1 }
       });
 
@@ -251,7 +251,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         userAgent: ctx.request.headers['user-agent']
       };
 
-      await strapi.entityService.create('api::choujiang-ji-lu.choujiang-ji-lu', {
+      await strapi.entityService.create('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
         data: recordData
       });
 

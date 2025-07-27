@@ -1,6 +1,6 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreController('api::choujiang-jiangpin.choujiang-jiangpin', ({ strapi }) => ({
+export default factories.createCoreController('api::choujiang-jiangpin.choujiang-jiangpin' as any, ({ strapi }) => ({
   // 获取可用的奖品列表（用于抽奖）
   async getAvailablePrizes(ctx) {
     try {
@@ -24,7 +24,7 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
         filters.rarity = rarity;
       }
 
-      const prizes = await strapi.entityService.findMany('api::choujiang-jiangpin.choujiang-jiangpin', {
+      const prizes = await strapi.entityService.findMany('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
         filters,
         sort: { paiXuShunXu: 'asc', zhongJiangLv: 'desc' },
         populate: ['image']
@@ -44,8 +44,8 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
   // 获取奖品统计信息
   async getPrizeStats(ctx) {
     try {
-      const totalPrizes = await strapi.entityService.count('api::choujiang-jiangpin.choujiang-jiangpin');
-      const activePrizes = await strapi.entityService.count('api::choujiang-jiangpin.choujiang-jiangpin', {
+      const totalPrizes = await strapi.entityService.count('api::choujiang-jiangpin.choujiang-jiangpin' as any);
+      const activePrizes = await strapi.entityService.count('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
         filters: { kaiQi: true }
       });
 
@@ -81,14 +81,14 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
         return ctx.badRequest('数量必须是数字');
       }
 
-      const prize = await strapi.entityService.findOne('api::choujiang-jiangpin.choujiang-jiangpin', id);
+      const prize = await strapi.entityService.findOne('api::choujiang-jiangpin.choujiang-jiangpin' as any, id);
       if (!prize) {
         return ctx.notFound('奖品不存在');
       }
 
       const newQuantity = Math.max(0, ((prize as any).currentQuantity || 0) + quantity);
       
-      await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin', id, {
+      await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin' as any, id, {
         data: { currentQuantity: newQuantity }
       });
 

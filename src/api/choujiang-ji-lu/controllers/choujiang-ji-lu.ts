@@ -1,6 +1,6 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji-lu', ({ strapi }) => ({
+export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji-lu' as any, ({ strapi }) => ({
   // 获取用户的抽奖历史
   async getUserHistory(ctx) {
     try {
@@ -16,7 +16,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
         filters.isWon = isWon === 'true';
       }
 
-      const result = await strapi.entityService.findPage('api::choujiang-ji-lu.choujiang-ji-lu', {
+      const result = await strapi.entityService.findPage('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
         filters,
         populate: ['jiangpin', 'chance'],
         pagination: {
@@ -27,11 +27,11 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
       });
 
       // 计算统计信息
-      const totalDraws = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu', {
+      const totalDraws = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
         filters: { user: { id: userId } }
       });
 
-      const totalWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu', {
+      const totalWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
         filters: { 
           user: { id: userId },
           isWon: true
@@ -76,8 +76,8 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
         }
       }
 
-      const totalDraws = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu', { filters });
-      const totalWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu', { 
+      const totalDraws = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, { filters });
+      const totalWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, { 
         filters: { ...filters, isWon: true }
       });
 

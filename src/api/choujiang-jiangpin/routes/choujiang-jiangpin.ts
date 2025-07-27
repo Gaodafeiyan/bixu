@@ -1,6 +1,6 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreRouter('api::choujiang-jiangpin.choujiang-jiangpin', {
+export default factories.createCoreRouter('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
   config: {
     find: {
       auth: false,
