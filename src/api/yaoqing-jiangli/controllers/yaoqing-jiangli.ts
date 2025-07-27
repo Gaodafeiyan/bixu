@@ -57,6 +57,17 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
     }
   },
 
+  // 创建邀请奖励（兼容性方法，调用V2版本）
+  async createReward(ctx) {
+    try {
+      // 直接调用V2版本的方法，保持向后兼容性
+      return await this.createRewardV2(ctx);
+    } catch (error) {
+      console.error('创建邀请奖励失败:', error);
+      ctx.throw(500, `创建邀请奖励失败: ${error.message}`);
+    }
+  },
+
   // 创建邀请奖励（V2版本，支持档位封顶计算）
   async createRewardV2(ctx) {
     try {
