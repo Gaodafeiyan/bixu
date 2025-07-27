@@ -285,8 +285,34 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         }
       });
 
+      // 获取邀请奖励信息（使用新的档位封顶制度）
+      let invitationReward = '0';
+      let inviterInfo = null;
+      let rewardCalculation = null;
+      let parentTier = null;
+      
+      try {
+        const invitationRewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+          filters: { laiyuanDan: orderId },
+          populate: ['tuijianRen']
+        }) as any[];
+        
+        if (invitationRewards && invitationRewards.length > 0) {
+          const reward = invitationRewards[0];
+          invitationReward = reward.shouyiUSDT;
+          rewardCalculation = reward.calculation;
+          parentTier = reward.parentTier;
+          inviterInfo = {
+            id: reward.tuijianRen.id,
+            username: reward.tuijianRen.username
+          };
+        }
+      } catch (rewardError) {
+        console.error('获取邀请奖励信息失败:', rewardError);
+      }
+
       // 记录操作日志
-      console.log(`用户 ${userId} 赎回订单 ${orderId}，总收益: ${totalPayout.toString()} USDT`);
+      console.log(`用户 ${userId} 赎回订单 ${orderId}，总收益: ${totalPayout.toString()} USDT，邀请奖励: ${invitationReward} USDT`);
 
       ctx.body = {
         success: true,
@@ -296,7 +322,11 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           staticYield: staticYield.toString(),
           totalPayout: totalPayout.toString(),
           aiTokenReward: planData.aiBili ? investmentAmount.mul(planData.aiBili).toString() : '0',
-          lotteryChances: lotteryChances
+          lotteryChances: lotteryChances,
+          invitationReward: invitationReward,
+          inviterInfo: inviterInfo,
+          rewardCalculation: rewardCalculation,
+          parentTier: parentTier
         },
         message: '赎回成功'
       };

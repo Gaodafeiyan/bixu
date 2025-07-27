@@ -12,6 +12,15 @@ export default {
       },
     },
     {
+      method: 'POST',
+      path: '/yaoqing-jianglis/create-reward-v2',
+      handler: 'yaoqing-jiangli.createRewardV2',
+      config: { 
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    {
       method: 'GET',
       path: '/yaoqing-jianglis/user-rewards',
       handler: 'yaoqing-jiangli.getUserRewards',
@@ -24,6 +33,33 @@ export default {
       method: 'GET',
       path: '/yaoqing-jianglis/team-stats',
       handler: 'yaoqing-jiangli.getTeamStats',
+      config: { 
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    {
+      method: 'GET',
+      path: '/yaoqing-jianglis/team-stats-v2',
+      handler: 'yaoqing-jiangli.getTeamStatsV2',
+      config: { 
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    {
+      method: 'GET',
+      path: '/yaoqing-jianglis/reward-tiers',
+      handler: 'yaoqing-jiangli.getRewardTiers',
+      config: { 
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    {
+      method: 'GET',
+      path: '/yaoqing-jianglis/order/:orderId/reward',
+      handler: 'yaoqing-jiangli.getOrderInvitationReward',
       config: { 
         type: 'content-api',
         auth: {},  // 空对象表示需要登录

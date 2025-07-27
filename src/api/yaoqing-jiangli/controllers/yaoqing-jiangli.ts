@@ -57,8 +57,8 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
     }
   },
 
-  // 创建邀请奖励
-  async createReward(ctx) {
+  // 创建邀请奖励（V2版本，支持档位封顶计算）
+  async createRewardV2(ctx) {
     try {
       const { data } = ctx.request.body;
       
@@ -66,7 +66,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         return ctx.badRequest('缺少data字段');
       }
 
-      if (!data.tuijianRen || !data.laiyuanRen || !data.shouyiUSDT) {
+      if (!data.tuijianRen || !data.laiyuanRen || !data.childPrincipal) {
         return ctx.badRequest('缺少必要字段');
       }
 
@@ -82,18 +82,38 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         return ctx.badRequest('来源人不存在');
       }
 
+      // 获取邀请奖励配置服务
+      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      
+      // 获取推荐人的当前最高有效档位
+      const parentTier = await rewardConfigService.getUserCurrentTier(data.tuijianRen);
+      
+      if (!parentTier) {
+        return ctx.badRequest('推荐人没有有效的投资档位');
+      }
+
+      // 计算邀请奖励
+      const childPrincipal = parseFloat(data.childPrincipal);
+      const rewardCalculation = rewardConfigService.calculateReferralReward(parentTier, childPrincipal);
+      const rewardAmount = new Decimal(rewardCalculation.rewardAmount);
+
       // 创建奖励记录
       const reward = await strapi.entityService.create('api::yaoqing-jiangli.yaoqing-jiangli', {
         data: {
-          shouyiUSDT: data.shouyiUSDT,
+          shouyiUSDT: rewardAmount.toString(),
           tuijianRen: data.tuijianRen,
           laiyuanRen: data.laiyuanRen,
-          laiyuanDan: data.laiyuanDan || null
+          laiyuanDan: data.laiyuanDan || null,
+          calculation: rewardCalculation.calculation,
+          parentTier: parentTier.name,
+          childPrincipal: childPrincipal.toString(),
+          commissionablePrincipal: Math.min(childPrincipal, parentTier.maxCommission).toString(),
+          rewardLevel: data.rewardLevel || 1,
+          rewardType: data.rewardType || 'referral'
         }
       });
 
       // 更新推荐人钱包余额
-      const rewardAmount = new Decimal(data.shouyiUSDT);
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: data.tuijianRen }
       }) as any[];
@@ -109,7 +129,11 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
 
       ctx.body = {
         success: true,
-        data: reward,
+        data: {
+          reward,
+          calculation: rewardCalculation.calculation,
+          parentTier: parentTier.name
+        },
         message: '邀请奖励创建成功'
       };
     } catch (error) {
@@ -151,8 +175,8 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
     }
   },
 
-  // 获取用户团队统计
-  async getTeamStats(ctx) {
+  // 获取用户团队统计（V2版本，支持档位封顶计算）
+  async getTeamStatsV2(ctx) {
     try {
       const userId = ctx.state.user.id;
 
@@ -177,18 +201,111 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         return sum + new Decimal(reward.shouyiUSDT || 0).toNumber();
       }, 0);
 
+      // 获取用户当前档位
+      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const currentTier = await rewardConfigService.getUserCurrentTier(userId);
+
       ctx.body = {
         success: true,
         data: {
           directReferrals: directReferrals.length,
           indirectReferrals: indirectReferrals.length,
           totalReferrals: directReferrals.length + indirectReferrals.length,
-          totalEarnings: totalEarnings.toString()
+          totalEarnings: totalEarnings.toString(),
+          currentTier: currentTier ? {
+            name: currentTier.name,
+            staticRate: currentTier.staticRate,
+            referralRate: currentTier.referralRate,
+            maxCommission: currentTier.maxCommission
+          } : null
         }
       };
     } catch (error) {
       console.error('获取团队统计失败:', error);
       ctx.throw(500, `获取团队统计失败: ${error.message}`);
+    }
+  },
+
+  // 获取邀请奖励档位配置
+  async getRewardTiers(ctx) {
+    try {
+      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const tiers = rewardConfigService.getAllTiers();
+      const isValid = rewardConfigService.validateTierConfig();
+
+      ctx.body = {
+        success: true,
+        data: {
+          tiers,
+          isValid,
+          message: isValid ? '档位配置有效' : '档位配置有误'
+        }
+      };
+    } catch (error) {
+      console.error('获取奖励档位配置失败:', error);
+      ctx.throw(500, `获取奖励档位配置失败: ${error.message}`);
+    }
+  },
+
+  // 获取订单相关的邀请奖励
+  async getOrderInvitationReward(ctx) {
+    try {
+      const { orderId } = ctx.params;
+      const userId = ctx.state.user.id;
+
+      if (!orderId || isNaN(Number(orderId))) {
+        return ctx.badRequest('无效的订单ID');
+      }
+
+      // 验证订单所有者
+      const order = await strapi.entityService.findOne('api::dinggou-dingdan.dinggou-dingdan', orderId);
+      if (!order) {
+        return ctx.notFound('订单不存在');
+      }
+
+      if (order.user.id !== userId) {
+        return ctx.forbidden('无权查看此订单的邀请奖励');
+      }
+
+      // 查询邀请奖励
+      const rewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+        filters: { laiyuanDan: orderId },
+        populate: ['tuijianRen']
+      }) as any[];
+
+      if (rewards.length === 0) {
+        ctx.body = {
+          success: true,
+          data: {
+            hasReward: false,
+            rewardAmount: '0',
+            inviterInfo: null,
+            message: '该订单没有邀请奖励'
+          }
+        };
+        return;
+      }
+
+      const reward = rewards[0];
+      ctx.body = {
+        success: true,
+        data: {
+          hasReward: true,
+          rewardId: reward.id,
+          rewardAmount: reward.shouyiUSDT,
+          calculation: reward.calculation,
+          parentTier: reward.parentTier,
+          inviterInfo: {
+            id: reward.tuijianRen.id,
+            username: reward.tuijianRen.username
+          },
+          createdAt: reward.createdAt,
+          message: '邀请奖励查询成功'
+        }
+      };
+    } catch (error) {
+      console.error('获取订单邀请奖励失败:', error);
+      ctx.throw(500, `获取订单邀请奖励失败: ${error.message}`);
     }
   },
 
@@ -227,7 +344,13 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
           shouyiUSDT: data.shouyiUSDT,
           tuijianRen: data.tuijianRen,
           laiyuanRen: data.laiyuanRen,
-          laiyuanDan: data.laiyuanDan || null
+          laiyuanDan: data.laiyuanDan || null,
+          calculation: data.calculation || '',
+          parentTier: data.parentTier || '',
+          childPrincipal: data.childPrincipal || '',
+          commissionablePrincipal: data.commissionablePrincipal || '',
+          rewardLevel: data.rewardLevel || 1,
+          rewardType: data.rewardType || 'referral'
         }
       });
       
