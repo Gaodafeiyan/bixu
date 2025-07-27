@@ -32,11 +32,7 @@ export default {
       handler: 'auth.getMyInviteCode',
       config: {
         type: 'content-api',
-        auth: {
-          scope: ['authenticated']
-        },
-        policies: [],
-        middlewares: [],
+        auth: true,  // 简化为只要求登录
       },
     },
     // 获取我的团队
@@ -46,11 +42,7 @@ export default {
       handler: 'auth.getMyTeam',
       config: {
         type: 'content-api',
-        auth: {
-          scope: ['authenticated']
-        },
-        policies: [],
-        middlewares: [],
+        auth: true,  // 简化为只要求登录
       },
     },
     // 验证邀请码
