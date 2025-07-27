@@ -1,0 +1,263 @@
+import { factories } from '@strapi/strapi';
+import Decimal from 'decimal.js';
+
+export default factories.createCoreController('api::choujiang-jihui.choujiang-jihui', ({ strapi }) => ({
+  // 赠送抽奖机会
+  async giveChance(ctx) {
+    try {
+      const { userId, jiangpinId, count, reason, type, sourceOrderId, validUntil } = ctx.request.body;
+
+      // 验证输入
+      if (!userId || !jiangpinId || !count || count <= 0) {
+        return ctx.badRequest('参数不完整或无效');
+      }
+
+      // 检查奖品是否存在且可用
+      const prize = await strapi.entityService.findOne('api::choujiang-jiangpin.choujiang-jiangpin', jiangpinId);
+      if (!prize || !prize.kaiQi) {
+        return ctx.badRequest('奖品不存在或已停用');
+      }
+
+      // 检查库存
+      if (prize.maxQuantity > 0 && (prize.currentQuantity || 0) >= prize.maxQuantity) {
+        return ctx.badRequest('奖品库存不足');
+      }
+
+      // 创建抽奖机会记录
+      const chanceData = {
+        user: userId,
+        jiangpin: jiangpinId,
+        count: count,
+        usedCount: 0,
+        reason: reason || '系统赠送',
+        type: type || 'other',
+        isActive: true,
+        validUntil: validUntil || null,
+        sourceOrder: sourceOrderId || null
+      };
+
+      const chance = await strapi.entityService.create('api::choujiang-jihui.choujiang-jihui', {
+        data: chanceData
+      });
+
+      console.log(`用户 ${userId} 获得 ${count} 次抽奖机会，奖品: ${prize.name}`);
+
+      ctx.body = {
+        success: true,
+        data: chance,
+        message: '赠送抽奖机会成功'
+      };
+    } catch (error) {
+      console.error('赠送抽奖机会失败:', error);
+      ctx.throw(500, `赠送抽奖机会失败: ${error.message}`);
+    }
+  },
+
+  // 获取用户的抽奖机会
+  async getUserChances(ctx) {
+    try {
+      const userId = ctx.state.user.id;
+      const { active = true } = ctx.query;
+
+      const filters = {
+        user: { id: userId },
+        isActive: active === 'true'
+      };
+
+      // 如果只查询有效机会，添加有效期过滤
+      if (active === 'true') {
+        filters.$or = [
+          { validUntil: null },
+          { validUntil: { $gt: new Date() } }
+        ];
+      }
+
+      const chances = await strapi.entityService.findMany('api::choujiang-jihui.choujiang-jihui', {
+        filters,
+        populate: ['jiangpin'],
+        sort: { createdAt: 'desc' }
+      });
+
+      // 计算总可用次数
+      const totalAvailable = chances.reduce((sum, chance) => {
+        return sum + (chance.count - (chance.usedCount || 0));
+      }, 0);
+
+      ctx.body = {
+        success: true,
+        data: {
+          chances,
+          totalAvailable,
+          totalChances: chances.length
+        },
+        message: '获取抽奖机会成功'
+      };
+    } catch (error) {
+      console.error('获取用户抽奖机会失败:', error);
+      ctx.throw(500, `获取用户抽奖机会失败: ${error.message}`);
+    }
+  },
+
+  // 执行抽奖
+  async draw(ctx) {
+    try {
+      const userId = ctx.state.user.id;
+      const { chanceId } = ctx.request.body;
+
+      if (!chanceId) {
+        return ctx.badRequest('请选择抽奖机会');
+      }
+
+      // 获取抽奖机会
+      const chance = await strapi.entityService.findOne('api::choujiang-jihui.choujiang-jihui', chanceId, {
+        populate: ['jiangpin', 'user']
+      });
+
+      if (!chance) {
+        return ctx.notFound('抽奖机会不存在');
+      }
+
+      // 验证用户权限
+      if (chance.user.id !== userId) {
+        return ctx.forbidden('无权使用此抽奖机会');
+      }
+
+      // 检查机会是否有效
+      if (!chance.isActive) {
+        return ctx.badRequest('抽奖机会已失效');
+      }
+
+      // 检查有效期
+      if (chance.validUntil && new Date() > new Date(chance.validUntil)) {
+        return ctx.badRequest('抽奖机会已过期');
+      }
+
+      // 检查是否还有可用次数
+      const availableCount = chance.count - (chance.usedCount || 0);
+      if (availableCount <= 0) {
+        return ctx.badRequest('抽奖机会已用完');
+      }
+
+      // 获取奖品信息
+      const prize = chance.jiangpin;
+      if (!prize || !prize.kaiQi) {
+        return ctx.badRequest('奖品已停用');
+      }
+
+      // 检查库存
+      if (prize.maxQuantity > 0 && (prize.currentQuantity || 0) >= prize.maxQuantity) {
+        return ctx.badRequest('奖品库存不足');
+      }
+
+      // 执行抽奖逻辑
+      const isWon = await this.performDraw(prize);
+      
+      if (isWon) {
+        // 中奖：发放奖品
+        await this.grantPrize(userId, prize);
+        
+        // 更新奖品库存
+        if (prize.maxQuantity > 0) {
+          await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin', prize.id, {
+            data: { currentQuantity: (prize.currentQuantity || 0) + 1 }
+          });
+        }
+      }
+
+      // 更新抽奖机会使用次数
+      await strapi.entityService.update('api::choujiang-jihui.choujiang-jihui', chanceId, {
+        data: { usedCount: (chance.usedCount || 0) + 1 }
+      });
+
+      // 记录抽奖记录
+      await this.recordDrawResult(userId, chance, prize, isWon);
+
+      ctx.body = {
+        success: true,
+        data: {
+          isWon,
+          prize: isWon ? prize : null,
+          remainingChances: availableCount - 1
+        },
+        message: isWon ? '恭喜中奖！' : '很遗憾，未中奖'
+      };
+    } catch (error) {
+      console.error('执行抽奖失败:', error);
+      ctx.throw(500, `执行抽奖失败: ${error.message}`);
+    }
+  },
+
+  // 执行抽奖算法
+  async performDraw(prize) {
+    const winRate = new Decimal(prize.zhongJiangLv || 1);
+    const random = Math.random() * 100;
+    return random <= winRate.toNumber();
+  },
+
+  // 发放奖品
+  async grantPrize(userId, prize) {
+    try {
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: { id: userId } }
+      }) as any[];
+
+      if (wallets && wallets.length > 0) {
+        const userWallet = wallets[0];
+
+        switch (prize.jiangpinType) {
+          case 'usdt':
+            const currentBalance = new Decimal(userWallet.usdtYue || 0);
+            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+              data: { usdtYue: currentBalance.plus(prize.value).toString() }
+            });
+            console.log(`用户 ${userId} 获得 USDT 奖励: ${prize.value}`);
+            break;
+
+          case 'ai_token':
+            const currentAiBalance = new Decimal(userWallet.aiYue || 0);
+            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+              data: { aiYue: currentAiBalance.plus(prize.value).toString() }
+            });
+            console.log(`用户 ${userId} 获得 AI代币 奖励: ${prize.value}`);
+            break;
+
+          case 'physical':
+          case 'virtual':
+            // 这里可以添加实物奖品或虚拟奖品的发放逻辑
+            console.log(`用户 ${userId} 获得 ${prize.jiangpinType} 奖品: ${prize.name}`);
+            break;
+        }
+      }
+    } catch (error) {
+      console.error('发放奖品失败:', error);
+      throw error;
+    }
+  },
+
+  // 记录抽奖结果
+  async recordDrawResult(userId, chance, prize, isWon) {
+    try {
+      // 创建抽奖记录
+      const recordData = {
+        user: userId,
+        jiangpin: prize.id,
+        chance: chance.id,
+        isWon: isWon,
+        drawTime: new Date(),
+        prizeValue: isWon ? prize.value : null,
+        sourceType: chance.type,
+        sourceOrder: chance.sourceOrder,
+        ipAddress: ctx.request.ip,
+        userAgent: ctx.request.headers['user-agent']
+      };
+
+      await strapi.entityService.create('api::choujiang-ji-lu.choujiang-ji-lu', {
+        data: recordData
+      });
+
+      console.log(`抽奖记录已保存: 用户 ${userId}, 奖品 ${prize.name}, 中奖: ${isWon}`);
+    } catch (error) {
+      console.error('记录抽奖结果失败:', error);
+    }
+  }
+})); 

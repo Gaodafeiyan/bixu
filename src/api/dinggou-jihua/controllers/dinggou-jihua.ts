@@ -298,16 +298,16 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
               jiangpinId: defaultPrize.id,
               count: lotteryChances,
               reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
-              type: 'investment_redeem'
+              type: 'investment_redeem',
+              sourceOrderId: orderId
             });
             
-            console.log(`成功赠送 ${lotteryChances} 次抽奖机会给用户 ${userId}`);
+            console.log(`用户 ${userId} 获得 ${lotteryChances} 次抽奖机会，奖品: ${defaultPrize.name}`);
           } else {
-            console.log('没有可用的抽奖奖品，跳过抽奖次数赠送');
+            console.log(`计划赠送 ${lotteryChances} 次抽奖机会，但未找到可用奖品`);
           }
-        } catch (lotteryError) {
-          console.error('赠送抽奖次数失败:', lotteryError);
-          // 抽奖次数赠送失败不影响主流程
+        } catch (error) {
+          console.error('赠送抽奖机会失败:', error);
         }
       }
 
