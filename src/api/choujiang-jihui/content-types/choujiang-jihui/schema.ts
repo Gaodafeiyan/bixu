@@ -20,7 +20,6 @@ export default {
       type: 'relation',
       relation: 'manyToOne',
       target: 'plugin::users-permissions.user',
-      inversedBy: 'choujiangJihuis',
       required: true,
     },
     jiangpin: {

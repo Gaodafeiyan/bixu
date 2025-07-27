@@ -12,7 +12,7 @@ const QianbaoSchema = {
       description: 'AI代币余额JSON格式 {tokenId: balance}'
     },
     user  : { type: 'relation', relation: 'oneToOne',
-                target: 'plugin::users-permissions.user', inversedBy: 'qianbao' },
+                target: 'plugin::users-permissions.user' },
   },
 };
 export default QianbaoSchema; 
