@@ -191,6 +191,11 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
           user: data.user,
           jihua: data.jihua,
           amount: data.amount,
+          principal: data.principal || data.amount,
+          yield_rate: data.yield_rate || 0,
+          cycle_days: data.cycle_days || 30,
+          start_at: data.start_at || new Date(),
+          end_at: data.end_at || new Date(Date.now() + (data.cycle_days || 30) * 24 * 60 * 60 * 1000),
           status: data.status || 'pending'
         }
       });
