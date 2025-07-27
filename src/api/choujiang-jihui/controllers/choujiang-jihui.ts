@@ -2,11 +2,66 @@ import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
 
 export default factories.createCoreController('api::choujiang-jihui.choujiang-jihui' as any, ({ strapi }) => {
-  // 执行抽奖算法
-  const performDraw = async (prize: any) => {
-    const winRate = new Decimal(prize.zhongJiangLv || 1);
-    const random = Math.random() * 100;
-    return random <= winRate.toNumber();
+  // 从奖品池中随机选择奖品
+  const selectRandomPrize = async () => {
+    try {
+      // 获取所有可用的奖品
+      const availablePrizes = await strapi.entityService.findMany('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
+        filters: {
+          kaiQi: true,
+          $or: [
+            { maxQuantity: 0 }, // 无限制数量
+            { currentQuantity: { $lt: { $ref: 'maxQuantity' } } } // 当前数量小于最大数量
+          ]
+        },
+        sort: { paiXuShunXu: 'asc' }
+      }) as any[];
+
+      if (availablePrizes.length === 0) {
+        throw new Error('暂无可用的抽奖奖品');
+      }
+
+      console.log(`可用奖品数量: ${availablePrizes.length}`);
+      availablePrizes.forEach(prize => {
+        console.log(`奖品: ${prize.name}, 概率: ${prize.zhongJiangLv}%, 库存: ${prize.currentQuantity || 0}/${prize.maxQuantity || '无限制'}`);
+      });
+
+      // 计算总概率
+      const totalProbability = availablePrizes.reduce((sum, prize) => {
+        return sum + new Decimal(prize.zhongJiangLv || 0).toNumber();
+      }, 0);
+
+      console.log(`总概率: ${totalProbability}%`);
+
+      // 生成随机数 (0 到总概率)
+      const random = Math.random() * totalProbability;
+      console.log(`随机数: ${random}`);
+
+      // 根据概率选择奖品
+      let cumulativeProbability = 0;
+      for (const prize of availablePrizes) {
+        const prizeProbability = new Decimal(prize.zhongJiangLv || 0).toNumber();
+        cumulativeProbability += prizeProbability;
+        
+        if (random <= cumulativeProbability) {
+          console.log(`选中奖品: ${prize.name}, 概率: ${prize.zhongJiangLv}%`);
+          return prize;
+        }
+      }
+
+      // 保底机制：如果没有选中任何奖品，返回概率最高的奖品
+      const highestProbabilityPrize = availablePrizes.reduce((highest, current) => {
+        const currentProb = new Decimal(current.zhongJiangLv || 0).toNumber();
+        const highestProb = new Decimal(highest.zhongJiangLv || 0).toNumber();
+        return currentProb > highestProb ? current : highest;
+      });
+
+      console.log(`保底奖品: ${highestProbabilityPrize.name}`);
+      return highestProbabilityPrize;
+    } catch (error) {
+      console.error('选择随机奖品失败:', error);
+      throw error;
+    }
   };
 
   // 发放奖品
@@ -159,31 +214,20 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       }
     },
 
-    // 赠送抽奖机会
+    // 赠送抽奖机会（不绑定特定奖品）
     async giveChance(ctx) {
       try {
-        const { userId, jiangpinId, count, reason, type, sourceOrderId, validUntil } = ctx.request.body;
+        const { userId, count, reason, type, sourceOrderId, validUntil } = ctx.request.body;
 
         // 验证输入
-        if (!userId || !jiangpinId || !count || count <= 0) {
+        if (!userId || !count || count <= 0) {
           return ctx.badRequest('参数不完整或无效');
         }
 
-        // 检查奖品是否存在且可用
-        const prize = await strapi.entityService.findOne('api::choujiang-jiangpin.choujiang-jiangpin' as any, jiangpinId);
-        if (!prize || !(prize as any).kaiQi) {
-          return ctx.badRequest('奖品不存在或已停用');
-        }
-
-        // 检查库存
-        if ((prize as any).maxQuantity > 0 && ((prize as any).currentQuantity || 0) >= (prize as any).maxQuantity) {
-          return ctx.badRequest('奖品库存不足');
-        }
-
-        // 创建抽奖机会记录
+        // 创建抽奖机会记录（不绑定特定奖品）
         const chanceData = {
           user: userId,
-          jiangpin: jiangpinId,
+          jiangpin: null, // 不绑定特定奖品，抽奖时随机选择
           count: count,
           usedCount: 0,
           reason: reason || '系统赠送',
@@ -197,7 +241,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
           data: chanceData
         });
 
-        console.log(`用户 ${userId} 获得 ${count} 次抽奖机会，奖品: ${(prize as any).name}`);
+        console.log(`用户 ${userId} 获得 ${count} 次抽奖机会`);
 
         ctx.body = {
           success: true,
@@ -210,52 +254,47 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       }
     },
 
-    // 获取用户的抽奖机会
+    // 获取用户抽奖机会
     async getUserChances(ctx) {
       try {
         const userId = ctx.state.user.id;
-        const { active = true } = ctx.query;
-
-        console.log(`=== 调试: 获取用户抽奖机会 ===`);
-        console.log(`用户ID: ${userId}`);
-        console.log(`查询参数:`, ctx.query);
-
-        const filters: any = {
-          user: { id: userId },
-          isActive: active === 'true'
-        };
-
-        console.log(`查询过滤器:`, JSON.stringify(filters, null, 2));
-
-        // 如果只查询有效机会，添加有效期过滤
-        if (active === 'true') {
-          filters.$or = [
-            { validUntil: null },
-            { validUntil: { $gt: new Date() } }
-          ];
-        }
+        console.log('获取用户抽奖机会，用户ID:', userId);
 
         const chances = await strapi.entityService.findMany('api::choujiang-jihui.choujiang-jihui' as any, {
-          filters,
-          populate: ['jiangpin'],
+          filters: {
+            user: { id: userId },
+            isActive: true,
+            $or: [
+              { validUntil: null },
+              { validUntil: { $gt: new Date() } }
+            ]
+          },
+          populate: ['user', 'jiangpin'],
           sort: { createdAt: 'desc' }
         }) as any[];
 
-        console.log(`查询结果: 找到 ${chances.length} 个抽奖机会`);
-        console.log(`抽奖机会详情:`, JSON.stringify(chances, null, 2));
+        console.log('查询到的抽奖机会:', chances.length, '个');
 
         // 计算总可用次数
-        const totalAvailable = chances.reduce((sum, chance) => {
-          return sum + (chance.count - (chance.usedCount || 0));
-        }, 0);
-
-        console.log(`总可用次数: ${totalAvailable}`);
+        let totalAvailableCount = 0;
+        const processedChances = chances.map(chance => {
+          const availableCount = chance.count - (chance.usedCount || 0);
+          totalAvailableCount += availableCount;
+          
+          console.log(`抽奖机会ID: ${chance.id}, 总次数: ${chance.count}, 已用: ${chance.usedCount || 0}, 剩余: ${availableCount}`);
+          
+          return {
+            ...chance,
+            availableCount,
+            isUsable: availableCount > 0
+          };
+        });
 
         ctx.body = {
           success: true,
           data: {
-            chances,
-            totalAvailable,
+            chances: processedChances,
+            totalAvailableCount,
             totalChances: chances.length
           },
           message: '获取抽奖机会成功'
@@ -266,7 +305,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       }
     },
 
-    // 执行抽奖
+    // 执行抽奖（修复后的随机抽奖逻辑）
     async draw(ctx) {
       try {
         const userId = ctx.state.user.id;
@@ -276,9 +315,11 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
           return ctx.badRequest('请选择抽奖机会');
         }
 
+        console.log(`用户 ${userId} 开始抽奖，机会ID: ${chanceId}`);
+
         // 获取抽奖机会
         const chance = await strapi.entityService.findOne('api::choujiang-jihui.choujiang-jihui' as any, chanceId, {
-          populate: ['jiangpin', 'user']
+          populate: ['user']
         }) as any;
 
         if (!chance) {
@@ -306,28 +347,32 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
           return ctx.badRequest('抽奖机会已用完');
         }
 
-        // 获取奖品信息
-        const prize = chance.jiangpin;
-        if (!prize || !prize.kaiQi) {
-          return ctx.badRequest('奖品已停用');
+        console.log(`抽奖机会验证通过，剩余次数: ${availableCount}`);
+
+        // 从奖品池中随机选择奖品
+        const selectedPrize = await selectRandomPrize();
+        console.log(`随机选中奖品: ${selectedPrize.name}, 类型: ${selectedPrize.jiangpinType}, 价值: ${selectedPrize.value}`);
+
+        // 检查选中奖品的库存
+        if (selectedPrize.maxQuantity > 0 && (selectedPrize.currentQuantity || 0) >= selectedPrize.maxQuantity) {
+          return ctx.badRequest('奖品库存不足，请稍后重试');
         }
 
-        // 检查库存
-        if (prize.maxQuantity > 0 && (prize.currentQuantity || 0) >= prize.maxQuantity) {
-          return ctx.badRequest('奖品库存不足');
-        }
+        // 根据奖品概率决定是否中奖
+        const winRate = new Decimal(selectedPrize.zhongJiangLv || 1);
+        const random = Math.random() * 100;
+        const isWon = random <= winRate.toNumber();
 
-        // 执行抽奖逻辑
-        const isWon = await performDraw(prize);
+        console.log(`抽奖结果: 随机数 ${random}, 中奖概率 ${winRate.toNumber()}%, 是否中奖: ${isWon}`);
         
         if (isWon) {
           // 中奖：发放奖品
-          await grantPrize(userId, prize);
+          await grantPrize(userId, selectedPrize);
           
           // 更新奖品库存
-          if (prize.maxQuantity > 0) {
-            await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin' as any, prize.id, {
-              data: { currentQuantity: (prize.currentQuantity || 0) + 1 }
+          if (selectedPrize.maxQuantity > 0) {
+            await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin' as any, selectedPrize.id, {
+              data: { currentQuantity: (selectedPrize.currentQuantity || 0) + 1 }
             });
           }
         }
@@ -338,13 +383,13 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         });
 
         // 记录抽奖记录
-        await recordDrawResult(ctx, userId, chance, prize, isWon);
+        await recordDrawResult(ctx, userId, chance, selectedPrize, isWon);
 
         ctx.body = {
           success: true,
           data: {
             isWon,
-            prize: isWon ? prize : null,
+            prize: isWon ? selectedPrize : null,
             remainingChances: availableCount - 1
           },
           message: isWon ? '恭喜中奖！' : '很遗憾，未中奖'
