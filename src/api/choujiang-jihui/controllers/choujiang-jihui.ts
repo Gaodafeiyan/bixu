@@ -250,6 +250,28 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       const { chanceId } = ctx.request.body;
 
       if (!chanceId) {
+        return ctx.badRequest('缺少抽奖机会ID');
+      }
+
+      // 使用抽奖服务执行抽奖
+      const result = await strapi.service('api::lottery.lottery').performDraw({
+        userId: userId,
+        chanceId: chanceId
+      });
+
+      ctx.body = {
+        success: true,
+        data: result.data,
+        message: result.message
+      };
+    } catch (error) {
+      console.error('执行抽奖失败:', error);
+      ctx.throw(500, `执行抽奖失败: ${error.message}`);
+    }
+  },
+      const { chanceId } = ctx.request.body;
+
+      if (!chanceId) {
         return ctx.badRequest('请选择抽奖机会');
       }
 

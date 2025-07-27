@@ -279,7 +279,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       }
 
       // 处理抽奖机会 - 实际赠送抽奖次数
-      const lotteryChances = planData.lottery_chances || 0;
+      const lotteryChances = planData.lottery_chances || 3; // 默认赠送3次
       if (lotteryChances > 0) {
         try {
           // 检查是否有默认奖品
@@ -293,7 +293,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
             const defaultPrize = defaultPrizes[0];
             
             // 调用抽奖服务赠送抽奖机会
-            await strapi.service('api::choujiang-jihui.choujiang-jihui').giveChance({
+            await strapi.service('api::lottery.lottery').giveChance({
               userId: userId,
               jiangpinId: defaultPrize.id,
               count: lotteryChances,
