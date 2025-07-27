@@ -115,7 +115,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
 
       // 更新推荐人钱包余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: data.tuijianRen }
+        filters: { user: { $eq: data.tuijianRen } }
       }) as any[];
 
       if (wallets && wallets.length > 0) {
@@ -258,12 +258,14 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       }
 
       // 验证订单所有者
-      const order = await strapi.entityService.findOne('api::dinggou-dingdan.dinggou-dingdan', orderId);
+      const order = await strapi.entityService.findOne('api::dinggou-dingdan.dinggou-dingdan', orderId, {
+        populate: ['user']
+      });
       if (!order) {
         return ctx.notFound('订单不存在');
       }
 
-      if (order.user.id !== userId) {
+      if ((order as any).user?.id !== userId) {
         return ctx.forbidden('无权查看此订单的邀请奖励');
       }
 

@@ -68,7 +68,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
       }
 
       const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
-        filters: { user: userId },
+        filters: { user: { $eq: userId } },
         populate: ['jihua'],
         pagination: {
           page: parseInt(String(page)),
