@@ -1,20 +1,38 @@
-import { factories } from '@strapi/strapi';
-
 export default {
+  type: 'content-api',
   routes: [
     // 默认的CRUD路由
-    ...factories.createCoreRouter('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
+    {
+      method: 'GET',
+      path: '/choujiang-jiangpins',
+      handler: 'choujiang-jiangpin.find',
       config: {
-        find: {
-          auth: false,
-        },
-        findOne: {
-          auth: false,
-        },
+        auth: false,
       },
-      only: ['find', 'findOne', 'create', 'update', 'delete'],
-      except: [],
-    } as any).routes,
+    },
+    {
+      method: 'GET',
+      path: '/choujiang-jiangpins/:id',
+      handler: 'choujiang-jiangpin.findOne',
+      config: {
+        auth: false,
+      },
+    },
+    {
+      method: 'POST',
+      path: '/choujiang-jiangpins',
+      handler: 'choujiang-jiangpin.create',
+    },
+    {
+      method: 'PUT',
+      path: '/choujiang-jiangpins/:id',
+      handler: 'choujiang-jiangpin.update',
+    },
+    {
+      method: 'DELETE',
+      path: '/choujiang-jiangpins/:id',
+      handler: 'choujiang-jiangpin.delete',
+    },
     
     // 自定义路由
     {
