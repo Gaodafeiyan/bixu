@@ -121,7 +121,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       // 更新邀请人钱包余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: user.invitedBy.id }
+        filters: { user: { id: user.invitedBy.id } }
       }) as any[];
 
       if (wallets && wallets.length > 0) {
@@ -197,7 +197,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
     try {
       // 获取用户的所有订单
       const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
-        filters: { user: userId },
+        filters: { user: { id: userId } },
         populate: ['jihua']
       }) as any[];
 

@@ -124,7 +124,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 检查用户钱包余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: userId }
+        filters: { user: { id: userId } }
       }) as any[];
 
       if (!wallets || wallets.length === 0) {
@@ -241,7 +241,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 更新钱包余额 - 本金+收益
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: userId }
+        filters: { user: { id: userId } }
       }) as any[];
 
       if (wallets && wallets.length > 0) {
@@ -416,7 +416,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       }
 
       const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
-        filters: { user: userId },
+        filters: { user: { id: userId } },
         populate: ['jihua'],
         pagination: {
           page: pageNum,

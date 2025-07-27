@@ -97,7 +97,7 @@ export default factories.createCoreController(
         
         // 查找用户钱包
               const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: userId },
+        filters: { user: { id: userId } },
         populate: ['user']
       }) as any[];
         
@@ -158,7 +158,7 @@ export default factories.createCoreController(
         }
         
         const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-          filters: { user: userId }
+          filters: { user: { id: userId } }
         }) as any[];
         
         let wallet = wallets && wallets.length > 0 ? wallets[0] : null;
@@ -231,7 +231,7 @@ export default factories.createCoreController(
 
         // 查找或创建钱包
         const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-          filters: { user: data.user }
+          filters: { user: { id: data.user } }
         }) as any[];
         
         let wallet = wallets && wallets.length > 0 ? wallets[0] : null;
@@ -299,7 +299,7 @@ export default factories.createCoreController(
         
         // 检查用户是否已有钱包
         const existingWallet = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-          filters: { user: data.user }
+          filters: { user: { id: data.user } }
         }) as any[];
         
         if (existingWallet.length > 0) {
