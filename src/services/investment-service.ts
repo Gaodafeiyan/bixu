@@ -80,7 +80,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       }
 
       // 获取邀请奖励配置服务
-      const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      const rewardConfigService = strapi.service('invitation-reward-config');
       
       // 获取邀请人的当前最高有效档位
       const parentTier = await rewardConfigService.getUserCurrentTier(user.invitedBy.id);
