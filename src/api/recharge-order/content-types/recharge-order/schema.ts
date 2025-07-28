@@ -1,15 +1,13 @@
-const RechargeOrderSchema = {
+export default {
   kind: 'collectionType',
-  pluginOptions: { 'content-api': { enabled: true } },
+  collectionName: 'recharge_orders',
   info: {
     singularName: 'recharge-order',
     pluralName: 'recharge-orders',
     displayName: '充值订单',
     description: '用户充值订单记录',
   },
-  options: {
-    draftAndPublish: false,
-  },
+  options: { draftAndPublish: false },
   attributes: {
     // 订单基本信息
     orderNo: {
@@ -99,6 +97,4 @@ const RechargeOrderSchema = {
       type: 'json',
     },
   },
-};
-
-export default RechargeOrderSchema; 
+}; 

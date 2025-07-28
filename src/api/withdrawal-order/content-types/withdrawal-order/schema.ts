@@ -1,15 +1,13 @@
-const WithdrawalOrderSchema = {
+export default {
   kind: 'collectionType',
-  pluginOptions: { 'content-api': { enabled: true } },
+  collectionName: 'withdrawal_orders',
   info: {
     singularName: 'withdrawal-order',
     pluralName: 'withdrawal-orders',
     displayName: '提现订单',
     description: '用户提现订单记录',
   },
-  options: {
-    draftAndPublish: false,
-  },
+  options: { draftAndPublish: false },
   attributes: {
     // 订单基本信息
     orderNo: {
@@ -117,6 +115,4 @@ const WithdrawalOrderSchema = {
       type: 'json',
     },
   },
-};
-
-export default WithdrawalOrderSchema; 
+}; 

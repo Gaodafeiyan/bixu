@@ -1,15 +1,13 @@
-const RechargeChannelSchema = {
+export default {
   kind: 'collectionType',
-  pluginOptions: { 'content-api': { enabled: true } },
+  collectionName: 'recharge_channels',
   info: {
     singularName: 'recharge-channel',
     pluralName: 'recharge-channels',
     displayName: '充值通道',
     description: '管理充值提现通道系统',
   },
-  options: {
-    draftAndPublish: false,
-  },
+  options: { draftAndPublish: false },
   attributes: {
     // 通道基本信息
     name: {
@@ -110,6 +108,4 @@ const RechargeChannelSchema = {
       mappedBy: 'channel',
     },
   },
-};
-
-export default RechargeChannelSchema; 
+}; 
