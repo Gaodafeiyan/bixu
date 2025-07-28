@@ -20,7 +20,7 @@ async function getWalletTransactions(address: string, network: string) {
 async function processTransaction(channel: any, transaction: any, strapi: any) {
   try {
     // 查找匹配的充值订单
-    const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order', {
+          const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
       filters: {
         channel: { id: channel.id },
         status: 'pending',
@@ -47,7 +47,7 @@ async function processTransaction(channel: any, transaction: any, strapi: any) {
 async function completeRechargeOrder(order: any, transaction: any, strapi: any) {
   try {
     // 更新订单状态
-    await strapi.entityService.update('api::recharge-order.recharge-order', order.id, {
+    await strapi.entityService.update('api::recharge-order.recharge-order' as any, order.id, {
       data: {
         status: 'completed',
         txHash: transaction.hash,
@@ -130,7 +130,7 @@ export default ({ strapi }) => ({
   async createRechargeOrder(userId: number, amount: string, channelId: number) {
     try {
       // 获取通道信息
-      const channel = await strapi.entityService.findOne('api::recharge-channel.recharge-channel', channelId);
+      const channel = await strapi.entityService.findOne('api::recharge-channel.recharge-channel' as any, channelId);
       if (!channel || channel.status !== 'active') {
         throw new Error('充值通道不可用');
       }
@@ -147,7 +147,7 @@ export default ({ strapi }) => ({
       // 检查日限额
       const today = new Date();
       today.setHours(0, 0, 0, 0);
-      const todayOrders = await strapi.entityService.findMany('api::recharge-order.recharge-order', {
+      const todayOrders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
         filters: {
           channel: { id: channelId },
           status: { $in: ['pending', 'processing', 'completed'] },
@@ -167,7 +167,7 @@ export default ({ strapi }) => ({
 
       // 创建充值订单
       const orderNo = generateOrderNo('recharge');
-      const rechargeOrder = await strapi.entityService.create('api::recharge-order.recharge-order', {
+      const rechargeOrder = await strapi.entityService.create('api::recharge-order.recharge-order' as any, {
         data: {
           orderNo,
           amount: amount,
@@ -211,7 +211,7 @@ export default ({ strapi }) => ({
       }
 
       // 获取可用的提现通道
-      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel', {
+      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
         filters: {
           status: 'active',
           channelType: { $in: ['withdrawal', 'both'] },
@@ -251,7 +251,7 @@ export default ({ strapi }) => ({
 
       // 创建提现订单
       const orderNo = generateOrderNo('withdrawal');
-      const withdrawalOrder = await strapi.entityService.create('api::withdrawal-order.withdrawal-order', {
+      const withdrawalOrder = await strapi.entityService.create('api::withdrawal-order.withdrawal-order' as any, {
         data: {
           orderNo,
           amount: amount,
@@ -279,7 +279,7 @@ export default ({ strapi }) => ({
   async monitorWalletTransactions() {
     try {
       // 获取所有活跃的充值通道
-      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel', {
+      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
         filters: {
           status: 'active',
           channelType: { $in: ['recharge', 'both'] }
@@ -315,7 +315,7 @@ export default ({ strapi }) => ({
   async processWithdrawalOrders() {
     try {
       // 获取待处理的提现订单
-      const pendingOrders = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order', {
+      const pendingOrders = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
         filters: { status: 'pending' },
         populate: ['user', 'channel']
       });
@@ -328,7 +328,7 @@ export default ({ strapi }) => ({
           console.error(`处理提现订单 ${order.orderNo} 失败:`, error);
           
           // 更新订单状态为失败
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order', order.id, {
+          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               remark: error.message

@@ -1,13 +1,13 @@
 import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
 
-export default factories.createCoreController('api::recharge-channel.recharge-channel', ({ strapi }) => ({
+export default factories.createCoreController('api::recharge-channel.recharge-channel' as any, ({ strapi }) => ({
   // 获取可用的充值通道
   async getAvailableChannels(ctx) {
     try {
       const { type = 'both' } = ctx.query;
       
-      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel', {
+      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
         filters: {
           status: 'active',
           channelType: { $in: [type, 'both'] }
@@ -115,10 +115,10 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters.status = status;
       }
 
-      const [orders, total] = await strapi.db.query('api::recharge-order.recharge-order').findWithCount({
-        filters,
+      const [orders, total] = await strapi.db.query('api::recharge-order.recharge-order' as any).findWithCount({
+        where: filters,
         populate: ['channel'],
-        sort: { createdAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
         limit: parseInt(pageSize),
         offset: (parseInt(page) - 1) * parseInt(pageSize)
       });
@@ -145,10 +145,10 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters.status = status;
       }
 
-      const [orders, total] = await strapi.db.query('api::withdrawal-order.withdrawal-order').findWithCount({
-        filters,
+      const [orders, total] = await strapi.db.query('api::withdrawal-order.withdrawal-order' as any).findWithCount({
+        where: filters,
         populate: ['channel'],
-        sort: { createdAt: 'desc' },
+        orderBy: { createdAt: 'desc' },
         limit: parseInt(pageSize),
         offset: (parseInt(page) - 1) * parseInt(pageSize)
       });
@@ -170,7 +170,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const userId = ctx.state.user.id;
       const { id } = ctx.params;
 
-      const order = await strapi.entityService.findOne('api::recharge-order.recharge-order', id, {
+      const order = await strapi.entityService.findOne('api::recharge-order.recharge-order' as any, id, {
         populate: ['user', 'channel']
       });
 
@@ -200,7 +200,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const userId = ctx.state.user.id;
       const { id } = ctx.params;
 
-      const order = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order', id, {
+      const order = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, id, {
         populate: ['user', 'channel']
       });
 
@@ -230,7 +230,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const userId = ctx.state.user.id;
       const { id } = ctx.params;
 
-      const order = await strapi.entityService.findOne('api::recharge-order.recharge-order', id, {
+      const order = await strapi.entityService.findOne('api::recharge-order.recharge-order' as any, id, {
         populate: ['user']
       });
 
@@ -253,7 +253,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         return ctx.badRequest('订单已超时，无法取消');
       }
 
-      await strapi.entityService.update('api::recharge-order.recharge-order', id, {
+      await strapi.entityService.update('api::recharge-order.recharge-order' as any, id, {
         data: { status: 'cancelled' }
       });
 
@@ -276,7 +276,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(days));
 
-      const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order', {
+      const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
         filters: {
           user: { id: userId },
           status: 'completed',
@@ -315,7 +315,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const startDate = new Date();
       startDate.setDate(startDate.getDate() - parseInt(days));
 
-      const orders = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order', {
+      const orders = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
         filters: {
           user: { id: userId },
           status: 'completed',
