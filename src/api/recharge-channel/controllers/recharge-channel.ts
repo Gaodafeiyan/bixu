@@ -179,7 +179,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       }
 
       // 验证用户权限
-      if (order.user.id !== userId) {
+      if ((order as any).user.id !== userId) {
         return ctx.forbidden('无权访问此订单');
       }
 
@@ -209,7 +209,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       }
 
       // 验证用户权限
-      if (order.user.id !== userId) {
+      if ((order as any).user.id !== userId) {
         return ctx.forbidden('无权访问此订单');
       }
 
@@ -239,17 +239,17 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       }
 
       // 验证用户权限
-      if (order.user.id !== userId) {
+      if ((order as any).user.id !== userId) {
         return ctx.forbidden('无权操作此订单');
       }
 
       // 只能取消待处理的订单
-      if (order.status !== 'pending') {
+      if ((order as any).status !== 'pending') {
         return ctx.badRequest('只能取消待处理的订单');
       }
 
       // 检查是否超时
-      if (new Date() > new Date(order.expectedTime)) {
+      if (new Date() > new Date((order as any).expectedTime)) {
         return ctx.badRequest('订单已超时，无法取消');
       }
 
