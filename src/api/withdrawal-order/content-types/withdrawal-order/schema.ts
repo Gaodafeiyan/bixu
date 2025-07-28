@@ -1,8 +1,8 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreSchema('api::withdrawal-order.withdrawal-order', {
+const WithdrawalOrderSchema = {
   kind: 'collectionType',
-  collectionName: 'withdrawal_orders',
+  pluginOptions: { 'content-api': { enabled: true } },
   info: {
     singularName: 'withdrawal-order',
     pluralName: 'withdrawal-orders',
@@ -11,11 +11,6 @@ export default factories.createCoreSchema('api::withdrawal-order.withdrawal-orde
   },
   options: {
     draftAndPublish: false,
-  },
-  pluginOptions: {
-    i18n: {
-      localized: false,
-    },
   },
   attributes: {
     // 订单基本信息
@@ -124,4 +119,6 @@ export default factories.createCoreSchema('api::withdrawal-order.withdrawal-orde
       type: 'json',
     },
   },
-}); 
+};
+
+export default WithdrawalOrderSchema; 

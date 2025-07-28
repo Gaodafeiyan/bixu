@@ -1,8 +1,8 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreSchema('api::recharge-order.recharge-order', {
+const RechargeOrderSchema = {
   kind: 'collectionType',
-  collectionName: 'recharge_orders',
+  pluginOptions: { 'content-api': { enabled: true } },
   info: {
     singularName: 'recharge-order',
     pluralName: 'recharge-orders',
@@ -11,11 +11,6 @@ export default factories.createCoreSchema('api::recharge-order.recharge-order', 
   },
   options: {
     draftAndPublish: false,
-  },
-  pluginOptions: {
-    i18n: {
-      localized: false,
-    },
   },
   attributes: {
     // 订单基本信息
@@ -106,4 +101,6 @@ export default factories.createCoreSchema('api::recharge-order.recharge-order', 
       type: 'json',
     },
   },
-}); 
+};
+
+export default RechargeOrderSchema; 

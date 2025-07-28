@@ -104,7 +104,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
     }
   },
 
-  // 获取用户充值订单
+  // 获取用户充值订单列表
   async getUserRechargeOrders(ctx) {
     try {
       const userId = ctx.state.user.id;
@@ -126,15 +126,15 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       ctx.body = {
         success: true,
         data: orders,
-        message: '获取充值订单成功'
+        message: '获取充值订单列表成功'
       };
     } catch (error) {
-      console.error('获取充值订单失败:', error);
-      ctx.throw(500, `获取充值订单失败: ${error.message}`);
+      console.error('获取充值订单列表失败:', error);
+      ctx.throw(500, `获取充值订单列表失败: ${error.message}`);
     }
   },
 
-  // 获取用户提现订单
+  // 获取用户提现订单列表
   async getUserWithdrawalOrders(ctx) {
     try {
       const userId = ctx.state.user.id;
@@ -156,11 +156,11 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       ctx.body = {
         success: true,
         data: orders,
-        message: '获取提现订单成功'
+        message: '获取提现订单列表成功'
       };
     } catch (error) {
-      console.error('获取提现订单失败:', error);
-      ctx.throw(500, `获取提现订单失败: ${error.message}`);
+      console.error('获取提现订单列表失败:', error);
+      ctx.throw(500, `获取提现订单列表失败: ${error.message}`);
     }
   },
 
@@ -186,11 +186,11 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       ctx.body = {
         success: true,
         data: order,
-        message: '获取订单详情成功'
+        message: '获取充值订单详情成功'
       };
     } catch (error) {
       console.error('获取充值订单详情失败:', error);
-      ctx.throw(500, `获取订单详情失败: ${error.message}`);
+      ctx.throw(500, `获取充值订单详情失败: ${error.message}`);
     }
   },
 
@@ -216,11 +216,11 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       ctx.body = {
         success: true,
         data: order,
-        message: '获取订单详情成功'
+        message: '获取提现订单详情成功'
       };
     } catch (error) {
       console.error('获取提现订单详情失败:', error);
-      ctx.throw(500, `获取订单详情失败: ${error.message}`);
+      ctx.throw(500, `获取提现订单详情失败: ${error.message}`);
     }
   },
 
@@ -263,7 +263,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       };
     } catch (error) {
       console.error('取消充值订单失败:', error);
-      ctx.throw(500, `取消订单失败: ${error.message}`);
+      ctx.throw(500, `取消充值订单失败: ${error.message}`);
     }
   },
 
@@ -280,12 +280,12 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters: {
           user: { id: userId },
           status: 'completed',
-          completedTime: { $gte: startDate }
+          createdAt: { $gte: startDate }
         }
-      }) as any[];
+      });
 
       const totalAmount = orders.reduce((sum, order) => {
-        return sum + new Decimal(order.actualAmount).toNumber();
+        return sum + new Decimal(order.amount).toNumber();
       }, 0);
 
       const totalCount = orders.length;
@@ -295,13 +295,13 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         data: {
           totalAmount: totalAmount.toFixed(2),
           totalCount,
-          averageAmount: totalCount > 0 ? (totalAmount / totalCount).toFixed(2) : '0.00'
+          period: `${days}天`
         },
         message: '获取充值统计成功'
       };
     } catch (error) {
       console.error('获取充值统计失败:', error);
-      ctx.throw(500, `获取统计失败: ${error.message}`);
+      ctx.throw(500, `获取充值统计失败: ${error.message}`);
     }
   },
 
@@ -318,16 +318,12 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters: {
           user: { id: userId },
           status: 'completed',
-          completedTime: { $gte: startDate }
+          createdAt: { $gte: startDate }
         }
-      }) as any[];
+      });
 
       const totalAmount = orders.reduce((sum, order) => {
-        return sum + new Decimal(order.actualAmount).toNumber();
-      }, 0);
-
-      const totalFee = orders.reduce((sum, order) => {
-        return sum + new Decimal(order.fee).toNumber();
+        return sum + new Decimal(order.amount).toNumber();
       }, 0);
 
       const totalCount = orders.length;
@@ -336,15 +332,14 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         success: true,
         data: {
           totalAmount: totalAmount.toFixed(2),
-          totalFee: totalFee.toFixed(2),
           totalCount,
-          averageAmount: totalCount > 0 ? (totalAmount / totalCount).toFixed(2) : '0.00'
+          period: `${days}天`
         },
         message: '获取提现统计成功'
       };
     } catch (error) {
       console.error('获取提现统计失败:', error);
-      ctx.throw(500, `获取统计失败: ${error.message}`);
+      ctx.throw(500, `获取提现统计失败: ${error.message}`);
     }
-  }
+  },
 })); 

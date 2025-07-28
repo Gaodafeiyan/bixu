@@ -1,8 +1,8 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreSchema('api::recharge-channel.recharge-channel', {
+const RechargeChannelSchema = {
   kind: 'collectionType',
-  collectionName: 'recharge_channels',
+  pluginOptions: { 'content-api': { enabled: true } },
   info: {
     singularName: 'recharge-channel',
     pluralName: 'recharge-channels',
@@ -11,11 +11,6 @@ export default factories.createCoreSchema('api::recharge-channel.recharge-channe
   },
   options: {
     draftAndPublish: false,
-  },
-  pluginOptions: {
-    i18n: {
-      localized: false,
-    },
   },
   attributes: {
     // 通道基本信息
@@ -117,4 +112,6 @@ export default factories.createCoreSchema('api::recharge-channel.recharge-channe
       mappedBy: 'channel',
     },
   },
-}); 
+};
+
+export default RechargeChannelSchema; 
