@@ -33,8 +33,7 @@
     "user": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user",
-      "inversedBy": "withdrawalOrders"
+      "target": "plugin::users-permissions.user"
     },
     "channel": {
       "type": "relation",
