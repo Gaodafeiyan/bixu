@@ -290,6 +290,8 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       const rewardConfigService = strapi.service('api::yaoqing-jiangli.yaoqing-jiangli');
       const currentTier = await rewardConfigService.getUserCurrentTier(userId);
 
+      console.log('API返回的currentTier:', currentTier); // 调试日志
+
       ctx.body = {
         success: true,
         data: {
@@ -302,7 +304,12 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
             staticRate: currentTier.staticRate,
             referralRate: currentTier.referralRate,
             maxCommission: currentTier.maxCommission
-          } : null
+          } : {
+            name: '未知',
+            staticRate: 0,
+            referralRate: 0,
+            maxCommission: 0
+          }
         }
       };
     } catch (error) {
@@ -341,6 +348,8 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       const rewardConfigService = strapi.service('api::yaoqing-jiangli.yaoqing-jiangli');
       const currentTier = await rewardConfigService.getUserCurrentTier(userId);
 
+      console.log('API V2返回的currentTier:', currentTier); // 调试日志
+
       ctx.body = {
         success: true,
         data: {
@@ -353,7 +362,12 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
             staticRate: currentTier.staticRate,
             referralRate: currentTier.referralRate,
             maxCommission: currentTier.maxCommission
-          } : null
+          } : {
+            name: '未知',
+            staticRate: 0,
+            referralRate: 0,
+            maxCommission: 0
+          }
         }
       };
     } catch (error) {
