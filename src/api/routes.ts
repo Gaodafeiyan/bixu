@@ -16,4 +16,10 @@ export default {
   'choujiang-ji-lu': () => import('./choujiang-ji-lu/routes/choujiang-ji-lu'),
   // 认证路由
   'auth': () => import('./auth/routes/auth'),
+  // 充值通道路由
+  'recharge-channel': () => import('./recharge-channel/routes/recharge-channel'),
+  // 充值订单路由
+  'recharge-order': () => import('./recharge-order/routes/recharge-order'),
+  // 提现订单路由
+  'withdrawal-order': () => import('./withdrawal-order/routes/withdrawal-order'),
 }; 
