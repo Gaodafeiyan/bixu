@@ -371,7 +371,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
            console.log(`订单 ${orderId} 状态为${order.status}，触发邀请奖励处理`);
            
            // 调用投资服务处理邀请奖励
-           const rewardResult = await strapi.service('api::investment-service.investment-service').processInvitationRewardV2(order);
+           const rewardResult = await strapi.service('investment-service').processInvitationRewardV2(order);
            
            if (rewardResult.success) {
              console.log(`✅ 邀请奖励生成成功: ${rewardResult.rewardAmount} USDT`);
