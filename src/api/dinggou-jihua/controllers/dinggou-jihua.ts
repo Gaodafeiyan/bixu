@@ -282,39 +282,26 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       const lotteryChances = planData.lottery_chances || 3; // 默认赠送3次
       if (lotteryChances > 0) {
         try {
-          // 检查是否有默认奖品
-          const defaultPrizes = await strapi.entityService.findMany('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
-            filters: { kaiQi: true } as any,
-            sort: { paiXuShunXu: 'asc' },
-            limit: 1
-          }) as any[];
+          // 直接调用抽奖机会的giveChance方法，不绑定特定奖品
+          await strapi.service('api::choujiang-jihui.choujiang-jihui').giveChance({
+            userId: userId,
+            count: lotteryChances,
+            reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
+            type: 'investment_redeem',
+            sourceOrderId: orderId
+          });
           
-          if (defaultPrizes.length > 0) {
-            const defaultPrize = defaultPrizes[0];
-            
-            // 调用抽奖服务赠送抽奖机会
-            await strapi.service('api::lottery.lottery').giveChance({
-              userId: userId,
-              jiangpinId: defaultPrize.id,
-              count: lotteryChances,
-              reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
-              type: 'investment_redeem',
-              sourceOrderId: orderId
-            });
-            
-            console.log(`用户 ${userId} 获得 ${lotteryChances} 次抽奖机会，奖品: ${defaultPrize.name}`);
-          } else {
-            console.log(`计划赠送 ${lotteryChances} 次抽奖机会，但未找到可用奖品`);
-          }
+          console.log(`用户 ${userId} 获得 ${lotteryChances} 次抽奖机会`);
         } catch (error) {
           console.error('赠送抽奖机会失败:', error);
+          // 抽奖机会赠送失败不影响主流程
         }
       }
 
       // 更新订单状态
       await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
         data: {
-          status: 'cancelled',
+          status: 'finished', // 改为finished状态
           redeemed_at: new Date(),
           payout_amount: totalPayout.toString()
         }
