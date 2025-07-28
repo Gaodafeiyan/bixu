@@ -6,10 +6,8 @@ export default {
    * This gives you an opportunity to extend code.
    */
   register({ strapi }) {
-    // 注册自定义服务 - 使用正确的 api:: 前缀格式
-    strapi.service('api::investment-service.investment-service', require('./services/investment-service').default);
-    strapi.service('api::invitation-reward-config.invitation-reward-config', require('./services/invitation-reward-config').default);
-    strapi.service('api::lottery-service.lottery-service', require('./services/lottery-service').default);
+    // 移除手动服务注册，使用Strapi的自动服务发现机制
+    // 服务文件现在位于正确的位置：src/api/investment-service/services/
   },
 
   /**
