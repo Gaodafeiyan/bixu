@@ -115,14 +115,12 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters.status = status;
       }
 
-      const [orders, total] = await strapi.entityService.findWithCount('api::recharge-order.recharge-order', {
+      const [orders, total] = await strapi.db.query('api::recharge-order.recharge-order').findWithCount({
         filters,
         populate: ['channel'],
         sort: { createdAt: 'desc' },
-        pagination: {
-          page: parseInt(page),
-          pageSize: parseInt(pageSize)
-        }
+        limit: parseInt(pageSize),
+        offset: (parseInt(page) - 1) * parseInt(pageSize)
       });
 
       ctx.body = {
@@ -147,14 +145,12 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters.status = status;
       }
 
-      const [orders, total] = await strapi.entityService.findWithCount('api::withdrawal-order.withdrawal-order', {
+      const [orders, total] = await strapi.db.query('api::withdrawal-order.withdrawal-order').findWithCount({
         filters,
         populate: ['channel'],
         sort: { createdAt: 'desc' },
-        pagination: {
-          page: parseInt(page),
-          pageSize: parseInt(pageSize)
-        }
+        limit: parseInt(pageSize),
+        offset: (parseInt(page) - 1) * parseInt(pageSize)
       });
 
       ctx.body = {
