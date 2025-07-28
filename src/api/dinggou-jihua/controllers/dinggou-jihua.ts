@@ -337,20 +337,22 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         }
       });
 
-      // 获取邀请奖励信息（使用新的档位封顶制度）
+      // 检查并触发邀请奖励生成
       let invitationReward = '0';
       let inviterInfo = null;
       let rewardCalculation = null;
       let parentTier = null;
       
       try {
-        const invitationRewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+        // 首先检查是否已有邀请奖励记录
+        const existingRewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
           filters: { laiyuanDan: orderId },
           populate: ['tuijianRen']
         }) as any[];
         
-        if (invitationRewards && invitationRewards.length > 0) {
-          const reward = invitationRewards[0];
+        if (existingRewards && existingRewards.length > 0) {
+          // 已有奖励记录，直接使用
+          const reward = existingRewards[0];
           invitationReward = reward.shouyiUSDT;
           rewardCalculation = reward.calculation;
           parentTier = reward.parentTier;
@@ -358,9 +360,36 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
             id: reward.tuijianRen.id,
             username: reward.tuijianRen.username
           };
+          console.log(`订单 ${orderId} 已有邀请奖励记录: ${invitationReward} USDT`);
+        } else {
+          // 没有奖励记录，尝试触发邀请奖励生成
+          console.log(`订单 ${orderId} 没有邀请奖励记录，尝试触发生成...`);
+          
+          // 如果订单状态是redeemable，说明还没有处理过邀请奖励
+          if (order.status === 'redeemable') {
+            console.log(`订单 ${orderId} 状态为redeemable，触发邀请奖励处理`);
+            
+            // 调用投资服务处理邀请奖励
+            const rewardResult = await strapi.service('api::investment-service.investment-service').processInvitationRewardV2(order);
+            
+            if (rewardResult.success) {
+              console.log(`✅ 邀请奖励生成成功: ${rewardResult.rewardAmount} USDT`);
+              invitationReward = rewardResult.rewardAmount;
+              rewardCalculation = rewardResult.calculation;
+              parentTier = rewardResult.parentTier;
+              inviterInfo = {
+                id: rewardResult.inviterId,
+                username: rewardResult.inviterUsername
+              };
+            } else {
+              console.log(`❌ 邀请奖励生成失败: ${rewardResult.message}`);
+            }
+          } else {
+            console.log(`订单 ${orderId} 状态为 ${order.status}，跳过邀请奖励处理`);
+          }
         }
       } catch (rewardError) {
-        console.error('获取邀请奖励信息失败:', rewardError);
+        console.error('处理邀请奖励失败:', rewardError);
       }
 
       // 记录操作日志
