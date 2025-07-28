@@ -8,7 +8,7 @@ export default {
       console.log('🔄 开始监控钱包交易...');
       
       // 获取区块链服务
-      const blockchainService = strapi.service('blockchain-service');
+      const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
       
       // 初始化区块链服务（如果未初始化）
       if (!blockchainService.web3) {
