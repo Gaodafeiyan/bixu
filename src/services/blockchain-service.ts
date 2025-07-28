@@ -88,7 +88,7 @@ export default ({ strapi }) => {
 
         // 获取最新区块
         const latestBlock = await web3.eth.getBlockNumber();
-        const fromBlock = latestBlock - 10; // 监控最近10个区块
+        const fromBlock = Number(latestBlock) - 10; // 转换为number类型
 
         // 获取钱包的交易
         const transactions = await web3.eth.getPastLogs({
@@ -142,7 +142,7 @@ export default ({ strapi }) => {
         ], tx.data, [tx.topics[1], tx.topics[2]]);
 
         const fromAddress = decodedData.from;
-        const amount = web3.utils.fromWei(decodedData.value, 'ether');
+        const amount = web3.utils.fromWei(decodedData.value as string, 'ether'); // 类型断言为string
         const txHash = tx.transactionHash;
 
         console.log(`💰 收到转账: ${amount} USDT from ${fromAddress}, tx: ${txHash}`);
