@@ -365,28 +365,29 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           // 没有奖励记录，尝试触发邀请奖励生成
           console.log(`订单 ${orderId} 没有邀请奖励记录，尝试触发生成...`);
           
-                     // 如果订单状态是redeemable或running且已到期，尝试触发邀请奖励处理
-           if (order.status === 'redeemable' || (order.status === 'running' && isExpired)) {
-             console.log(`订单 ${orderId} 状态为${order.status}，触发邀请奖励处理`);
-             
-             // 调用投资服务处理邀请奖励
-             const rewardResult = await strapi.service('api::investment-service.investment-service').processInvitationRewardV2(order);
-             
-             if (rewardResult.success) {
-               console.log(`✅ 邀请奖励生成成功: ${rewardResult.rewardAmount} USDT`);
-               invitationReward = rewardResult.rewardAmount;
-               rewardCalculation = rewardResult.calculation;
-               parentTier = rewardResult.parentTier;
-               inviterInfo = {
-                 id: rewardResult.inviterId,
-                 username: rewardResult.inviterUsername
-               };
-             } else {
-               console.log(`❌ 邀请奖励生成失败: ${rewardResult.message}`);
-             }
-           } else {
-             console.log(`订单 ${orderId} 状态为 ${order.status}，跳过邀请奖励处理`);
-           }
+          // 修复：对于已完成的订单，也应该触发邀请奖励处理
+          // 因为订单可能直接跳过了redeemable状态
+          if (order.status === 'redeemable' || order.status === 'finished' || (order.status === 'running' && isExpired)) {
+            console.log(`订单 ${orderId} 状态为${order.status}，触发邀请奖励处理`);
+            
+            // 调用投资服务处理邀请奖励
+            const rewardResult = await strapi.service('api::investment-service.investment-service').processInvitationRewardV2(order);
+            
+            if (rewardResult.success) {
+              console.log(`✅ 邀请奖励生成成功: ${rewardResult.rewardAmount} USDT`);
+              invitationReward = rewardResult.rewardAmount;
+              rewardCalculation = rewardResult.calculation;
+              parentTier = rewardResult.parentTier;
+              inviterInfo = {
+                id: rewardResult.inviterId,
+                username: rewardResult.inviterUsername
+              };
+            } else {
+              console.log(`❌ 邀请奖励生成失败: ${rewardResult.message}`);
+            }
+          } else {
+            console.log(`订单 ${orderId} 状态为 ${order.status}，跳过邀请奖励处理`);
+          }
         }
       } catch (rewardError) {
         console.error('处理邀请奖励失败:', rewardError);
