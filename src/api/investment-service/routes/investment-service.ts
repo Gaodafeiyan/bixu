@@ -11,6 +11,16 @@ export default {
         auth: {},  // 需要登录
       },
     },
+    // 手动触发邀请奖励处理
+    {
+      method: 'POST',
+      path: '/investment-service/process-invitation-reward',
+      handler: 'investment-service.processInvitationReward',
+      config: { 
+        type: 'content-api',
+        auth: {},  // 需要登录
+      },
+    },
     // 手动触发到期投资检查
     {
       method: 'POST',
