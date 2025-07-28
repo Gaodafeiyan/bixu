@@ -1,6 +1,4 @@
-import { factories } from '@strapi/strapi';
-
-export default factories.createCoreController('api::investment-service.investment-service', ({ strapi }) => ({
+export default ({ strapi }) => ({
   // 手动触发投资完成处理
   async handleCompletion(ctx) {
     try {
@@ -60,4 +58,4 @@ export default factories.createCoreController('api::investment-service.investmen
       ctx.throw(500, `获取投资统计失败: ${error.message}`);
     }
   }
-})); 
+}); 
