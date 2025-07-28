@@ -1,0 +1,298 @@
+import Web3 from 'web3';
+import { AbiItem } from 'web3-utils';
+
+// USDT合约ABI（简化版）
+const USDT_ABI: AbiItem[] = [
+  {
+    "constant": true,
+    "inputs": [{"name": "_owner", "type": "address"}],
+    "name": "balanceOf",
+    "outputs": [{"name": "balance", "type": "uint256"}],
+    "type": "function"
+  },
+  {
+    "constant": false,
+    "inputs": [
+      {"name": "_to", "type": "address"},
+      {"name": "_value", "type": "uint256"}
+    ],
+    "name": "transfer",
+    "outputs": [{"name": "", "type": "bool"}],
+    "type": "function"
+  }
+];
+
+// BSC USDT合约地址
+const USDT_CONTRACT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
+
+export default ({ strapi }) => ({
+  private web3: Web3 | null = null;
+  private usdtContract: any = null;
+  private walletAddress: string = '';
+  private privateKey: string = '';
+
+  // 初始化Web3连接
+  async initialize() {
+    try {
+      // 连接到BSC节点
+      this.web3 = new Web3('https://bsc-dataseed.binance.org/');
+      
+      // 设置钱包地址和私钥（从环境变量获取）
+      this.walletAddress = process.env.BSC_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6';
+      this.privateKey = process.env.BSC_PRIVATE_KEY || '';
+      
+      if (!this.privateKey) {
+        console.warn('⚠️ BSC私钥未配置，转账功能将不可用');
+      }
+
+      // 初始化USDT合约
+      this.usdtContract = new this.web3.eth.Contract(USDT_ABI, USDT_CONTRACT_ADDRESS);
+      
+      console.log('✅ 区块链服务初始化成功');
+      console.log(`📧 钱包地址: ${this.walletAddress}`);
+      
+      return true;
+    } catch (error) {
+      console.error('❌ 区块链服务初始化失败:', error);
+      return false;
+    }
+  },
+
+  // 获取钱包USDT余额
+  async getWalletBalance(): Promise<string> {
+    try {
+      if (!this.web3 || !this.usdtContract) {
+        throw new Error('区块链服务未初始化');
+      }
+
+      const balance = await this.usdtContract.methods.balanceOf(this.walletAddress).call();
+      const balanceInEth = this.web3.utils.fromWei(balance, 'ether');
+      
+      console.log(`💰 钱包USDT余额: ${balanceInEth}`);
+      return balanceInEth;
+    } catch (error) {
+      console.error('❌ 获取钱包余额失败:', error);
+      return '0';
+    }
+  },
+
+  // 监控钱包交易
+  async monitorWalletTransactions() {
+    try {
+      if (!this.web3) {
+        throw new Error('区块链服务未初始化');
+      }
+
+      console.log('🔄 开始监控钱包交易...');
+
+      // 获取最新区块
+      const latestBlock = await this.web3.eth.getBlockNumber();
+      const fromBlock = latestBlock - 10; // 监控最近10个区块
+
+      // 获取钱包的交易
+      const transactions = await this.web3.eth.getPastLogs({
+        address: USDT_CONTRACT_ADDRESS,
+        fromBlock: fromBlock,
+        toBlock: 'latest',
+        topics: [
+          '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // Transfer事件
+          null,
+          '0x000000000000000000000000' + this.walletAddress.slice(2) // 到我们钱包的转账
+        ]
+      });
+
+      console.log(`📊 发现 ${transactions.length} 笔到账交易`);
+
+      // 处理每笔交易
+      for (const tx of transactions) {
+        await this.processIncomingTransaction(tx);
+      }
+
+      return transactions.length;
+    } catch (error) {
+      console.error('❌ 监控钱包交易失败:', error);
+      return 0;
+    }
+  },
+
+  // 处理到账交易
+  async processIncomingTransaction(tx: any) {
+    try {
+      // 解析交易数据
+      const decodedData = this.web3!.eth.abi.decodeLog([
+        {
+          type: 'address',
+          name: 'from',
+          indexed: true
+        },
+        {
+          type: 'address',
+          name: 'to',
+          indexed: true
+        },
+        {
+          type: 'uint256',
+          name: 'value'
+        }
+      ], tx.data, [tx.topics[1], tx.topics[2]]);
+
+      const fromAddress = decodedData.from;
+      const amount = this.web3!.utils.fromWei(decodedData.value, 'ether');
+      const txHash = tx.transactionHash;
+
+      console.log(`💰 收到转账: ${amount} USDT from ${fromAddress}, tx: ${txHash}`);
+
+      // 查找匹配的充值订单
+      const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
+        filters: {
+          status: 'pending',
+          receiveAddress: this.walletAddress
+        }
+      });
+
+      for (const order of orders) {
+        const orderAmount = parseFloat(order.amount);
+        const txAmount = parseFloat(amount);
+        
+        // 检查金额是否匹配（允许0.01的误差）
+        if (Math.abs(orderAmount - txAmount) <= 0.01) {
+          await this.completeRechargeOrder(order, txHash, amount);
+          break;
+        }
+      }
+    } catch (error) {
+      console.error('❌ 处理到账交易失败:', error);
+    }
+  },
+
+  // 完成充值订单
+  async completeRechargeOrder(order: any, txHash: string, amount: string) {
+    try {
+      console.log(`✅ 匹配充值订单: ${order.orderNo}, 金额: ${amount} USDT`);
+
+      // 更新订单状态
+      await strapi.entityService.update('api::recharge-order.recharge-order' as any, order.id, {
+        data: {
+          status: 'completed',
+          txHash: txHash,
+          blockNumber: await this.web3!.eth.getTransactionReceipt(txHash).then(receipt => receipt.blockNumber),
+          confirmations: 12,
+          receivedTime: new Date(),
+          completedTime: new Date()
+        }
+      });
+
+      // 增加用户钱包余额
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: { id: order.user.id } }
+      });
+
+      const wallet = wallets[0];
+      if (wallet) {
+        const currentBalance = parseFloat(wallet.usdtYue || '0');
+        const newBalance = currentBalance + parseFloat(amount);
+
+        await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+          data: {
+            usdtYue: newBalance.toString()
+          }
+        });
+
+        console.log(`✅ 用户 ${order.user.id} 余额更新: ${currentBalance} → ${newBalance} USDT`);
+      }
+    } catch (error) {
+      console.error('❌ 完成充值订单失败:', error);
+    }
+  },
+
+  // 执行提现转账
+  async executeWithdrawal(order: any) {
+    try {
+      if (!this.privateKey) {
+        throw new Error('私钥未配置，无法执行转账');
+      }
+
+      console.log(`🔄 执行提现转账: ${order.orderNo}, 金额: ${order.actualAmount} USDT`);
+
+      // 更新订单状态为处理中
+      await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        data: {
+          status: 'processing',
+          processTime: new Date()
+        }
+      });
+
+      // 准备转账数据
+      const amountInWei = this.web3!.utils.toWei(order.actualAmount, 'ether');
+      
+      // 创建转账交易
+      const tx = {
+        from: this.walletAddress,
+        to: USDT_CONTRACT_ADDRESS,
+        data: this.usdtContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+        gas: '100000',
+        gasPrice: await this.web3!.eth.getGasPrice()
+      };
+
+      // 签名并发送交易
+      const signedTx = await this.web3!.eth.accounts.signTransaction(tx, this.privateKey);
+      const receipt = await this.web3!.eth.sendSignedTransaction(signedTx.rawTransaction!);
+
+      // 更新订单状态为完成
+      await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        data: {
+          status: 'completed',
+          txHash: receipt.transactionHash,
+          blockNumber: receipt.blockNumber,
+          confirmations: 1,
+          completedTime: new Date()
+        }
+      });
+
+      console.log(`✅ 提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+      return receipt.transactionHash;
+    } catch (error) {
+      console.error('❌ 执行提现转账失败:', error);
+      
+      // 更新订单状态为失败
+      await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        data: {
+          status: 'failed',
+          processTime: new Date()
+        }
+      });
+      
+      throw error;
+    }
+  },
+
+  // 处理待处理的提现订单
+  async processPendingWithdrawals() {
+    try {
+      console.log('🔄 处理待处理的提现订单...');
+
+      const orders = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
+        filters: {
+          status: 'pending'
+        }
+      });
+
+      console.log(`📊 发现 ${orders.length} 个待处理提现订单`);
+
+      for (const order of orders) {
+        try {
+          await this.executeWithdrawal(order);
+          // 等待5秒再处理下一个，避免频率过高
+          await new Promise(resolve => setTimeout(resolve, 5000));
+        } catch (error) {
+          console.error(`❌ 处理提现订单 ${order.orderNo} 失败:`, error);
+        }
+      }
+
+      return orders.length;
+    } catch (error) {
+      console.error('❌ 处理提现订单失败:', error);
+      return 0;
+    }
+  }
+});

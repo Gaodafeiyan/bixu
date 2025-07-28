@@ -7,10 +7,22 @@ export default {
     try {
       console.log('🔄 开始监控钱包交易...');
       
-      // 调用充值通道服务监控交易
-      await strapi.service('api::recharge-channel.recharge-channel').monitorWalletTransactions();
+      // 获取区块链服务
+      const blockchainService = strapi.service('api::blockchain-service.blockchain-service');
       
-      console.log('✅ 钱包交易监控完成');
+      // 初始化区块链服务（如果未初始化）
+      if (!blockchainService.web3) {
+        await blockchainService.initialize();
+      }
+      
+      // 监控钱包交易
+      const transactionCount = await blockchainService.monitorWalletTransactions();
+      
+      if (transactionCount > 0) {
+        console.log(`✅ 处理了 ${transactionCount} 笔交易`);
+      } else {
+        console.log('✅ 无新交易');
+      }
     } catch (error) {
       console.error('❌ 钱包交易监控失败:', error);
     }

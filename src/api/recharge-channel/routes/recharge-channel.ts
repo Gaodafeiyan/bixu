@@ -145,6 +145,18 @@ export default {
       },
     },
 
+    // 测试区块链服务
+    {
+      method: 'GET',
+      path: '/recharge-channels/test-blockchain',
+      handler: 'recharge-channel.testBlockchainService',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+
     // 默认CRUD路由
     {
       method: 'GET',

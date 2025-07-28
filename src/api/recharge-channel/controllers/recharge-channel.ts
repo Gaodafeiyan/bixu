@@ -552,4 +552,36 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       ctx.throw(500, `创建提现订单失败: ${error.message}`);
     }
   },
+
+  // 测试区块链服务
+  async testBlockchainService(ctx) {
+    try {
+      const blockchainService = strapi.service('api::blockchain-service.blockchain-service');
+      
+      // 初始化服务
+      const initialized = await blockchainService.initialize();
+      
+      if (!initialized) {
+        return ctx.throw(500, '区块链服务初始化失败');
+      }
+      
+      // 获取钱包余额
+      const balance = await blockchainService.getWalletBalance();
+      
+      ctx.body = {
+        success: true,
+        data: {
+          initialized: true,
+          walletAddress: process.env.BSC_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
+          usdtBalance: balance,
+          hasPrivateKey: !!process.env.BSC_PRIVATE_KEY,
+          message: '区块链服务连接正常'
+        },
+        message: '区块链服务测试成功'
+      };
+    } catch (error) {
+      console.error('区块链服务测试失败:', error);
+      ctx.throw(500, `区块链服务测试失败: ${error.message}`);
+    }
+  },
 })); 
