@@ -1,0 +1,100 @@
+{
+  "kind": "collectionType",
+  "collectionName": "recharge_channels",
+  "info": {
+    "singularName": "recharge-channel",
+    "pluralName": "recharge-channels",
+    "displayName": "充值通道",
+    "description": "管理充值提现通道系统"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "name": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "channelType": {
+      "type": "enumeration",
+      "enum": ["recharge", "withdrawal", "both"],
+      "default": "both"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["active", "inactive", "maintenance"],
+      "default": "active"
+    },
+    "walletAddress": {
+      "type": "string",
+      "required": true
+    },
+    "walletPrivateKey": {
+      "type": "text",
+      "private": true
+    },
+    "network": {
+      "type": "enumeration",
+      "enum": ["BSC", "ETH", "TRON", "POLYGON"],
+      "default": "BSC"
+    },
+    "asset": {
+      "type": "enumeration",
+      "enum": ["USDT", "USDC", "BTC", "ETH"],
+      "default": "USDT"
+    },
+    "minAmount": {
+      "type": "decimal",
+      "default": "10.00"
+    },
+    "maxAmount": {
+      "type": "decimal",
+      "default": "10000.00"
+    },
+    "dailyLimit": {
+      "type": "decimal",
+      "default": "50000.00"
+    },
+    "feeRate": {
+      "type": "decimal",
+      "default": "0.001"
+    },
+    "fixedFee": {
+      "type": "decimal",
+      "default": "1.00"
+    },
+    "confirmations": {
+      "type": "integer",
+      "default": 12
+    },
+    "scanInterval": {
+      "type": "integer",
+      "default": 30
+    },
+    "totalRechargeAmount": {
+      "type": "decimal",
+      "default": "0.00"
+    },
+    "totalWithdrawalAmount": {
+      "type": "decimal",
+      "default": "0.00"
+    },
+    "totalTransactions": {
+      "type": "integer",
+      "default": 0
+    },
+    "rechargeOrders": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::recharge-order.recharge-order",
+      "mappedBy": "channel"
+    },
+    "withdrawalOrders": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::withdrawal-order.withdrawal-order",
+      "mappedBy": "channel"
+    }
+  }
+} 

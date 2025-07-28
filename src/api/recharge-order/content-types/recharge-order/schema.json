@@ -1,0 +1,83 @@
+{
+  "kind": "collectionType",
+  "collectionName": "recharge_orders",
+  "info": {
+    "singularName": "recharge-order",
+    "pluralName": "recharge-orders",
+    "displayName": "充值订单",
+    "description": "用户充值订单记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "orderNo": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "amount": {
+      "type": "decimal",
+      "required": true
+    },
+    "currency": {
+      "type": "enumeration",
+      "enum": ["USDT", "USDC", "BTC", "ETH"],
+      "default": "USDT"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "processing", "completed", "failed", "cancelled"],
+      "default": "pending"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "rechargeOrders"
+    },
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::recharge-channel.recharge-channel",
+      "inversedBy": "rechargeOrders"
+    },
+    "receiveAddress": {
+      "type": "string",
+      "required": true
+    },
+    "txHash": {
+      "type": "string"
+    },
+    "blockNumber": {
+      "type": "biginteger"
+    },
+    "confirmations": {
+      "type": "integer",
+      "default": 0
+    },
+    "expectedTime": {
+      "type": "datetime"
+    },
+    "receivedTime": {
+      "type": "datetime"
+    },
+    "completedTime": {
+      "type": "datetime"
+    },
+    "remark": {
+      "type": "text"
+    },
+    "fee": {
+      "type": "decimal",
+      "default": "0.00"
+    },
+    "actualAmount": {
+      "type": "decimal",
+      "default": "0.00"
+    },
+    "metadata": {
+      "type": "json"
+    }
+  }
+} 

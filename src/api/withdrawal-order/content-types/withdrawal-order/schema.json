@@ -1,0 +1,99 @@
+{
+  "kind": "collectionType",
+  "collectionName": "withdrawal_orders",
+  "info": {
+    "singularName": "withdrawal-order",
+    "pluralName": "withdrawal-orders",
+    "displayName": "提现订单",
+    "description": "用户提现订单记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "attributes": {
+    "orderNo": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "amount": {
+      "type": "decimal",
+      "required": true
+    },
+    "currency": {
+      "type": "enumeration",
+      "enum": ["USDT", "USDC", "BTC", "ETH"],
+      "default": "USDT"
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "processing", "completed", "failed", "cancelled", "rejected"],
+      "default": "pending"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "withdrawalOrders"
+    },
+    "channel": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::recharge-channel.recharge-channel",
+      "inversedBy": "withdrawalOrders"
+    },
+    "withdrawAddress": {
+      "type": "string",
+      "required": true
+    },
+    "withdrawNetwork": {
+      "type": "enumeration",
+      "enum": ["BSC", "ETH", "TRON", "POLYGON"],
+      "default": "BSC"
+    },
+    "txHash": {
+      "type": "string"
+    },
+    "blockNumber": {
+      "type": "biginteger"
+    },
+    "confirmations": {
+      "type": "integer",
+      "default": 0
+    },
+    "requestTime": {
+      "type": "datetime"
+    },
+    "processTime": {
+      "type": "datetime"
+    },
+    "completedTime": {
+      "type": "datetime"
+    },
+    "fee": {
+      "type": "decimal",
+      "default": "0.00"
+    },
+    "actualAmount": {
+      "type": "decimal",
+      "default": "0.00"
+    },
+    "reviewedBy": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user"
+    },
+    "reviewTime": {
+      "type": "datetime"
+    },
+    "reviewRemark": {
+      "type": "text"
+    },
+    "remark": {
+      "type": "text"
+    },
+    "metadata": {
+      "type": "json"
+    }
+  }
+} 
