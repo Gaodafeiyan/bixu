@@ -282,18 +282,18 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       const lotteryChances = planData.lottery_chances || 3; // 默认赠送3次
       if (lotteryChances > 0) {
         try {
-          // 直接创建抽奖机会记录
-          const chanceData = {
-            user: userId,
-            jiangpin: null, // 不绑定特定奖品，抽奖时随机选择
-            count: lotteryChances,
-            usedCount: 0,
-            reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
-            type: 'investment_redeem',
-            isActive: true,
-            validUntil: null,
-            sourceOrder: orderId
-          };
+                     // 直接创建抽奖机会记录
+           const chanceData = {
+             user: userId,
+             jiangpin: 1, // 临时绑定一个奖品ID，抽奖时会重新选择
+             count: lotteryChances,
+             usedCount: 0,
+             reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
+             type: 'investment_redeem' as const,
+             isActive: true,
+             validUntil: null,
+             sourceOrder: orderId
+           };
 
           const chance = await strapi.entityService.create('api::choujiang-jihui.choujiang-jihui', {
             data: chanceData
