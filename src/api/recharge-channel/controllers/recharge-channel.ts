@@ -413,4 +413,143 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       ctx.throw(500, `获取提现统计失败: ${error.message}`);
     }
   },
+
+  // 简化的充值接口 - 不需要充值通道
+  async simpleRecharge(ctx) {
+    try {
+      const { amount } = ctx.request.body;
+
+      if (!amount) {
+        return ctx.badRequest('缺少充值金额');
+      }
+
+      // 验证金额格式
+      if (isNaN(Number(amount)) || Number(amount) <= 0) {
+        return ctx.badRequest('充值金额必须是大于0的数字');
+      }
+
+      // 使用固定的BSC钱包地址
+      const bscWalletAddress = "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6";
+      
+      // 生成订单号
+      const orderNo = `RC${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      
+      // 创建充值订单
+      const rechargeOrder = await strapi.entityService.create('api::recharge-order.recharge-order' as any, {
+        data: {
+          orderNo,
+          amount: amount,
+          currency: "USDT",
+          status: 'pending',
+          user: 33, // 使用测试用户ID
+          receiveAddress: bscWalletAddress,
+          expectedTime: new Date(Date.now() + 30 * 60 * 1000), // 30分钟后过期
+          fee: 0,
+          actualAmount: amount,
+        }
+      });
+
+      ctx.body = {
+        success: true,
+        data: {
+          orderNo: rechargeOrder.orderNo,
+          amount: rechargeOrder.amount,
+          receiveAddress: bscWalletAddress,
+          expectedTime: rechargeOrder.expectedTime,
+          status: rechargeOrder.status,
+          message: "请向以下地址转账USDT，到账后自动放行"
+        },
+        message: '充值订单创建成功'
+      };
+    } catch (error) {
+      console.error('创建充值订单失败:', error);
+      ctx.throw(500, `创建充值订单失败: ${error.message}`);
+    }
+  },
+
+  // 简化的提现接口
+  async simpleWithdrawal(ctx) {
+    try {
+      const { amount, address } = ctx.request.body;
+
+      if (!amount || !address) {
+        return ctx.badRequest('缺少必要参数');
+      }
+
+      // 验证金额格式
+      if (isNaN(Number(amount)) || Number(amount) <= 0) {
+        return ctx.badRequest('提现金额必须是大于0的数字');
+      }
+
+      // 验证地址格式（简单验证）
+      if (address.length < 10) {
+        return ctx.badRequest('提现地址格式不正确');
+      }
+
+      // 验证用户余额
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: { id: 33 } }
+      });
+
+      const wallet = wallets[0];
+      if (!wallet) {
+        return ctx.badRequest('用户钱包不存在');
+      }
+
+      const walletBalance = new Decimal(wallet.usdtYue || 0);
+      const withdrawalAmount = new Decimal(amount);
+
+      if (walletBalance.lessThan(withdrawalAmount)) {
+        return ctx.badRequest('余额不足');
+      }
+
+      // 生成订单号
+      const orderNo = `WD${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+      
+      // 计算手续费
+      const fee = new Decimal(amount).mul(0.001).add(1); // 0.1% + 1 USDT固定手续费
+      const actualAmount = new Decimal(amount).sub(fee);
+
+      // 立即扣除用户余额
+      const newBalance = walletBalance.sub(withdrawalAmount);
+      await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+        data: {
+          usdtYue: newBalance.toString()
+        }
+      });
+
+      // 创建提现订单
+      const withdrawalOrder = await strapi.entityService.create('api::withdrawal-order.withdrawal-order' as any, {
+        data: {
+          orderNo,
+          amount: amount,
+          currency: "USDT",
+          status: 'pending',
+          user: 33,
+          withdrawAddress: address,
+          withdrawNetwork: "BSC",
+          fee: fee.toString(),
+          actualAmount: actualAmount.toString(),
+          requestTime: new Date()
+        }
+      });
+
+      ctx.body = {
+        success: true,
+        data: {
+          orderNo: withdrawalOrder.orderNo,
+          amount: withdrawalOrder.amount,
+          actualAmount: withdrawalOrder.actualAmount,
+          fee: withdrawalOrder.fee,
+          status: withdrawalOrder.status,
+          requestTime: withdrawalOrder.requestTime,
+          message: "提现申请已提交，将在24小时内处理"
+        },
+        message: '提现订单创建成功'
+      };
+    } catch (error) {
+      console.error('创建提现订单失败:', error);
+      ctx.throw(500, `创建提现订单失败: ${error.message}`);
+    }
+  },
 })); 

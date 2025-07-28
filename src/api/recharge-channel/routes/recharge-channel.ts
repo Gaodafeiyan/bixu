@@ -121,6 +121,30 @@ export default {
       },
     },
 
+    // 简化的充值接口 - 不需要认证
+    {
+      method: 'POST',
+      path: '/recharge-channels/simple-recharge',
+      handler: 'recharge-channel.simpleRecharge',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+
+    // 简化的提现接口 - 不需要认证
+    {
+      method: 'POST',
+      path: '/recharge-channels/simple-withdrawal',
+      handler: 'recharge-channel.simpleWithdrawal',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+
     // 默认CRUD路由
     {
       method: 'GET',
