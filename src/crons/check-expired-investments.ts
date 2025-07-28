@@ -8,7 +8,7 @@ export default {
       console.log('🕐 开始检查到期投资...');
       
       // 调用投资服务检查到期投资
-      await (strapi.service('investment-service') as any).checkAndProcessExpiredInvestments();
+      await strapi.service('api::investment-service.investment-service').checkAndProcessExpiredInvestments();
       
       console.log('✅ 到期投资检查完成');
     } catch (error) {

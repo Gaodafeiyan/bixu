@@ -370,8 +370,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           // 注意：此时订单状态已经是finished，所以直接触发邀请奖励处理
           console.log(`订单 ${orderId} 状态为${order.status}，触发邀请奖励处理`);
           
-          // 调用投资服务处理邀请奖励 - 使用类型断言避免TypeScript错误
-          const investmentService = (strapi as any).service('investment-service');
+          // 调用投资服务处理邀请奖励 - 使用正确的 api:: 前缀格式
+          const investmentService = strapi.service('api::investment-service.investment-service');
           const rewardResult = await investmentService.processInvitationRewardV2(order);
           
           if (rewardResult.success) {
