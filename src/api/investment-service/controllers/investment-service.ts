@@ -11,7 +11,7 @@ export default ({ strapi }) => ({
       console.log(`Manually triggering investment completion: Order ${orderId}`);
 
       // Call investment service to handle investment completion
-      const result = await strapi.service('investment-service').handleInvestmentCompletion(Number(orderId));
+      const result = await (strapi.service('investment-service') as any).handleInvestmentCompletion(Number(orderId));
 
       ctx.body = {
         success: true,
@@ -48,7 +48,7 @@ export default ({ strapi }) => ({
       }
 
       // Call investment service to process invitation reward
-      const result = await strapi.service('investment-service').processInvitationRewardV2(order);
+      const result = await (strapi.service('investment-service') as any).processInvitationRewardV2(order);
 
       ctx.body = {
         success: true,
@@ -67,7 +67,7 @@ export default ({ strapi }) => ({
       console.log('Manually triggering expired investment check');
 
       // Call investment service to check expired investments
-      await strapi.service('investment-service').checkAndProcessExpiredInvestments();
+      await (strapi.service('investment-service') as any).checkAndProcessExpiredInvestments();
 
       ctx.body = {
         success: true,
@@ -84,7 +84,7 @@ export default ({ strapi }) => ({
     try {
       const userId = ctx.state.user.id;
       
-      const stats = await strapi.service('investment-service').getInvestmentStats(userId);
+      const stats = await (strapi.service('investment-service') as any).getInvestmentStats(userId);
 
       ctx.body = {
         success: true,
