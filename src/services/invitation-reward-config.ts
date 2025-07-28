@@ -55,7 +55,10 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         populate: ['jihua']
       }) as any[];
 
+      console.log(`用户 ${userId} 的运行中订单数量: ${activeOrders.length}`);
+
       if (!activeOrders || activeOrders.length === 0) {
+        console.log(`用户 ${userId} 没有运行中的订单`);
         return null;
       }
 
@@ -64,15 +67,26 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       let maxPrincipal = 0;
 
       for (const order of activeOrders) {
-        const orderPrincipal = new Decimal(order.principal || order.amount);
+        // 尝试多种字段名获取金额
+        const orderPrincipal = new Decimal(order.principal || order.amount || 0);
         const principalValue = orderPrincipal.toNumber();
+
+        console.log(`订单 ${order.id}: 状态=${order.status}, 金额=${principalValue}`);
 
         // 根据本金找到对应的档位
         const tier = REWARD_TIERS.find(t => t.principal === principalValue);
+        
         if (tier && principalValue > maxPrincipal) {
           maxTier = tier;
           maxPrincipal = principalValue;
+          console.log(`找到档位: ${tier.name}, 金额: ${principalValue}`);
         }
+      }
+
+      if (maxTier) {
+        console.log(`用户 ${userId} 的最终档位: ${maxTier.name}`);
+      } else {
+        console.log(`用户 ${userId} 未找到匹配的档位`);
       }
 
       return maxTier;
