@@ -115,7 +115,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters.status = status;
       }
 
-      const { results: orders, pagination } = await strapi.entityService.findMany('api::recharge-order.recharge-order', {
+      const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order', {
         filters,
         populate: ['channel'],
         sort: { createdAt: 'desc' },
@@ -147,7 +147,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters.status = status;
       }
 
-      const { results: orders, pagination } = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order', {
+      const orders = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order', {
         filters,
         populate: ['channel'],
         sort: { createdAt: 'desc' },

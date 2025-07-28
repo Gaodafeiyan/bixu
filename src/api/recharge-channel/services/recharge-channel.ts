@@ -288,7 +288,7 @@ export default ({ strapi }) => ({
 
       const channelList = Array.isArray(channels) ? channels : [channels];
       for (const channel of channelList) {
-        await processChannelTransactions(channel);
+        await processChannelTransactions(channel, strapi);
       }
     } catch (error) {
       console.error('监控钱包交易失败:', error);
@@ -296,7 +296,7 @@ export default ({ strapi }) => ({
   },
 
   // 处理通道交易
-  async processChannelTransactions(channel: any) {
+  async processChannelTransactions(channel: any, strapi: any) {
     try {
       // 获取钱包交易记录
       const transactions = await getWalletTransactions(channel.walletAddress, channel.network);
