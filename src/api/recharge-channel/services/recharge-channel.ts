@@ -1,15 +1,130 @@
-import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
 import crypto from 'crypto';
 
-export default factories.createCoreService('api::recharge-channel.recharge-channel', ({ strapi }) => ({
-  // 生成订单号
-  generateOrderNo(type: 'recharge' | 'withdrawal'): string {
-    const timestamp = Date.now();
-    const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-    const prefix = type === 'recharge' ? 'RC' : 'WD';
-    return `${prefix}${timestamp}${random}`;
-  },
+// 生成订单号工具函数
+function generateOrderNo(type: 'recharge' | 'withdrawal'): string {
+  const timestamp = Date.now();
+  const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+  const prefix = type === 'recharge' ? 'RC' : 'WD';
+  return `${prefix}${timestamp}${random}`;
+}
+
+// 获取钱包交易记录（模拟实现）
+async function getWalletTransactions(address: string, network: string) {
+  // 这里应该调用真实的区块链API
+  // 目前返回模拟数据
+  return [];
+}
+
+// 处理交易
+async function processTransaction(channel: any, transaction: any, strapi: any) {
+  try {
+    // 查找匹配的充值订单
+    const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order', {
+      filters: {
+        channel: { id: channel.id },
+        status: 'pending',
+        receiveAddress: channel.walletAddress
+      }
+    });
+
+    for (const order of orders) {
+      const orderAmount = new Decimal(order.amount);
+      const txAmount = new Decimal(transaction.value);
+
+      // 检查金额是否匹配（允许一定的误差）
+      if (orderAmount.equals(txAmount)) {
+        await completeRechargeOrder(order, transaction, strapi);
+        break;
+      }
+    }
+  } catch (error) {
+    console.error('处理交易失败:', error);
+  }
+}
+
+// 完成充值订单
+async function completeRechargeOrder(order: any, transaction: any, strapi: any) {
+  try {
+    // 更新订单状态
+    await strapi.entityService.update('api::recharge-order.recharge-order', order.id, {
+      data: {
+        status: 'completed',
+        txHash: transaction.hash,
+        blockNumber: transaction.blockNumber,
+        confirmations: transaction.confirmations,
+        receivedTime: new Date(),
+        completedTime: new Date()
+      }
+    });
+
+    // 增加用户钱包余额
+    const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+      filters: { user: { id: order.user.id } }
+    });
+
+    const wallet = wallets[0];
+    if (wallet) {
+      const currentBalance = new Decimal(wallet.usdtYue || 0);
+      const rechargeAmount = new Decimal(order.amount);
+      const newBalance = currentBalance.add(rechargeAmount);
+
+      await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+        data: {
+          usdtYue: newBalance.toString()
+        }
+      });
+
+      console.log(`充值完成: 订单 ${order.orderNo}, 用户 ${order.user.id}, 金额 ${order.amount}`);
+    }
+  } catch (error) {
+    console.error('完成充值订单失败:', error);
+  }
+}
+
+// 执行提现
+async function executeWithdrawal(order: any, strapi: any) {
+  try {
+    // 更新订单状态为处理中
+    await strapi.entityService.update('api::withdrawal-order.withdrawal-order', order.id, {
+      data: {
+        status: 'processing',
+        processTime: new Date()
+      }
+    });
+
+    // 发送区块链交易（模拟实现）
+    const transaction = await sendTransaction(order);
+    
+    // 更新订单状态为完成
+    await strapi.entityService.update('api::withdrawal-order.withdrawal-order', order.id, {
+      data: {
+        status: 'completed',
+        txHash: transaction.hash,
+        completedTime: new Date()
+      }
+    });
+
+    console.log(`提现完成: 订单 ${order.orderNo}, 用户 ${order.user.id}, 金额 ${order.amount}`);
+  } catch (error) {
+    console.error(`执行提现失败: 订单 ${order.orderNo}`, error);
+    throw error;
+  }
+}
+
+// 发送交易（模拟实现）
+async function sendTransaction(order: any) {
+  // 这里应该调用真实的区块链API
+  // 目前返回模拟数据
+  return {
+    hash: `tx_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+    blockNumber: Math.floor(Math.random() * 1000000),
+    confirmations: 1
+  };
+}
+
+export default ({ strapi }) => ({
+
 
   // 创建充值订单
   async createRechargeOrder(userId: number, amount: string, channelId: number) {
@@ -40,7 +155,8 @@ export default factories.createCoreService('api::recharge-channel.recharge-chann
         }
       });
 
-      const todayAmount = todayOrders.reduce((sum, order) => {
+      const orderList = Array.isArray(todayOrders) ? todayOrders : [todayOrders];
+      const todayAmount = orderList.reduce((sum, order) => {
         return sum + new Decimal(order.amount).toNumber();
       }, 0);
 
@@ -50,7 +166,7 @@ export default factories.createCoreService('api::recharge-channel.recharge-chann
       }
 
       // 创建充值订单
-      const orderNo = this.generateOrderNo('recharge');
+      const orderNo = generateOrderNo('recharge');
       const rechargeOrder = await strapi.entityService.create('api::recharge-order.recharge-order', {
         data: {
           orderNo,
@@ -103,11 +219,12 @@ export default factories.createCoreService('api::recharge-channel.recharge-chann
         }
       });
 
-      if (channels.length === 0) {
+      const channelList = Array.isArray(channels) ? channels : [channels];
+      if (channelList.length === 0) {
         throw new Error('没有可用的提现通道');
       }
 
-      const channel = channels[0]; // 选择第一个可用通道
+      const channel = channelList[0]; // 选择第一个可用通道
 
       // 验证金额
       const amountDecimal = new Decimal(amount);
@@ -133,7 +250,7 @@ export default factories.createCoreService('api::recharge-channel.recharge-chann
       });
 
       // 创建提现订单
-      const orderNo = this.generateOrderNo('withdrawal');
+      const orderNo = generateOrderNo('withdrawal');
       const withdrawalOrder = await strapi.entityService.create('api::withdrawal-order.withdrawal-order', {
         data: {
           orderNo,
@@ -169,8 +286,9 @@ export default factories.createCoreService('api::recharge-channel.recharge-chann
         }
       });
 
-      for (const channel of channels) {
-        await this.processChannelTransactions(channel);
+      const channelList = Array.isArray(channels) ? channels : [channels];
+      for (const channel of channelList) {
+        await processChannelTransactions(channel);
       }
     } catch (error) {
       console.error('监控钱包交易失败:', error);
@@ -181,88 +299,17 @@ export default factories.createCoreService('api::recharge-channel.recharge-chann
   async processChannelTransactions(channel: any) {
     try {
       // 获取钱包交易记录
-      const transactions = await this.getWalletTransactions(channel.walletAddress, channel.network);
+      const transactions = await getWalletTransactions(channel.walletAddress, channel.network);
       
       for (const transaction of transactions) {
-        await this.processTransaction(channel, transaction);
+        await processTransaction(channel, transaction, strapi);
       }
     } catch (error) {
       console.error(`处理通道 ${channel.id} 交易失败:`, error);
     }
   },
 
-  // 获取钱包交易记录（模拟实现）
-  async getWalletTransactions(address: string, network: string) {
-    // 这里应该调用真实的区块链API
-    // 目前返回模拟数据
-    return [];
-  },
 
-  // 处理交易
-  async processTransaction(channel: any, transaction: any) {
-    try {
-      // 查找匹配的充值订单
-      const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order', {
-        filters: {
-          channel: { id: channel.id },
-          status: 'pending',
-          receiveAddress: channel.walletAddress
-        }
-      });
-
-      for (const order of orders) {
-        const orderAmount = new Decimal(order.amount);
-        const txAmount = new Decimal(transaction.value);
-
-        // 检查金额是否匹配（允许一定的误差）
-        if (orderAmount.equals(txAmount)) {
-          await this.completeRechargeOrder(order, transaction);
-          break;
-        }
-      }
-    } catch (error) {
-      console.error('处理交易失败:', error);
-    }
-  },
-
-  // 完成充值订单
-  async completeRechargeOrder(order: any, transaction: any) {
-    try {
-      // 更新订单状态
-      await strapi.entityService.update('api::recharge-order.recharge-order', order.id, {
-        data: {
-          status: 'completed',
-          txHash: transaction.hash,
-          blockNumber: transaction.blockNumber,
-          confirmations: transaction.confirmations,
-          receivedTime: new Date(),
-          completedTime: new Date()
-        }
-      });
-
-      // 增加用户钱包余额
-      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: { id: order.user.id } }
-      });
-
-      const wallet = wallets[0];
-      if (wallet) {
-        const currentBalance = new Decimal(wallet.usdtYue || 0);
-        const rechargeAmount = new Decimal(order.amount);
-        const newBalance = currentBalance.add(rechargeAmount);
-
-        await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
-          data: {
-            usdtYue: newBalance.toString()
-          }
-        });
-
-        console.log(`充值完成: 订单 ${order.orderNo}, 用户 ${order.user.id}, 金额 ${order.amount}`);
-      }
-    } catch (error) {
-      console.error('完成充值订单失败:', error);
-    }
-  },
 
   // 处理提现订单
   async processWithdrawalOrders() {
@@ -273,9 +320,10 @@ export default factories.createCoreService('api::recharge-channel.recharge-chann
         populate: ['user', 'channel']
       });
 
-      for (const order of pendingOrders) {
+      const orderList = Array.isArray(pendingOrders) ? pendingOrders : [pendingOrders];
+      for (const order of orderList) {
         try {
-          await this.executeWithdrawal(order);
+          await executeWithdrawal(order, strapi);
         } catch (error) {
           console.error(`处理提现订单 ${order.orderNo} 失败:`, error);
           
@@ -293,46 +341,5 @@ export default factories.createCoreService('api::recharge-channel.recharge-chann
     }
   },
 
-  // 执行提现
-  async executeWithdrawal(order: any) {
-    try {
-      // 更新订单状态为处理中
-      await strapi.entityService.update('api::withdrawal-order.withdrawal-order', order.id, {
-        data: {
-          status: 'processing',
-          processTime: new Date()
-        }
-      });
 
-      // 发送区块链交易（模拟实现）
-      const transaction = await this.sendTransaction(order);
-      
-      // 更新订单状态为完成
-      await strapi.entityService.update('api::withdrawal-order.withdrawal-order', order.id, {
-        data: {
-          status: 'completed',
-          txHash: transaction.hash,
-          blockNumber: transaction.blockNumber,
-          confirmations: transaction.confirmations,
-          completedTime: new Date()
-        }
-      });
-
-      console.log(`提现完成: 订单 ${order.orderNo}, 用户 ${order.user.id}, 金额 ${order.amount}`);
-    } catch (error) {
-      console.error('执行提现失败:', error);
-      throw error;
-    }
-  },
-
-  // 发送交易（模拟实现）
-  async sendTransaction(order: any) {
-    // 这里应该调用真实的区块链API发送交易
-    // 目前返回模拟数据
-    return {
-      hash: `0x${crypto.randomBytes(32).toString('hex')}`,
-      blockNumber: Math.floor(Math.random() * 1000000),
-      confirmations: 1
-    };
-  },
 })); 

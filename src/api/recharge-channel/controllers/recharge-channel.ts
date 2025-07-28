@@ -115,12 +115,14 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters.status = status;
       }
 
-      const orders = await strapi.entityService.findPage('api::recharge-order.recharge-order', {
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
+      const { results: orders, pagination } = await strapi.entityService.findMany('api::recharge-order.recharge-order', {
         filters,
         populate: ['channel'],
-        sort: { createdAt: 'desc' }
+        sort: { createdAt: 'desc' },
+        pagination: {
+          page: parseInt(page),
+          pageSize: parseInt(pageSize)
+        }
       });
 
       ctx.body = {
@@ -145,12 +147,14 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         filters.status = status;
       }
 
-      const orders = await strapi.entityService.findPage('api::withdrawal-order.withdrawal-order', {
-        page: parseInt(page),
-        pageSize: parseInt(pageSize),
+      const { results: orders, pagination } = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order', {
         filters,
         populate: ['channel'],
-        sort: { createdAt: 'desc' }
+        sort: { createdAt: 'desc' },
+        pagination: {
+          page: parseInt(page),
+          pageSize: parseInt(pageSize)
+        }
       });
 
       ctx.body = {
@@ -284,11 +288,12 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         }
       });
 
-      const totalAmount = orders.reduce((sum, order) => {
+      const orderList = Array.isArray(orders) ? orders : [orders];
+      const totalAmount = orderList.reduce((sum, order) => {
         return sum + new Decimal(order.amount).toNumber();
       }, 0);
 
-      const totalCount = orders.length;
+      const totalCount = orderList.length;
 
       ctx.body = {
         success: true,
@@ -322,11 +327,12 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         }
       });
 
-      const totalAmount = orders.reduce((sum, order) => {
+      const orderList = Array.isArray(orders) ? orders : [orders];
+      const totalAmount = orderList.reduce((sum, order) => {
         return sum + new Decimal(order.amount).toNumber();
       }, 0);
 
-      const totalCount = orders.length;
+      const totalCount = orderList.length;
 
       ctx.body = {
         success: true,

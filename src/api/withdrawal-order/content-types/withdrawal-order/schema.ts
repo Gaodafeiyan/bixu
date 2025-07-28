@@ -1,5 +1,3 @@
-import { factories } from '@strapi/strapi';
-
 const WithdrawalOrderSchema = {
   kind: 'collectionType',
   pluginOptions: { 'content-api': { enabled: true } },
