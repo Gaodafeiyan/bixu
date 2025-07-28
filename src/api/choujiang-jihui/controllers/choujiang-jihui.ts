@@ -142,11 +142,16 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         // 处理查询参数，将"me"替换为当前用户ID
         const query = { ...ctx.query };
         
+        console.log('抽奖机会查询参数:', JSON.stringify(query, null, 2));
+        console.log('当前用户状态:', ctx.state.user ? `ID: ${ctx.state.user.id}, 用户名: ${ctx.state.user.username}` : '未登录');
+        
         // 检查是否有filters[user][id]=me的情况
         if (query.filters && query.filters.user && query.filters.user.id === 'me') {
           if (ctx.state.user && ctx.state.user.id) {
             query.filters.user.id = ctx.state.user.id;
+            console.log('将"me"替换为用户ID:', ctx.state.user.id);
           } else {
+            console.log('用户未登录，返回401');
             return ctx.unauthorized('用户未登录');
           }
         }
@@ -155,6 +160,8 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
           ...query,
           populate: ['user', 'jiangpin']
         });
+        
+        console.log('查询结果:', JSON.stringify(result, null, 2));
         return result;
       } catch (error) {
         console.error('获取抽奖机会列表失败:', error);

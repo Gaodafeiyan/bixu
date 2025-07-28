@@ -279,30 +279,52 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       }
 
       // 处理抽奖机会 - 实际赠送抽奖次数
-      const lotteryChances = planData.lottery_chances || 3; // 默认赠送3次
+      const lotteryChances = planData.lottery_chances || 3;
       if (lotteryChances > 0) {
         try {
-                     // 直接创建抽奖机会记录
-           const chanceData = {
-             user: userId,
-             jiangpin: 1, // 临时绑定一个奖品ID，抽奖时会重新选择
-             count: lotteryChances,
-             usedCount: 0,
-             reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
-             type: 'investment_redeem' as const,
-             isActive: true,
-             validUntil: null,
-             sourceOrder: orderId
-           };
-
-          const chance = await strapi.entityService.create('api::choujiang-jihui.choujiang-jihui', {
-            data: chanceData
-          });
+          // 获取一个可用的奖品作为默认绑定（用于满足数据库约束）
+          const availablePrizes = await strapi.entityService.findMany('api::choujiang-jiangpin.choujiang-jiangpin', {
+            filters: { kaiQi: true },
+            limit: 1
+          }) as any[];
           
-          console.log(`用户 ${userId} 获得 ${lotteryChances} 次抽奖机会，记录ID: ${chance.id}`);
+          let defaultPrizeId = null;
+          if (availablePrizes && availablePrizes.length > 0) {
+            defaultPrizeId = availablePrizes[0].id;
+          } else {
+            console.error('没有可用的奖品，无法创建抽奖机会');
+            // 继续执行，不因为抽奖机会创建失败而影响赎回流程
+          }
+          
+          if (defaultPrizeId) {
+            // 创建抽奖机会记录
+            const chanceData = {
+              user: userId,
+              jiangpin: defaultPrizeId, // 绑定一个可用的奖品ID
+              count: lotteryChances,
+              usedCount: 0,
+              reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
+              type: 'investment_redeem' as const,
+              isActive: true,
+              validUntil: null,
+              sourceOrder: orderId
+            };
+
+            const chance = await strapi.entityService.create('api::choujiang-jihui.choujiang-jihui', {
+              data: chanceData
+            });
+            
+            console.log(`用户 ${userId} 获得 ${lotteryChances} 次抽奖机会，记录ID: ${chance.id}`);
+          }
         } catch (error) {
           console.error('赠送抽奖机会失败:', error);
-          // 抽奖机会赠送失败不影响主流程
+          // 抽奖机会赠送失败不影响主流程，但记录详细错误信息
+          console.error('抽奖机会创建失败详情:', {
+            userId,
+            lotteryChances,
+            planData: planData.jihuaCode || planData.name,
+            error: error.message
+          });
         }
       }
 
