@@ -8,26 +8,29 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       // 获取所有可用的奖品
       const availablePrizes = await strapi.entityService.findMany('api::choujiang-jiangpin.choujiang-jiangpin' as any, {
         filters: {
-          kaiQi: true,
-          $or: [
-            { maxQuantity: 0 }, // 无限制数量
-            { currentQuantity: { $lt: { $ref: 'maxQuantity' } } } // 当前数量小于最大数量
-          ]
+          kaiQi: true
         },
         sort: { paiXuShunXu: 'asc' }
       }) as any[];
 
-      if (availablePrizes.length === 0) {
+      // 手动过滤库存
+      const filteredPrizes = availablePrizes.filter(prize => {
+        const maxQty = prize.maxQuantity || 0;
+        const currentQty = prize.currentQuantity || 0;
+        return maxQty === 0 || currentQty < maxQty; // 无限制或库存充足
+      });
+
+      if (filteredPrizes.length === 0) {
         throw new Error('暂无可用的抽奖奖品');
       }
 
-      console.log(`可用奖品数量: ${availablePrizes.length}`);
-      availablePrizes.forEach(prize => {
+      console.log(`可用奖品数量: ${filteredPrizes.length}`);
+      filteredPrizes.forEach(prize => {
         console.log(`奖品: ${prize.name}, 概率: ${prize.zhongJiangLv}%, 库存: ${prize.currentQuantity || 0}/${prize.maxQuantity || '无限制'}`);
       });
 
       // 计算总概率
-      const totalProbability = availablePrizes.reduce((sum, prize) => {
+      const totalProbability = filteredPrizes.reduce((sum, prize) => {
         return sum + new Decimal(prize.zhongJiangLv || 0).toNumber();
       }, 0);
 
@@ -39,7 +42,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
 
       // 根据概率选择奖品
       let cumulativeProbability = 0;
-      for (const prize of availablePrizes) {
+      for (const prize of filteredPrizes) {
         const prizeProbability = new Decimal(prize.zhongJiangLv || 0).toNumber();
         cumulativeProbability += prizeProbability;
         
@@ -50,7 +53,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       }
 
       // 保底机制：如果没有选中任何奖品，返回概率最高的奖品
-      const highestProbabilityPrize = availablePrizes.reduce((highest, current) => {
+      const highestProbabilityPrize = filteredPrizes.reduce((highest, current) => {
         const currentProb = new Decimal(current.zhongJiangLv || 0).toNumber();
         const highestProb = new Decimal(highest.zhongJiangLv || 0).toNumber();
         return currentProb > highestProb ? current : highest;
