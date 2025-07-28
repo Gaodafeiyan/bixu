@@ -556,7 +556,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
   // 测试区块链服务
   async testBlockchainService(ctx) {
     try {
-      const blockchainService = strapi.service('api::blockchain-service.blockchain-service');
+      const blockchainService = strapi.service('blockchain-service');
       
       // 初始化服务
       const initialized = await blockchainService.initialize();
