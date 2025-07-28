@@ -2,6 +2,75 @@ import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
 
 export default factories.createCoreController('api::recharge-channel.recharge-channel' as any, ({ strapi }) => ({
+  // 重写默认的find方法
+  async find(ctx) {
+    try {
+      const result = await strapi.entityService.findPage('api::recharge-channel.recharge-channel' as any, {
+        ...ctx.query,
+        populate: []
+      });
+      return result;
+    } catch (error) {
+      console.error('获取充值通道列表失败:', error);
+      ctx.throw(500, `获取充值通道列表失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的findOne方法
+  async findOne(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.entityService.findOne('api::recharge-channel.recharge-channel' as any, id, {
+        populate: []
+      });
+      return result;
+    } catch (error) {
+      console.error('获取充值通道详情失败:', error);
+      ctx.throw(500, `获取充值通道详情失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的create方法
+  async create(ctx) {
+    try {
+      const { data } = ctx.request.body;
+      const result = await strapi.entityService.create('api::recharge-channel.recharge-channel' as any, {
+        data
+      });
+      return result;
+    } catch (error) {
+      console.error('创建充值通道失败:', error);
+      ctx.throw(500, `创建充值通道失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的update方法
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      const result = await strapi.entityService.update('api::recharge-channel.recharge-channel' as any, id, {
+        data
+      });
+      return result;
+    } catch (error) {
+      console.error('更新充值通道失败:', error);
+      ctx.throw(500, `更新充值通道失败: ${error.message}`);
+    }
+  },
+
+  // 添加默认的delete方法
+  async delete(ctx) {
+    try {
+      const { id } = ctx.params;
+      const result = await strapi.entityService.delete('api::recharge-channel.recharge-channel' as any, id);
+      return result;
+    } catch (error) {
+      console.error('删除充值通道失败:', error);
+      ctx.throw(500, `删除充值通道失败: ${error.message}`);
+    }
+  },
+
   // 获取可用的充值通道
   async getAvailableChannels(ctx) {
     try {
