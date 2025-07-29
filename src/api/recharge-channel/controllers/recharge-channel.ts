@@ -504,6 +504,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
   async simpleWithdrawal(ctx) {
     try {
       const { amount, address } = ctx.request.body;
+      const userId = ctx.state.user.id; // 获取当前登录用户ID
 
       if (!amount || !address) {
         return ctx.badRequest('缺少必要参数');
@@ -521,7 +522,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
 
       // 验证用户余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-        filters: { user: { id: 33 } }
+        filters: { user: { id: userId } }
       });
 
       const wallet = wallets[0];
@@ -558,7 +559,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           amount: amount,
           currency: "USDT",
           status: 'pending',
-          user: 33,
+          user: userId,
           withdrawAddress: address,
           withdrawNetwork: "BSC",
           fee: fee.toString(),
