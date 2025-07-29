@@ -9,4 +9,5 @@ export default [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
+  'plugin::users-permissions.users-permissions', // 添加用户权限中间件
 ];
