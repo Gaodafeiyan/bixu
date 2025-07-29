@@ -442,7 +442,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       }
 
       // 选择第一个可用的通道
-      const selectedChannel = channels[0];
+      const selectedChannel = channels[0] as any;
       
       // 验证金额是否在通道限制范围内
       const amountNum = Number(amount);
