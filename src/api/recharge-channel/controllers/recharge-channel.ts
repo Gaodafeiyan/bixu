@@ -428,8 +428,37 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         return ctx.badRequest('充值金额必须是大于0的数字');
       }
 
-      // 使用固定的BSC钱包地址
-      const bscWalletAddress = "0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6";
+      // 获取可用的充值通道
+      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        filters: {
+          status: 'active',
+          channelType: { $in: ['recharge', 'both'] }
+        },
+        fields: ['id', 'name', 'walletAddress', 'network', 'asset', 'minAmount', 'maxAmount']
+      });
+
+      if (!channels || channels.length === 0) {
+        return ctx.badRequest('没有可用的充值通道');
+      }
+
+      // 选择第一个可用的通道
+      const selectedChannel = channels[0];
+      
+      // 验证金额是否在通道限制范围内
+      const amountNum = Number(amount);
+      if (selectedChannel.minAmount && amountNum < selectedChannel.minAmount) {
+        return ctx.badRequest(`充值金额不能少于 ${selectedChannel.minAmount} ${selectedChannel.asset}`);
+      }
+      if (selectedChannel.maxAmount && amountNum > selectedChannel.maxAmount) {
+        return ctx.badRequest(`充值金额不能超过 ${selectedChannel.maxAmount} ${selectedChannel.asset}`);
+      }
+
+      // 使用通道配置的钱包地址
+      const receiveAddress = selectedChannel.walletAddress;
+      
+      if (!receiveAddress) {
+        return ctx.badRequest('充值通道未配置钱包地址');
+      }
       
       // 生成订单号
       const orderNo = `RC${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
@@ -439,13 +468,14 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         data: {
           orderNo,
           amount: amount,
-          currency: "USDT",
+          currency: selectedChannel.asset || "USDT",
           status: 'pending',
           user: 33, // 使用测试用户ID
-          receiveAddress: bscWalletAddress,
+          receiveAddress: receiveAddress,
           expectedTime: new Date(Date.now() + 30 * 60 * 1000), // 30分钟后过期
           fee: 0,
           actualAmount: amount,
+          channel: selectedChannel.id,
         }
       });
 
@@ -454,9 +484,11 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         data: {
           orderNo: rechargeOrder.orderNo,
           amount: rechargeOrder.amount,
-          receiveAddress: bscWalletAddress,
+          receiveAddress: receiveAddress,
           expectedTime: rechargeOrder.expectedTime,
           status: rechargeOrder.status,
+          channelName: selectedChannel.name,
+          network: selectedChannel.network,
           message: "请向以下地址转账USDT，到账后自动放行"
         },
         message: '充值订单创建成功'
