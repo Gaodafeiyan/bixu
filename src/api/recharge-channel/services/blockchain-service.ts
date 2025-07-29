@@ -322,7 +322,8 @@ export default ({ strapi }) => {
           filters: {
             status: 'pending',
             receiveAddress: walletAddress
-          }
+          },
+          populate: ['user'] // 包含user关系
         });
 
         for (const order of orders) {
