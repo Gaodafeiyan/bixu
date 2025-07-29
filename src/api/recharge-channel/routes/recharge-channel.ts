@@ -121,25 +121,29 @@ export default {
       },
     },
 
-    // 简化的充值接口 - 不需要认证
+    // 简化的充值接口 - 需要认证
     {
       method: 'POST',
       path: '/recharge-channels/simple-recharge',
       handler: 'recharge-channel.simpleRecharge',
       config: {
-        auth: false,
+        auth: {
+          scope: ['authenticated'],
+        },
         policies: [],
         middlewares: [],
       },
     },
 
-    // 简化的提现接口 - 不需要认证
+    // 简化的提现接口 - 需要认证
     {
       method: 'POST',
       path: '/recharge-channels/simple-withdrawal',
       handler: 'recharge-channel.simpleWithdrawal',
       config: {
-        auth: false,
+        auth: {
+          scope: ['authenticated'],
+        },
         policies: [],
         middlewares: [],
       },
