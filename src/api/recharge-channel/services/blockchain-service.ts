@@ -86,29 +86,26 @@ export default ({ strapi }) => {
     ): Promise<any[]> {
       const { fromBlock, toBlock } = params;
 
+      let logs: any[];
       try {
-        const logs = await web3.eth.getPastLogs(params);
-        if (logs.length <= logLimit) return logs;
-
-        // 数量超阈值，继续二分
-        if (fromBlock === toBlock) {
-          console.error(`❌ block ${fromBlock} 日志 ${logs.length} 条 > ${logLimit}，记录告警后跳过`);
-          await this.recordSkippedBlock(fromBlock, toBlock, `单区块日志条数超限: ${logs.length} > ${logLimit}`);
-          return [];
-        }
+        logs = await web3.eth.getPastLogs(params);
       } catch (err: any) {
-        // -32005 或其它 RPC 限流错误
-        if (err?.code !== -32005) throw err;
-        // 直接进入二分
+        // 只有这里才会捕到 -32005
+        if (err?.code !== -32005) throw err;          // 其它异常直接抛给外层
+        logs = null as any;                           // 标记需要递归
+        console.warn(`⚠️  RPC limit (-32005) from ${fromBlock} to ${toBlock}`);
       }
 
-      // 递归二分
+      // ① RPC 成功且条数在阈值内 —— 返回
+      if (logs && logs.length <= logLimit) return logs;
+
+      // ② RPC 成功但条数超阈值，或 RPC 直接报 -32005 —— 进入二分
       if (fromBlock === toBlock) {
-        console.error(`❌ block ${fromBlock} 单区块仍 -32005，记录告警后跳过`);
-        await this.recordSkippedBlock(fromBlock, toBlock, `单区块RPC超限: -32005`);
-        return [];
+        console.error(`❌ 单区块 ${fromBlock} 仍超限，记录告警后跳过`);
+        await this.recordSkippedBlock(fromBlock, toBlock, `单区块仍超限: -32005`);
+        return [];                                    // 不再抛异常
       }
-      
+
       const mid = Math.floor((fromBlock + toBlock) / 2);
       const left = await this.getLogsPaged({ ...params, fromBlock, toBlock: mid }, logLimit);
       const right = await this.getLogsPaged({ ...params, fromBlock: mid + 1, toBlock }, logLimit);
