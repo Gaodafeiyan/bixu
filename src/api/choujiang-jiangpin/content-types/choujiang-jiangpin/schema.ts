@@ -97,4 +97,4 @@ export default {
       default: 0,
     },
   },
-} as const; 
+} as const;

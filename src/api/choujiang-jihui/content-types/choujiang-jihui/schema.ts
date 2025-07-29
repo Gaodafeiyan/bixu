@@ -67,4 +67,4 @@ export default {
       required: false,
     },
   },
-} as const; 
+} as const;
