@@ -39,7 +39,7 @@ export default ({ strapi }) => {
         web3 = new Web3('https://bsc-dataseed.binance.org/');
         
         // 设置钱包地址和私钥（从环境变量获取）
-        walletAddress = process.env.BSC_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6';
+        walletAddress = process.env.BSC_WALLET_ADDRESS || '0xe3353f75d68f9096aC4A49b4968e56b5DFbd2697';
         privateKey = process.env.BSC_PRIVATE_KEY || '';
         
         if (!privateKey) {
@@ -88,7 +88,9 @@ export default ({ strapi }) => {
 
         // 获取最新区块
         const latestBlock = await web3.eth.getBlockNumber();
-        const fromBlock = Number(latestBlock) - 10; // 转换为number类型
+        const fromBlock = Number(latestBlock) - 50; // 检查最近50个区块，确保不遗漏
+
+        console.log(`📊 检查区块范围: ${fromBlock} - ${latestBlock}`);
 
         // 获取钱包的交易
         const transactions = await web3.eth.getPastLogs({
@@ -97,6 +99,7 @@ export default ({ strapi }) => {
           toBlock: 'latest',
           topics: [
             '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // Transfer事件
+            null,
             null,
             '0x000000000000000000000000' + walletAddress.slice(2) // 到我们钱包的转账
           ]
