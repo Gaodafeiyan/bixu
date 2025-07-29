@@ -1,21 +1,21 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreController('api::notice.notice', ({ strapi }) => ({
+export default factories.createCoreController('api::notice.notice' as any, ({ strapi }) => ({
   // 获取活跃的公告列表
   async findActive(ctx) {
     try {
-      const { data, meta } = await strapi.entityService.findMany('api::notice.notice', {
+      const notices = await strapi.entityService.findMany('api::notice.notice' as any, {
         filters: {
           isActive: true,
           publishedAt: { $notNull: true }
         },
         sort: { priority: 'desc', createdAt: 'desc' },
         populate: '*'
-      });
+      }) as any[];
 
       ctx.body = {
         success: true,
-        data: data
+        data: notices
       };
     } catch (error) {
       ctx.body = {
@@ -29,7 +29,7 @@ export default factories.createCoreController('api::notice.notice', ({ strapi })
   async findOne(ctx) {
     try {
       const { id } = ctx.params;
-      const entity = await strapi.entityService.findOne('api::notice.notice', id, {
+      const entity = await strapi.entityService.findOne('api::notice.notice' as any, id, {
         populate: '*'
       });
 
