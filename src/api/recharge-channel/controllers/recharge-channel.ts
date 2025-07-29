@@ -437,7 +437,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         fields: ['id', 'name', 'walletAddress', 'network', 'asset', 'minAmount', 'maxAmount']
       });
 
-      if (!channels || channels.length === 0) {
+      if (!channels || !Array.isArray(channels) || channels.length === 0) {
         return ctx.badRequest('没有可用的充值通道');
       }
 
