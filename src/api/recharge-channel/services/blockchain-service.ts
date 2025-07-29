@@ -109,9 +109,9 @@ export default ({ strapi }) => {
         console.log(`📊 发现 ${transactions.length} 笔USDT转账交易`);
 
         // 过滤出到我们钱包的交易
-        const incomingTransactions = transactions.filter(tx => {
+        const incomingTransactions = transactions.filter((tx: any) => {
           // 检查第三个topic（to地址）
-          if (tx.topics.length >= 3) {
+          if (tx.topics && tx.topics.length >= 3) {
             const toAddress = '0x' + tx.topics[2].slice(26); // 移除前导零
             return toAddress.toLowerCase() === walletAddress.toLowerCase();
           }
