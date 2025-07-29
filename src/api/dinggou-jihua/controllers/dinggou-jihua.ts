@@ -279,7 +279,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       }
 
       // 处理抽奖机会 - 实际赠送抽奖次数
-      const lotteryChances = planData.lottery_chances || 3;
+      const lotteryChances = planData.lottery_chances || 0; // 改为默认0，只有明确配置了才赠送
       if (lotteryChances > 0) {
         try {
           // 获取一个可用的奖品作为默认绑定（用于满足数据库约束）
@@ -326,6 +326,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
             error: error.message
           });
         }
+      } else {
+        console.log(`计划 ${planData.jihuaCode || planData.name} 未配置抽奖机会 (lottery_chances: ${planData.lottery_chances})`);
       }
 
       // 更新订单状态
