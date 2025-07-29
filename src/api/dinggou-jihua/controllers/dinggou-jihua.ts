@@ -299,20 +299,20 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           if (defaultPrizeId) {
             // 创建抽奖机会记录
             const chanceData = {
-              user: userId,
-              jiangpin: defaultPrizeId, // 绑定一个可用的奖品ID
-              count: lotteryChances,
-              usedCount: 0,
-              reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
-              type: 'investment_redeem' as const,
-              isActive: true,
-              validUntil: null,
-              sourceOrder: orderId
+              data: {
+                user: userId,
+                jiangpin: defaultPrizeId, // 绑定一个可用的奖品ID
+                count: lotteryChances,
+                usedCount: 0,
+                reason: `投资赎回奖励 - 计划: ${planData.jihuaCode || planData.name}`,
+                type: 'investment_redeem' as const,
+                isActive: true,
+                validUntil: null,
+                sourceOrder: orderId
+              }
             };
 
-            const chance = await strapi.entityService.create('api::choujiang-jihui.choujiang-jihui', {
-              data: chanceData
-            });
+            const chance = await strapi.entityService.create('api::choujiang-jihui.choujiang-jihui', chanceData);
             
             console.log(`用户 ${userId} 获得 ${lotteryChances} 次抽奖机会，记录ID: ${chance.id}`);
           }
