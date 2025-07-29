@@ -102,10 +102,10 @@ export default ({ strapi }) => {
         }
 
         // 获取最新区块
-        const latestBlock = await web3.eth.getBlockNumber();
+        const latestBlock = Number(await web3.eth.getBlockNumber());
         
         // 从数据库获取上次检查的区块号，如果没有则从最近100个区块开始
-        let lastCheckedBlock = latestBlock - 100;
+        let lastCheckedBlock = Math.max(latestBlock - 100, 0);
         
         // 尝试从数据库获取上次检查的区块号
         try {
@@ -113,7 +113,7 @@ export default ({ strapi }) => {
             filters: { key: 'last_checked_block' }
           });
           if (config && config.length > 0) {
-            lastCheckedBlock = parseInt(config[0].value) || lastCheckedBlock;
+            lastCheckedBlock = Math.max(parseInt(config[0].value) || lastCheckedBlock, 0);
           }
         } catch (error) {
           console.log('⚠️ 无法获取上次检查的区块号，使用默认值');
