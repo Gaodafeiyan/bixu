@@ -78,35 +78,39 @@ export default ({ strapi }) => {
     },
 
     // 分页查询日志，避免日志条数超限
-    async getLogsPaged(params: any, logLimit = 9500): Promise<any[]> {
-      const { fromBlock, toBlock, ...rest } = params;
-      
+    async getLogsPaged(
+      params: { address: string; topics: (string|null)[]; fromBlock: number; toBlock: number },
+      logLimit = 9500
+    ): Promise<any[]> {
+      const { fromBlock, toBlock } = params;
+
       try {
-        const logs = await web3.eth.getPastLogs({ fromBlock, toBlock, ...rest });
-        
-        if (logs.length <= logLimit) {
-          return logs;
-        }
+        const logs = await web3.eth.getPastLogs(params);
+        if (logs.length <= logLimit) return logs;
 
-        console.log(`⚠️ 区块 ${fromBlock}-${toBlock} 返回 ${logs.length} 条日志，超过限制 ${logLimit}，开始递归拆分`);
-
-        // 单区块仍超限 → 记录告警后跳过
+        // 数量超阈值，继续二分
         if (fromBlock === toBlock) {
-          console.error(`❌ 区块 ${fromBlock} 单区块也 > ${logLimit} 条日志，记录告警后跳过`);
+          console.error(`❌ block ${fromBlock} 日志 ${logs.length} 条 > ${logLimit}，记录告警后跳过`);
           await this.recordSkippedBlock(fromBlock, toBlock, `单区块日志条数超限: ${logs.length} > ${logLimit}`);
           return [];
         }
-
-        // 拆半递归，直到满足日志数量限制
-        const mid = Math.floor((fromBlock + toBlock) / 2);
-        const left = await this.getLogsPaged({ ...rest, fromBlock, toBlock: mid }, logLimit);
-        const right = await this.getLogsPaged({ ...rest, fromBlock: mid + 1, toBlock }, logLimit);
-        
-        return [...left, ...right];
-      } catch (error) {
-        console.error(`❌ 分页查询区块 ${fromBlock}-${toBlock} 失败:`, error.message);
-        throw error;
+      } catch (err: any) {
+        // -32005 或其它 RPC 限流错误
+        if (err?.code !== -32005) throw err;
+        // 直接进入二分
       }
+
+      // 递归二分
+      if (fromBlock === toBlock) {
+        console.error(`❌ block ${fromBlock} 单区块仍 -32005，记录告警后跳过`);
+        await this.recordSkippedBlock(fromBlock, toBlock, `单区块RPC超限: -32005`);
+        return [];
+      }
+      
+      const mid = Math.floor((fromBlock + toBlock) / 2);
+      const left = await this.getLogsPaged({ ...params, fromBlock, toBlock: mid }, logLimit);
+      const right = await this.getLogsPaged({ ...params, fromBlock: mid + 1, toBlock }, logLimit);
+      return [...left, ...right];
     },
 
     // 监控钱包交易
@@ -155,40 +159,45 @@ export default ({ strapi }) => {
 
         // 构建精确的topics过滤
         const TRANSFER_TOPIC = web3.utils.sha3('Transfer(address,address,uint256)')!;
-        const addr32 = (addr: string) => '0x' + addr.toLowerCase().slice(2).padStart(64, '0');
-        const toTopic = addr32(walletAddress); // 充值：to = 我方钱包
+        
+        function addrTopic(address: string) {
+          // 32-byte, 左填 0
+          return '0x' + address.toLowerCase().slice(2).padStart(64, '0');
+        }
+
+        const toTopic = addrTopic(walletAddress); // 充值：to = 我方钱包
 
         console.log(`🎯 使用精确过滤 - 钱包地址: ${walletAddress}`);
         console.log(`🎯 钱包Topic: ${toTopic}`);
+        console.log(`🎯 Transfer Topic: ${TRANSFER_TOPIC}`);
 
-        // 自适应步长查询
-        const INITIAL_STEP = 50;
-        const MIN_STEP = 1;
-        const MAX_STEP = 200;
+        // 基础查询参数
+        const baseParams = {
+          address: USDT_CONTRACT_ADDRESS,
+          topics: [TRANSFER_TOPIC, null, toTopic], // topics[2] = to
+        };
+
+        // 指数退避扫描循环
+        const INITIAL_STEP = 100;
+        const MAX_STEP = 500;
         
-        let fromBlock = lastCheckedBlock;
         let step = INITIAL_STEP;
+        let cursor = lastCheckedBlock;
         let processedCount = 0;
 
-        while (fromBlock < latestBlock) {
-          const toBlock = Math.min(fromBlock + step - 1, latestBlock);
-          
+        while (cursor <= latestBlock) {
+          const end = Math.min(cursor + step - 1, latestBlock);
+
           try {
-            console.log(`🔍 查询区块 ${fromBlock} - ${toBlock} (步长: ${step})`);
+            console.log(`🔍 查询区块 ${cursor} - ${end} (步长: ${step})`);
             
-            // 使用精确的topics过滤，只查询到我们钱包的转账
-            const logs = await this.getLogsPaged({
-              address: USDT_CONTRACT_ADDRESS,
-              fromBlock: fromBlock,
-              toBlock: toBlock,
-              topics: [
-                TRANSFER_TOPIC, // Transfer事件
-                null, // from地址（任意）
-                toTopic // to地址（我们的钱包）
-              ]
+            const logs = await this.getLogsPaged({ 
+              ...baseParams, 
+              fromBlock: cursor, 
+              toBlock: end 
             });
 
-            console.log(`📊 区块 ${fromBlock}-${toBlock} 发现 ${logs.length} 笔到账交易`);
+            console.log(`📊 区块 ${cursor}-${end} 发现 ${logs.length} 笔到账交易`);
 
             // 处理每笔到账交易
             for (const tx of logs) {
@@ -196,29 +205,18 @@ export default ({ strapi }) => {
               processedCount++;
             }
 
-            // 更新最后检查的区块号
-            await this.updateLastCheckedBlock(toBlock);
-            
-            // 成功后把窗口慢慢放大
+            // 成功 -> 光标前进，步长放大
+            cursor = end + 1;
             step = Math.min(step * 2, MAX_STEP);
-            fromBlock = toBlock + 1;
             
-          } catch (error) {
-            console.error(`❌ 查询区块 ${fromBlock}-${toBlock} 失败:`, error.message);
-            
-            // 如果是limit exceeded错误，减少步长重试
-            if (error.message.includes('limit exceeded') && step > MIN_STEP) {
-              step = Math.max(Math.floor(step / 2), MIN_STEP);
+          } catch (err: any) {
+            if (err?.code === -32005) {
+              step = Math.max(Math.floor(step / 2), 1); // 步长减半，但内部仍会再二分
               console.log(`⏳ 遇到limit exceeded，缩小步长到 ${step}，等待1秒后重试...`);
               await new Promise(resolve => setTimeout(resolve, 1000));
-              continue; // 重试当前区块段
             } else {
-              console.error(`❌ 连最小步长 ${MIN_STEP} 也超限，跳过区块 ${fromBlock}-${toBlock}`);
-              
-              // 记录跳过的区块到数据库，便于后续补扫
-              await this.recordSkippedBlock(fromBlock, toBlock, error.message);
-              
-              fromBlock = toBlock + 1;
+              console.error(`❌ 查询区块 ${cursor}-${end} 失败:`, err.message);
+              cursor = end + 1; // 跳过当前区块段
               step = INITIAL_STEP; // 重置步长
             }
           }
@@ -226,6 +224,9 @@ export default ({ strapi }) => {
           // 添加小延迟，避免请求过于频繁
           await new Promise(resolve => setTimeout(resolve, 100));
         }
+
+        // 最后把最新cursor写回DB
+        await this.updateLastCheckedBlock(cursor);
 
         console.log(`✅ 监控完成，处理了 ${processedCount} 笔交易`);
         return processedCount;
