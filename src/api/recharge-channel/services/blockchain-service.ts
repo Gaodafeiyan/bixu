@@ -35,8 +35,9 @@ export default ({ strapi }) => {
     // 初始化Web3连接
     async initialize() {
       try {
-        // 连接到BSC节点
-        web3 = new Web3('https://bsc-dataseed.binance.org/');
+        // 使用Ankr付费节点
+        const rpcUrl = process.env.BSC_RPC_URL || 'https://rpc.ankr.com/multichain/0cc28cc1d2308734e5535767191f325256d627fee791f33b30b8a9e9f53d02fb';
+        web3 = new Web3(rpcUrl);
         
         // 设置钱包地址和私钥（从环境变量获取）
         walletAddress = process.env.BSC_WALLET_ADDRESS || '0xe3353f75d68f9096aC4A49b4968e56b5DFbd2697';
@@ -51,6 +52,7 @@ export default ({ strapi }) => {
         
         console.log('✅ 区块链服务初始化成功');
         console.log(`📧 钱包地址: ${walletAddress}`);
+        console.log(`🌐 RPC节点: ${rpcUrl.includes('ankr') ? 'Ankr付费节点' : '公共节点'}`);
         
         return true;
       } catch (error) {
@@ -178,8 +180,12 @@ export default ({ strapi }) => {
         };
 
         // 指数退避扫描循环
-        const INITIAL_STEP = 100;
-        const MAX_STEP = 500;
+        const isPaidNode = process.env.BSC_RPC_URL && process.env.BSC_RPC_URL.includes('ankr');
+        const INITIAL_STEP = isPaidNode ? 200 : 50;  // Ankr节点可以用更大的步长
+        const MAX_STEP = isPaidNode ? 500 : 200;     // Ankr节点最大步长更大
+        const LOG_LIMIT = isPaidNode ? 45000 : 9500; // Ankr节点日志限制更高
+        
+        console.log(`⚙️ 查询配置 - 付费节点: ${isPaidNode ? '是' : '否'}, 初始步长: ${INITIAL_STEP}, 日志限制: ${LOG_LIMIT}`);
         
         let step = INITIAL_STEP;
         let cursor = lastCheckedBlock;
@@ -195,7 +201,7 @@ export default ({ strapi }) => {
               ...baseParams, 
               fromBlock: cursor, 
               toBlock: end 
-            });
+            }, LOG_LIMIT);
 
             console.log(`📊 区块 ${cursor}-${end} 发现 ${logs.length} 笔到账交易`);
 
