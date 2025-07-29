@@ -418,6 +418,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
   async simpleRecharge(ctx) {
     try {
       const { amount } = ctx.request.body;
+      const userId = ctx.state.user.id; // 获取当前登录用户ID
 
       if (!amount) {
         return ctx.badRequest('缺少充值金额');
@@ -470,7 +471,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           amount: amount,
           currency: selectedChannel.asset || "USDT",
           status: 'pending',
-          user: 33, // 使用测试用户ID
+          user: userId, // 使用当前登录用户ID
           receiveAddress: receiveAddress,
           expectedTime: new Date(Date.now() + 30 * 60 * 1000), // 30分钟后过期
           fee: 0,
