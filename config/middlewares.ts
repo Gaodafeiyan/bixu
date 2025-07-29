@@ -9,4 +9,5 @@ export default [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
+  'strapi::users-permissions', // 添加JWT认证中间件
 ];
