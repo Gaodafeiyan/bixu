@@ -88,8 +88,15 @@ export default ({ strapi }) => {
           return logs;
         }
 
-        console.log(`⚠️ 区块 ${fromBlock}-${toBlock} 返回 ${logs.length} 条日志，超过限制 ${logLimit}，开始分页查询`);
-        
+        console.log(`⚠️ 区块 ${fromBlock}-${toBlock} 返回 ${logs.length} 条日志，超过限制 ${logLimit}，开始递归拆分`);
+
+        // 单区块仍超限 → 记录告警后跳过
+        if (fromBlock === toBlock) {
+          console.error(`❌ 区块 ${fromBlock} 单区块也 > ${logLimit} 条日志，记录告警后跳过`);
+          await this.recordSkippedBlock(fromBlock, toBlock, `单区块日志条数超限: ${logs.length} > ${logLimit}`);
+          return [];
+        }
+
         // 拆半递归，直到满足日志数量限制
         const mid = Math.floor((fromBlock + toBlock) / 2);
         const left = await this.getLogsPaged({ ...rest, fromBlock, toBlock: mid }, logLimit);
@@ -146,6 +153,14 @@ export default ({ strapi }) => {
 
         console.log(`📊 检查区块范围: ${lastCheckedBlock} - ${latestBlock}`);
 
+        // 构建精确的topics过滤
+        const TRANSFER_TOPIC = web3.utils.sha3('Transfer(address,address,uint256)')!;
+        const addr32 = (addr: string) => '0x' + addr.toLowerCase().slice(2).padStart(64, '0');
+        const toTopic = addr32(walletAddress); // 充值：to = 我方钱包
+
+        console.log(`🎯 使用精确过滤 - 钱包地址: ${walletAddress}`);
+        console.log(`🎯 钱包Topic: ${toTopic}`);
+
         // 自适应步长查询
         const INITIAL_STEP = 50;
         const MIN_STEP = 1;
@@ -161,17 +176,15 @@ export default ({ strapi }) => {
           try {
             console.log(`🔍 查询区块 ${fromBlock} - ${toBlock} (步长: ${step})`);
             
-            // 构建精确的topics过滤，只查询到我们钱包的转账
-            const walletTopic = '0x' + '0'.repeat(24) + walletAddress.slice(2).toLowerCase();
-            
+            // 使用精确的topics过滤，只查询到我们钱包的转账
             const logs = await this.getLogsPaged({
               address: USDT_CONTRACT_ADDRESS,
               fromBlock: fromBlock,
               toBlock: toBlock,
               topics: [
-                '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // Transfer事件
+                TRANSFER_TOPIC, // Transfer事件
                 null, // from地址（任意）
-                walletTopic // to地址（我们的钱包）
+                toTopic // to地址（我们的钱包）
               ]
             });
 
