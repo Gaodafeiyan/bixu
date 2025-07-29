@@ -591,9 +591,9 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
   async aiTokenWithdrawal(ctx) {
     try {
       const userId = ctx.state.user.id;
-      const { tokenId, amount, address, network = 'BSC' } = ctx.request.body;
+      const { amount, address, network = 'BSC' } = ctx.request.body;
 
-      if (!tokenId || !amount || !address) {
+      if (!amount || !address) {
         return ctx.badRequest('缺少必要参数');
       }
 
@@ -607,9 +607,19 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         return ctx.badRequest('提现地址格式不正确');
       }
 
+      // 根据用户ID自动选择代币类型
+      const tokens = [
+        { tokenId: 1, symbol: 'FLOKI' }, // 用户ID % 3 = 0
+        { tokenId: 2, symbol: 'DOGE' },  // 用户ID % 3 = 1  
+        { tokenId: 3, symbol: 'BNB' },   // 用户ID % 3 = 2
+      ];
+      
+      const selectedToken = tokens[userId % tokens.length];
+      console.log(`用户 ${userId} 选择代币: ${selectedToken.symbol} (ID: ${selectedToken.tokenId})`);
+
       const withdrawalOrder = await strapi
         .service('api::recharge-channel.recharge-channel')
-        .createAiTokenWithdrawalOrder(userId, tokenId, amount, address, network);
+        .createAiTokenWithdrawalOrder(userId, selectedToken.tokenId, amount, address, network);
 
       ctx.body = {
         success: true,
@@ -619,7 +629,9 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           actualAmount: withdrawalOrder.actualAmount,
           fee: withdrawalOrder.fee,
           status: withdrawalOrder.status,
-          requestTime: withdrawalOrder.requestTime
+          requestTime: withdrawalOrder.requestTime,
+          tokenSymbol: selectedToken.symbol,
+          tokenId: selectedToken.tokenId
         },
         message: 'AI代币提现订单创建成功'
       };
