@@ -339,7 +339,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
                 type: 'investment_redeem' as const,
                 isActive: true,
                 validUntil: null,
-                sourceOrder: orderId
+                // 暂时移除sourceOrder字段，避免SQLite错误
+                // sourceOrder: orderId
               }
             };
 

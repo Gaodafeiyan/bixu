@@ -60,11 +60,13 @@ export default {
       required: true,
       default: true,
     },
-    sourceOrder: {
-      type: 'relation',
-      relation: 'manyToOne',
-      target: 'api::dinggou-dingdan.dinggou-dingdan',
-      required: false,
-    },
+    // 暂时注释掉sourceOrder字段，避免SQLite错误
+    // sourceOrder: {
+    //   type: 'relation',
+    //   relation: 'manyToOne',
+    //   target: 'api::dinggou-dingdan.dinggou-dingdan',
+    //   required: false,
+    //   configurable: false,
+    // },
   },
 } as const;
