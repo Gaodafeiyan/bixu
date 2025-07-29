@@ -157,6 +157,19 @@ export default {
       },
     },
 
+    // AI代币提现接口 - 需要认证
+    {
+      method: 'POST',
+      path: '/recharge-channels/ai-token-withdrawal',
+      handler: 'recharge-channel.aiTokenWithdrawal',
+      config: {
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+        policies: [],
+        middlewares: [],
+      },
+    },
+
     // 测试区块链服务
     {
       method: 'GET',

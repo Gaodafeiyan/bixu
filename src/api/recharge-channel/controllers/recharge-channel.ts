@@ -587,6 +587,48 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
     }
   },
 
+  // AI代币提现接口
+  async aiTokenWithdrawal(ctx) {
+    try {
+      const userId = ctx.state.user.id;
+      const { tokenId, amount, address, network = 'BSC' } = ctx.request.body;
+
+      if (!tokenId || !amount || !address) {
+        return ctx.badRequest('缺少必要参数');
+      }
+
+      // 验证金额格式
+      if (isNaN(Number(amount)) || Number(amount) <= 0) {
+        return ctx.badRequest('提现金额必须是大于0的数字');
+      }
+
+      // 验证地址格式（简单验证）
+      if (address.length < 10) {
+        return ctx.badRequest('提现地址格式不正确');
+      }
+
+      const withdrawalOrder = await strapi
+        .service('api::recharge-channel.recharge-channel')
+        .createAiTokenWithdrawalOrder(userId, tokenId, amount, address, network);
+
+      ctx.body = {
+        success: true,
+        data: {
+          orderNo: withdrawalOrder.orderNo,
+          amount: withdrawalOrder.amount,
+          actualAmount: withdrawalOrder.actualAmount,
+          fee: withdrawalOrder.fee,
+          status: withdrawalOrder.status,
+          requestTime: withdrawalOrder.requestTime
+        },
+        message: 'AI代币提现订单创建成功'
+      };
+    } catch (error) {
+      console.error('创建AI代币提现订单失败:', error);
+      ctx.throw(500, `创建AI代币提现订单失败: ${error.message}`);
+    }
+  },
+
   // 测试区块链服务
   async testBlockchainService(ctx) {
     try {

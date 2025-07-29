@@ -21,8 +21,8 @@
       "required": true
     },
     "currency": {
-      "type": "enumeration",
-      "enum": ["USDT", "USDC", "BTC", "ETH"],
+      "type": "string",
+      "required": true,
       "default": "USDT"
     },
     "status": {

@@ -40,8 +40,8 @@
       "default": "BSC"
     },
     "asset": {
-      "type": "enumeration",
-      "enum": ["USDT", "USDC", "BTC", "ETH"],
+      "type": "string",
+      "required": true,
       "default": "USDT"
     },
     "minAmount": {

@@ -275,6 +275,102 @@ export default ({ strapi }) => ({
     }
   },
 
+  // 创建AI代币提现订单
+  async createAiTokenWithdrawalOrder(userId: number, tokenId: number, amount: string, address: string, network: string) {
+    try {
+      // 验证用户AI代币余额
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: { id: userId } }
+      });
+
+      const wallet = wallets[0];
+      if (!wallet) {
+        throw new Error('用户钱包不存在');
+      }
+
+      // 获取AI代币信息
+      const token = await strapi.entityService.findOne('api::ai-token.ai-token', tokenId);
+      if (!token) {
+        throw new Error('AI代币不存在');
+      }
+
+      // 检查用户AI代币余额
+      const currentBalances = JSON.parse(wallet.aiTokenBalances || '{}');
+      const currentBalance = new Decimal(currentBalances[tokenId] || '0');
+      const withdrawalAmount = new Decimal(amount);
+
+      if (currentBalance.lessThan(withdrawalAmount)) {
+        throw new Error(`AI代币余额不足，当前余额: ${currentBalance.toString()} ${token.symbol}`);
+      }
+
+      // 获取可用的提现通道
+      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        filters: {
+          status: 'active',
+          channelType: { $in: ['withdrawal', 'both'] },
+          network: network,
+          asset: token.symbol
+        }
+      });
+
+      const channelList = Array.isArray(channels) ? channels : [channels];
+      if (channelList.length === 0) {
+        throw new Error(`没有可用的${token.symbol}提现通道`);
+      }
+
+      const channel = channelList[0]; // 选择第一个可用通道
+
+      // 验证金额
+      const amountDecimal = new Decimal(amount);
+      const minAmount = new Decimal(channel.minAmount);
+      const maxAmount = new Decimal(channel.maxAmount);
+
+      if (amountDecimal.lessThan(minAmount) || amountDecimal.greaterThan(maxAmount)) {
+        throw new Error(`提现金额必须在 ${minAmount} - ${maxAmount} 之间`);
+      }
+
+      // 计算手续费
+      const feeRate = new Decimal(channel.feeRate);
+      const fixedFee = new Decimal(channel.fixedFee);
+      const fee = amountDecimal.mul(feeRate).add(fixedFee);
+      const actualAmount = amountDecimal.sub(fee);
+
+      // 立即扣除用户AI代币余额
+      const newBalance = currentBalance.sub(withdrawalAmount);
+      currentBalances[tokenId] = newBalance.toString();
+      
+      await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+        data: {
+          aiTokenBalances: JSON.stringify(currentBalances)
+        }
+      });
+
+      // 创建提现订单
+      const orderNo = generateOrderNo('withdrawal');
+      const withdrawalOrder = await strapi.entityService.create('api::withdrawal-order.withdrawal-order' as any, {
+        data: {
+          orderNo,
+          amount: amount,
+          currency: token.symbol,
+          status: 'pending',
+          user: userId,
+          channel: channel.id,
+          withdrawAddress: address,
+          withdrawNetwork: network,
+          requestTime: new Date(),
+          fee: fee.toString(),
+          actualAmount: actualAmount.toString(),
+        }
+      });
+
+      console.log(`创建AI代币提现订单: ${orderNo}, 用户: ${userId}, 代币: ${token.symbol}, 金额: ${amount}, 手续费: ${fee}`);
+      return withdrawalOrder;
+    } catch (error) {
+      console.error('创建AI代币提现订单失败:', error);
+      throw error;
+    }
+  },
+
   // 监控钱包交易
   async monitorWalletTransactions() {
     try {
