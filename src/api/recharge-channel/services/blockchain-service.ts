@@ -86,9 +86,24 @@ export default ({ strapi }) => {
 
         console.log('🔄 开始监控钱包交易...');
 
+        // 先获取待处理的充值订单
+        const pendingOrders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
+          filters: {
+            status: 'pending',
+            receiveAddress: walletAddress
+          }
+        });
+
+        console.log(`📊 发现 ${pendingOrders.length} 个待处理充值订单`);
+
+        if (pendingOrders.length === 0) {
+          console.log('✅ 无待处理充值订单');
+          return 0;
+        }
+
         // 获取最新区块
         const latestBlock = await web3.eth.getBlockNumber();
-        const fromBlock = Number(latestBlock) - 50; // 检查最近50个区块，确保不遗漏
+        const fromBlock = Number(latestBlock) - 20; // 检查最近20个区块
 
         console.log(`📊 检查区块范围: ${fromBlock} - ${latestBlock}`);
 
