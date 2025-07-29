@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "system_configs",
+  "info": {
+    "singularName": "system-config",
+    "pluralName": "system-configs",
+    "displayName": "System Config",
+    "description": "系统配置表"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "key": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "value": {
+      "type": "text",
+      "required": true
+    },
+    "description": {
+      "type": "string"
+    }
+  }
+}

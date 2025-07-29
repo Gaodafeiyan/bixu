@@ -103,47 +103,153 @@ export default ({ strapi }) => {
 
         // 获取最新区块
         const latestBlock = await web3.eth.getBlockNumber();
-        const fromBlock = Number(latestBlock) - 20; // 检查最近20个区块
-
-        console.log(`📊 检查区块范围: ${fromBlock} - ${latestBlock}`);
-
-        // 使用更简单的方法查询转账记录
-        const filter = {
-          address: USDT_CONTRACT_ADDRESS,
-          fromBlock: fromBlock,
-          toBlock: 'latest',
-          topics: [
-            '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
-          ]
-        };
-
-        console.log('🔍 查询条件:', JSON.stringify(filter, null, 2));
-
-        const transactions = await web3.eth.getPastLogs(filter);
-
-        console.log(`📊 发现 ${transactions.length} 笔USDT转账交易`);
-
-        // 过滤出到我们钱包的交易
-        const incomingTransactions = transactions.filter((tx: any) => {
-          // 检查第三个topic（to地址）
-          if (tx.topics && tx.topics.length >= 3) {
-            const toAddress = '0x' + tx.topics[2].slice(26); // 移除前导零
-            return toAddress.toLowerCase() === walletAddress.toLowerCase();
+        
+        // 从数据库获取上次检查的区块号，如果没有则从最近100个区块开始
+        let lastCheckedBlock = latestBlock - 100;
+        
+        // 尝试从数据库获取上次检查的区块号
+        try {
+          const config = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+            filters: { key: 'last_checked_block' }
+          });
+          if (config && config.length > 0) {
+            lastCheckedBlock = parseInt(config[0].value) || lastCheckedBlock;
           }
-          return false;
-        });
-
-        console.log(`📊 发现 ${incomingTransactions.length} 笔到账交易`);
-
-        // 处理每笔到账交易
-        for (const tx of incomingTransactions) {
-          await this.processIncomingTransaction(tx);
+        } catch (error) {
+          console.log('⚠️ 无法获取上次检查的区块号，使用默认值');
         }
 
-        return incomingTransactions.length;
+        console.log(`📊 检查区块范围: ${lastCheckedBlock} - ${latestBlock}`);
+
+        // 分段查询，每次查询100个区块
+        const STEP = 100;
+        let fromBlock = lastCheckedBlock;
+        let processedCount = 0;
+
+        while (fromBlock < latestBlock) {
+          const toBlock = Math.min(fromBlock + STEP, latestBlock);
+          
+          try {
+            console.log(`🔍 查询区块 ${fromBlock} - ${toBlock}`);
+            
+            const logs = await web3.eth.getPastLogs({
+              address: USDT_CONTRACT_ADDRESS,
+              fromBlock: fromBlock,
+              toBlock: toBlock,
+              topics: [
+                '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+              ]
+            });
+
+            console.log(`📊 区块 ${fromBlock}-${toBlock} 发现 ${logs.length} 笔USDT转账`);
+
+            // 过滤出到我们钱包的交易
+            const incomingTransactions = logs.filter((tx: any) => {
+              if (tx.topics && tx.topics.length >= 3) {
+                const toAddress = '0x' + tx.topics[2].slice(26);
+                return toAddress.toLowerCase() === walletAddress.toLowerCase();
+              }
+              return false;
+            });
+
+            if (incomingTransactions.length > 0) {
+              console.log(`💰 区块 ${fromBlock}-${toBlock} 发现 ${incomingTransactions.length} 笔到账交易`);
+              
+              // 处理每笔到账交易
+              for (const tx of incomingTransactions) {
+                await this.processIncomingTransaction(tx);
+                processedCount++;
+              }
+            }
+
+            // 更新最后检查的区块号
+            await this.updateLastCheckedBlock(toBlock);
+            
+          } catch (error) {
+            console.error(`❌ 查询区块 ${fromBlock}-${toBlock} 失败:`, error.message);
+            
+            // 如果是limit exceeded错误，等待后重试
+            if (error.message.includes('limit exceeded')) {
+              console.log('⏳ 遇到limit exceeded，等待2秒后重试...');
+              await new Promise(resolve => setTimeout(resolve, 2000));
+              
+              // 减少查询范围重试
+              const smallerStep = Math.floor(STEP / 2);
+              const retryToBlock = Math.min(fromBlock + smallerStep, latestBlock);
+              
+              try {
+                console.log(`🔄 重试查询区块 ${fromBlock} - ${retryToBlock}`);
+                const retryLogs = await web3.eth.getPastLogs({
+                  address: USDT_CONTRACT_ADDRESS,
+                  fromBlock: fromBlock,
+                  toBlock: retryToBlock,
+                  topics: [
+                    '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
+                  ]
+                });
+                
+                const retryIncoming = retryLogs.filter((tx: any) => {
+                  if (tx.topics && tx.topics.length >= 3) {
+                    const toAddress = '0x' + tx.topics[2].slice(26);
+                    return toAddress.toLowerCase() === walletAddress.toLowerCase();
+                  }
+                  return false;
+                });
+                
+                for (const tx of retryIncoming) {
+                  await this.processIncomingTransaction(tx);
+                  processedCount++;
+                }
+                
+                await this.updateLastCheckedBlock(retryToBlock);
+                fromBlock = retryToBlock + 1;
+                continue;
+              } catch (retryError) {
+                console.error(`❌ 重试失败，跳过区块 ${fromBlock}-${retryToBlock}`);
+                fromBlock = retryToBlock + 1;
+                continue;
+              }
+            }
+          }
+          
+          fromBlock = toBlock + 1;
+          
+          // 添加小延迟，避免请求过于频繁
+          await new Promise(resolve => setTimeout(resolve, 100));
+        }
+
+        console.log(`✅ 监控完成，处理了 ${processedCount} 笔交易`);
+        return processedCount;
+        
       } catch (error) {
         console.error('❌ 监控钱包交易失败:', error);
         return 0;
+      }
+    },
+
+    // 更新最后检查的区块号
+    async updateLastCheckedBlock(blockNumber: number) {
+      try {
+        // 查找或创建系统配置
+        const configs = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+          filters: { key: 'last_checked_block' }
+        });
+        
+        if (configs && configs.length > 0) {
+          await strapi.entityService.update('api::system-config.system-config' as any, configs[0].id, {
+            data: { value: blockNumber.toString() }
+          });
+        } else {
+          await strapi.entityService.create('api::system-config.system-config' as any, {
+            data: {
+              key: 'last_checked_block',
+              value: blockNumber.toString(),
+              description: '最后检查的区块号'
+            }
+          });
+        }
+      } catch (error) {
+        console.error('❌ 更新最后检查区块号失败:', error);
       }
     },
 
