@@ -44,6 +44,15 @@
       "required": true,
       "default": "USDT"
     },
+    "contractAddress": {
+      "type": "string",
+      "description": "代币合约地址，用于自动转账"
+    },
+    "decimals": {
+      "type": "integer",
+      "default": 18,
+      "description": "代币小数位数"
+    },
     "minAmount": {
       "type": "decimal",
       "default": "10.00"
