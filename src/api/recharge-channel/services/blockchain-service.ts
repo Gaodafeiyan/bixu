@@ -92,27 +92,40 @@ export default ({ strapi }) => {
 
         console.log(`📊 检查区块范围: ${fromBlock} - ${latestBlock}`);
 
-        // 获取钱包的交易
-        const transactions = await web3.eth.getPastLogs({
+        // 使用更简单的方法查询转账记录
+        const filter = {
           address: USDT_CONTRACT_ADDRESS,
           fromBlock: fromBlock,
           toBlock: 'latest',
           topics: [
-            '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef', // Transfer事件
-            null,
-            null,
-            '0x000000000000000000000000' + walletAddress.slice(2) // 到我们钱包的转账
+            '0xddf252ad1be2c89b69c2b068fc378daa952ba7f163c4a11628f55a4df523b3ef'
           ]
+        };
+
+        console.log('🔍 查询条件:', JSON.stringify(filter, null, 2));
+
+        const transactions = await web3.eth.getPastLogs(filter);
+
+        console.log(`📊 发现 ${transactions.length} 笔USDT转账交易`);
+
+        // 过滤出到我们钱包的交易
+        const incomingTransactions = transactions.filter(tx => {
+          // 检查第三个topic（to地址）
+          if (tx.topics.length >= 3) {
+            const toAddress = '0x' + tx.topics[2].slice(26); // 移除前导零
+            return toAddress.toLowerCase() === walletAddress.toLowerCase();
+          }
+          return false;
         });
 
-        console.log(`📊 发现 ${transactions.length} 笔到账交易`);
+        console.log(`📊 发现 ${incomingTransactions.length} 笔到账交易`);
 
-        // 处理每笔交易
-        for (const tx of transactions) {
+        // 处理每笔到账交易
+        for (const tx of incomingTransactions) {
           await this.processIncomingTransaction(tx);
         }
 
-        return transactions.length;
+        return incomingTransactions.length;
       } catch (error) {
         console.error('❌ 监控钱包交易失败:', error);
         return 0;
