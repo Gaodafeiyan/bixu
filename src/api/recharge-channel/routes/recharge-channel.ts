@@ -127,9 +127,7 @@ export default {
       path: '/recharge-channels/simple-recharge',
       handler: 'recharge-channel.simpleRecharge',
       config: {
-        auth: {
-          scope: ['authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
         policies: [],
         middlewares: [],
       },
@@ -141,9 +139,7 @@ export default {
       path: '/recharge-channels/simple-withdrawal',
       handler: 'recharge-channel.simpleWithdrawal',
       config: {
-        auth: {
-          scope: ['authenticated'],
-        },
+        auth: {},  // 空对象表示需要登录
         policies: [],
         middlewares: [],
       },
