@@ -35,7 +35,6 @@ export default {
       type: 'relation',
       relation: 'oneToOne',
       target: 'plugin::users-permissions.user',
-      inversedBy: 'qianbaoYue',
     },
   },
 } as const;
