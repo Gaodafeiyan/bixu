@@ -348,6 +348,13 @@ export default ({ strapi }) => {
         }
 
         console.log(`✅ 匹配充值订单: ${order.orderNo}, 金额: ${amount} USDT`);
+        console.log(`🔍 订单对象:`, JSON.stringify(order, null, 2));
+
+        // 验证订单对象
+        if (!order || !order.id) {
+          console.error('❌ 订单对象无效，缺少id字段');
+          return;
+        }
 
         // 更新订单状态
         await strapi.entityService.update('api::recharge-order.recharge-order' as any, order.id, {
@@ -378,6 +385,8 @@ export default ({ strapi }) => {
           });
 
           console.log(`✅ 用户 ${order.user.id} 余额更新: ${currentBalance} → ${newBalance} USDT`);
+        } else {
+          console.warn(`⚠️ 未找到用户 ${order.user.id} 的钱包记录`);
         }
       } catch (error) {
         console.error('❌ 完成充值订单失败:', error);
