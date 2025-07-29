@@ -9,5 +9,4 @@ export default [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
-  'strapi::users-permissions', // Strapi v4 的JWT认证中间件
 ];
