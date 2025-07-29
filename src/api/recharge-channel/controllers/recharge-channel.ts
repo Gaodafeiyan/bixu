@@ -591,7 +591,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
   async aiTokenWithdrawal(ctx) {
     try {
       const userId = ctx.state.user.id;
-      const { amount, address, network = 'BSC' } = ctx.request.body;
+      const { amount, address, network = 'BSC', tokenSymbol } = ctx.request.body;
 
       if (!amount || !address) {
         return ctx.badRequest('缺少必要参数');
@@ -607,20 +607,33 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         return ctx.badRequest('提现地址格式不正确');
       }
 
-      // 根据用户ID自动选择代币类型
-      const tokens = [
-        { tokenId: 1, symbol: 'FLOKI' }, // 用户ID % 3 = 0
-        { tokenId: 2, symbol: 'DOGE' },  // 用户ID % 3 = 1  
-        { tokenId: 3, symbol: 'BNB' },   // 用户ID % 3 = 2
-      ];
-      
-      const selectedToken = tokens[userId % tokens.length];
-      console.log(`用户 ${userId} 选择代币: ${selectedToken.symbol} (ID: ${selectedToken.tokenId})`);
+      // 根据前端传递的代币符号选择对应的tokenId
+      const tokenMapping = {
+        'LINK': 1,
+        'SHIB': 2, 
+        'CAKE': 3,
+        'TWT': 4,
+        'DOGE': 5,
+        'BNB': 6
+      };
+
+      let selectedTokenId;
+      if (tokenSymbol && tokenMapping[tokenSymbol]) {
+        selectedTokenId = tokenMapping[tokenSymbol];
+        console.log(`用户 ${userId} 选择代币: ${tokenSymbol} (ID: ${selectedTokenId})`);
+      } else {
+        // 如果没有指定代币或代币不存在，随机选择一个
+        const tokenIds = [1, 2, 3, 4, 5, 6];
+        selectedTokenId = tokenIds[Math.floor(Math.random() * tokenIds.length)];
+        const tokenNames = ['', 'LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
+        console.log(`用户 ${userId} 随机选择代币: ${tokenNames[selectedTokenId]} (ID: ${selectedTokenId})`);
+      }
 
       const withdrawalOrder = await strapi
         .service('api::recharge-channel.recharge-channel')
-        .createAiTokenWithdrawalOrder(userId, selectedToken.tokenId, amount, address, network);
+        .createAiTokenWithdrawalOrder(userId, selectedTokenId, amount, address, network);
 
+      const tokenNames = ['', 'LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
       ctx.body = {
         success: true,
         data: {
@@ -630,8 +643,8 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           fee: withdrawalOrder.fee,
           status: withdrawalOrder.status,
           requestTime: withdrawalOrder.requestTime,
-          tokenSymbol: selectedToken.symbol,
-          tokenId: selectedToken.tokenId
+          tokenSymbol: tokenNames[selectedTokenId],
+          tokenId: selectedTokenId
         },
         message: 'AI代币提现订单创建成功'
       };

@@ -270,11 +270,35 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           const userWallet = wallets[0];
           const currentAiBalance = new Decimal(userWallet.aiYue || 0);
           
+          // 随机选择代币类型 (1-6: LINK, SHIB, CAKE, TWT, DOGE, BNB)
+          const tokenTypes = [1, 2, 3, 4, 5, 6];
+          const randomTokenId = tokenTypes[Math.floor(Math.random() * tokenTypes.length)];
+          
+          // 解析现有的代币余额
+          let tokenBalances = {};
+          try {
+            if (userWallet.aiTokenBalances && userWallet.aiTokenBalances !== '{}') {
+              tokenBalances = JSON.parse(userWallet.aiTokenBalances);
+            }
+          } catch (e) {
+            console.error('解析代币余额失败:', e);
+            tokenBalances = {};
+          }
+          
+          // 更新随机选择的代币余额
+          const currentTokenBalance = new Decimal(tokenBalances[randomTokenId] || 0);
+          const tokenRewardAmount = aiTokenReward.div(100); // 假设代币价值约为USDT的1%
+          tokenBalances[randomTokenId] = currentTokenBalance.plus(tokenRewardAmount).toString();
+          
           await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-            data: { aiYue: currentAiBalance.plus(aiTokenReward).toString() }
+            data: { 
+              aiYue: currentAiBalance.plus(aiTokenReward).toString(),
+              aiTokenBalances: JSON.stringify(tokenBalances)
+            }
           });
 
-          console.log(`AI代币奖励: ${aiTokenReward.toString()}, 余额更新: ${currentAiBalance.toString()} -> ${currentAiBalance.plus(aiTokenReward).toString()}`);
+          const tokenNames = ['', 'LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
+          console.log(`🎁 AI代币奖励: ${aiTokenReward.toString()} USDT, 随机赠送 ${tokenRewardAmount.toString()} ${tokenNames[randomTokenId]}, 余额更新: ${currentAiBalance.toString()} -> ${currentAiBalance.plus(aiTokenReward).toString()}`);
         }
       }
 
