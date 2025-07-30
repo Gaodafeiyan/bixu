@@ -597,7 +597,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const userId = ctx.state.user.id;
       const { amount, address, network = 'BSC', tokenSymbol } = ctx.request.body;
 
-      if (!amount || !address) {
+      if (!amount || !address || !tokenSymbol) {
         return ctx.badRequest('缺少必要参数');
       }
 
@@ -611,33 +611,18 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         return ctx.badRequest('提现地址格式不正确');
       }
 
-      // 根据前端传递的代币符号选择对应的tokenId
-      const tokenMapping = {
-        'LINK': 1,
-        'SHIB': 2, 
-        'CAKE': 3,
-        'TWT': 4,
-        'DOGE': 5,
-        'BNB': 6
-      };
-
-      let selectedTokenId;
-      if (tokenSymbol && tokenMapping[tokenSymbol]) {
-        selectedTokenId = tokenMapping[tokenSymbol];
-        console.log(`用户 ${userId} 选择代币: ${tokenSymbol} (ID: ${selectedTokenId})`);
-      } else {
-        // 如果没有指定代币或代币不存在，随机选择一个
-        const tokenIds = [1, 2, 3, 4, 5, 6];
-        selectedTokenId = tokenIds[Math.floor(Math.random() * tokenIds.length)];
-        const tokenNames = ['', 'LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
-        console.log(`用户 ${userId} 随机选择代币: ${tokenNames[selectedTokenId]} (ID: ${selectedTokenId})`);
+      // 验证代币符号
+      const supportedTokens = ['LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
+      if (!supportedTokens.includes(tokenSymbol)) {
+        return ctx.badRequest('不支持的代币类型');
       }
+
+      console.log(`用户 ${userId} 选择代币: ${tokenSymbol}`);
 
       const withdrawalOrder = await strapi
         .service('api::recharge-channel.recharge-channel')
-        .createAiTokenWithdrawalOrder(userId, selectedTokenId, amount, address, network);
+        .createAiTokenWithdrawalOrder(userId, tokenSymbol, amount, address, network);
 
-      const tokenNames = ['', 'LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
       ctx.body = {
         success: true,
         data: {
@@ -647,8 +632,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           fee: withdrawalOrder.fee,
           status: withdrawalOrder.status,
           requestTime: withdrawalOrder.requestTime,
-          tokenSymbol: tokenNames[selectedTokenId],
-          tokenId: selectedTokenId
+          tokenSymbol: tokenSymbol
         },
         message: 'AI代币提现订单创建成功'
       };
