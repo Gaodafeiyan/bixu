@@ -94,6 +94,56 @@ export default ({ strapi }) => {
       }
     },
 
+    // 获取指定代币余额
+    async getTokenBalance(tokenSymbol: string): Promise<string> {
+      try {
+        if (!web3) {
+          throw new Error('区块链服务未初始化');
+        }
+
+        let contract: any = null;
+        let contractAddress: string = '';
+
+        switch (tokenSymbol.toUpperCase()) {
+          case 'USDT':
+            contract = usdtContract;
+            contractAddress = USDT_CONTRACT_ADDRESS;
+            break;
+          case 'DOGE':
+            contract = dogeContract;
+            contractAddress = DOGE_CONTRACT_ADDRESS;
+            break;
+          case 'BNB':
+            contract = bnbContract;
+            contractAddress = BNB_CONTRACT_ADDRESS;
+            break;
+          case 'LINK':
+            contract = linkContract;
+            contractAddress = LINK_CONTRACT_ADDRESS;
+            break;
+          case 'SHIB':
+            contract = shibContract;
+            contractAddress = SHIB_CONTRACT_ADDRESS;
+            break;
+          default:
+            throw new Error(`不支持的代币类型: ${tokenSymbol}`);
+        }
+
+        if (!contract) {
+          throw new Error(`代币合约未初始化: ${tokenSymbol}`);
+        }
+
+        const balance = await contract.methods.balanceOf(walletAddress).call();
+        const balanceInEth = web3.utils.fromWei(balance, 'ether');
+        
+        console.log(`💰 钱包${tokenSymbol}余额: ${balanceInEth}`);
+        return balanceInEth;
+      } catch (error) {
+        console.error(`❌ 获取${tokenSymbol}余额失败:`, error);
+        return '0';
+      }
+    },
+
     // 分页查询日志，避免日志条数超限
     async getLogsPaged(
       params: { address: string; topics: (string|null)[]; fromBlock: number; toBlock: number },
@@ -426,6 +476,27 @@ export default ({ strapi }) => {
 
         console.log(`🔄 执行提现转账: ${order.orderNo}, 金额: ${order.actualAmount} USDT`);
 
+        // 检查钱包USDT余额
+        const walletBalance = await this.getTokenBalance('USDT');
+        const requiredAmount = parseFloat(order.actualAmount);
+        const currentBalance = parseFloat(walletBalance);
+
+        if (currentBalance < requiredAmount) {
+          const errorMsg = `钱包USDT余额不足: 需要 ${requiredAmount} USDT, 当前余额 ${currentBalance} USDT`;
+          console.error(`❌ ${errorMsg}`);
+          
+          // 更新订单状态为失败
+          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: errorMsg
+            }
+          });
+          
+          throw new Error(errorMsg);
+        }
+
         // 更新订单状态为处理中
         await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
@@ -466,13 +537,17 @@ export default ({ strapi }) => {
       } catch (error) {
         console.error('❌ 执行提现转账失败:', error);
         
-        // 更新订单状态为失败
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'failed',
-            processTime: new Date()
-          }
-        });
+        // 如果订单状态还不是failed，则更新为失败
+        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        if (currentOrder && currentOrder.status !== 'failed') {
+          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: error.message
+            }
+          });
+        }
         
         throw error;
       }
@@ -535,6 +610,27 @@ export default ({ strapi }) => {
 
         console.log(`🔄 执行DOGE提现转账: ${order.orderNo}, 金额: ${order.actualAmount} DOGE`);
 
+        // 检查钱包DOGE余额
+        const walletBalance = await this.getTokenBalance('DOGE');
+        const requiredAmount = parseFloat(order.actualAmount);
+        const currentBalance = parseFloat(walletBalance);
+
+        if (currentBalance < requiredAmount) {
+          const errorMsg = `钱包DOGE余额不足: 需要 ${requiredAmount} DOGE, 当前余额 ${currentBalance} DOGE`;
+          console.error(`❌ ${errorMsg}`);
+          
+          // 更新订单状态为失败
+          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: errorMsg
+            }
+          });
+          
+          throw new Error(errorMsg);
+        }
+
         // 更新订单状态为处理中
         await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
@@ -575,13 +671,17 @@ export default ({ strapi }) => {
       } catch (error) {
         console.error('❌ 执行DOGE提现转账失败:', error);
         
-        // 更新订单状态为失败
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'failed',
-            processTime: new Date()
-          }
-        });
+        // 如果订单状态还不是failed，则更新为失败
+        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        if (currentOrder && currentOrder.status !== 'failed') {
+          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: error.message
+            }
+          });
+        }
         
         throw error;
       }
