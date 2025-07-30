@@ -147,6 +147,25 @@ export default ({ strapi }) => {
       }
     },
 
+    // 获取代币实时价格
+    async getTokenPrice(tokenSymbol: string): Promise<number> {
+      try {
+        const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${tokenSymbol}USDT`);
+        const data = await response.json();
+        return parseFloat(data.price);
+      } catch (error) {
+        console.error(`获取${tokenSymbol}价格失败:`, error);
+        // 返回默认价格作为备用
+        const defaultPrices: { [key: string]: number } = {
+          'DOGE': 0.216690,
+          'BNB': 300.0,
+          'LINK': 15.0,
+          'SHIB': 0.00002
+        };
+        return defaultPrices[tokenSymbol] || 1.0;
+      }
+    },
+
     // 分页查询日志，避免日志条数超限
     async getLogsPaged(
       params: { address: string; topics: (string|null)[]; fromBlock: number; toBlock: number },
@@ -673,6 +692,33 @@ export default ({ strapi }) => {
         return receipt.transactionHash;
       } catch (error) {
         console.error('❌ 执行DOGE提现转账失败:', error);
+        
+        // 回滚aiYue余额（提现失败时恢复用户余额）
+        try {
+          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+            filters: { user: { id: order.user.id } }
+          });
+          
+          if (wallets && wallets.length > 0) {
+            const wallet = wallets[0];
+            const currentAiYue = new Decimal(wallet.aiYue || '0');
+            
+            // 计算需要回滚的USDT价值
+            const tokenPrice = await this.getTokenPrice('DOGE');
+            const rollbackAmount = new Decimal(order.actualAmount).mul(new Decimal(tokenPrice));
+            const newAiYue = currentAiYue.plus(rollbackAmount);
+            
+            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+              data: {
+                aiYue: newAiYue.toString()
+              }
+            });
+            
+            console.log(`🔄 回滚DOGE提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额: ${newAiYue.toString()}`);
+          }
+        } catch (rollbackError) {
+          console.error('❌ 回滚aiYue余额失败:', rollbackError);
+        }
         
         // 如果订单状态还不是failed，则更新为失败
         const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);

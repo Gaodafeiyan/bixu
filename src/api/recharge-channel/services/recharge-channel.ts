@@ -16,6 +16,25 @@ async function getWalletTransactions(address: string, network: string) {
   return [];
 }
 
+// 添加获取实时价格的方法
+async function getTokenPrice(tokenSymbol: string): Promise<number> {
+  try {
+    const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${tokenSymbol}USDT`);
+    const data = await response.json();
+    return parseFloat(data.price);
+  } catch (error) {
+    console.error(`获取${tokenSymbol}价格失败:`, error);
+    // 返回默认价格作为备用
+    const defaultPrices: { [key: string]: number } = {
+      'DOGE': 0.216690,
+      'BNB': 300.0,
+      'LINK': 15.0,
+      'SHIB': 0.00002
+    };
+    return defaultPrices[tokenSymbol] || 1.0;
+  }
+}
+
 // 处理交易
 async function processTransaction(channel: any, transaction: any, strapi: any) {
   try {
@@ -326,8 +345,26 @@ export default ({ strapi }) => ({
       const fee = amountDecimal.mul(feeRate).add(fixedFee);
       const actualAmount = amountDecimal.sub(fee);
 
-      // 立即扣除用户AI代币价值余额
-      const newAiYueBalance = aiYueBalance.sub(amountDecimal);
+      // 获取实时价格并计算USDT价值
+      let usdtValue: Decimal;
+      if (tokenSymbol === 'USDT') {
+        // USDT直接使用数量作为价值
+        usdtValue = amountDecimal;
+      } else {
+        // 其他代币需要根据实时价格计算USDT价值
+        const tokenPrice = await getTokenPrice(tokenSymbol);
+        usdtValue = amountDecimal.mul(new Decimal(tokenPrice));
+        console.log(`💰 ${tokenSymbol}实时价格: ${tokenPrice} USDT`);
+        console.log(`💰 提现${amount} ${tokenSymbol} = ${usdtValue.toString()} USDT`);
+      }
+
+      // 检查余额是否足够
+      if (aiYueBalance.lessThan(usdtValue)) {
+        throw new Error(`AI代币价值余额不足: 需要 ${usdtValue.toString()} USDT, 当前余额 ${aiYueBalance.toString()} USDT`);
+      }
+
+      // 立即扣除用户AI代币价值余额（扣除USDT价值）
+      const newAiYueBalance = aiYueBalance.sub(usdtValue);
       
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
         data: {
@@ -353,7 +390,7 @@ export default ({ strapi }) => ({
         }
       });
 
-      console.log(`创建AI代币提现订单: ${orderNo}, 用户: ${userId}, 代币: ${tokenSymbol}, 金额: ${amount}, 手续费: ${fee}`);
+      console.log(`创建AI代币提现订单: ${orderNo}, 用户: ${userId}, 代币: ${tokenSymbol}, 数量: ${amount}, USDT价值: ${usdtValue.toString()}, 手续费: ${fee}`);
       return withdrawalOrder;
     } catch (error) {
       console.error('创建AI代币提现订单失败:', error);
