@@ -332,13 +332,16 @@ export default ({ strapi }) => {
 
         console.log(`💰 收到转账: ${amount} USDT from ${fromAddress}, tx: ${txHash}`);
 
-        // 查找匹配的充值订单
+        // 查找匹配的充值订单 - 只查找最近24小时内的订单
+        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
             status: 'pending',
-            receiveAddress: walletAddress
+            receiveAddress: walletAddress,
+            createdAt: { $gte: oneDayAgo }
           },
-          populate: ['user'] // 包含user关系
+          populate: ['user'], // 包含user关系
+          sort: { createdAt: 'desc' } // 按创建时间倒序，优先匹配最新订单
         });
 
         for (const order of orders) {
@@ -347,6 +350,7 @@ export default ({ strapi }) => {
           
           // 检查金额是否匹配（允许0.01的误差）
           if (Math.abs(orderAmount - txAmount) <= 0.01) {
+            console.log(`🎯 匹配到订单: ${order.orderNo}, 用户: ${order.user.id}, 创建时间: ${order.createdAt}`);
             await this.completeRechargeOrder(order, txHash, amount);
             break;
           }

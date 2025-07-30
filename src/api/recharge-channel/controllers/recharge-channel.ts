@@ -101,6 +101,8 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const userId = ctx.state.user.id;
       const { amount, channelId } = ctx.request.body;
 
+      console.log(`🔍 创建充值订单 - 用户ID: ${userId}, 金额: ${amount}, 通道ID: ${channelId}`);
+
       if (!amount || !channelId) {
         return ctx.badRequest('缺少必要参数');
       }
@@ -113,6 +115,8 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const rechargeOrder = await strapi
         .service('api::recharge-channel.recharge-channel')
         .createRechargeOrder(userId, amount, channelId);
+
+      console.log(`✅ 充值订单创建成功 - 订单号: ${rechargeOrder.orderNo}, 用户ID: ${userId}`);
 
       ctx.body = {
         success: true,
