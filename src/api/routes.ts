@@ -22,4 +22,6 @@ export default {
   'recharge-order': () => import('./recharge-order/routes/recharge-order'),
   // 提现订单路由
   'withdrawal-order': () => import('./withdrawal-order/routes/withdrawal-order'),
+  // AI代币路由
+  'ai-token': () => import('./ai-token/routes/ai-token'),
 }; 
