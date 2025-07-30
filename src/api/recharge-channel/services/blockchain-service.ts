@@ -704,9 +704,8 @@ export default ({ strapi }) => {
             const wallet = wallets[0];
             const currentAiYue = new Decimal(wallet.aiYue || '0');
             
-            // 计算需要回滚的USDT价值
-            const tokenPrice = await this.getTokenPrice('DOGE');
-            const rollbackAmount = new Decimal(order.actualAmount).mul(new Decimal(tokenPrice));
+            // 使用订单中记录的USDT价值进行回滚
+            const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
             await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
@@ -800,9 +799,8 @@ export default ({ strapi }) => {
             const wallet = wallets[0];
             const currentAiYue = new Decimal(wallet.aiYue || '0');
             
-            // 计算需要回滚的USDT价值
-            const tokenPrice = await this.getTokenPrice('BNB');
-            const rollbackAmount = new Decimal(order.actualAmount).mul(new Decimal(tokenPrice));
+            // 使用订单中记录的USDT价值进行回滚
+            const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
             await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
@@ -896,9 +894,8 @@ export default ({ strapi }) => {
             const wallet = wallets[0];
             const currentAiYue = new Decimal(wallet.aiYue || '0');
             
-            // 计算需要回滚的USDT价值
-            const tokenPrice = await this.getTokenPrice('LINK');
-            const rollbackAmount = new Decimal(order.actualAmount).mul(new Decimal(tokenPrice));
+            // 使用订单中记录的USDT价值进行回滚
+            const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
             await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
@@ -992,9 +989,8 @@ export default ({ strapi }) => {
             const wallet = wallets[0];
             const currentAiYue = new Decimal(wallet.aiYue || '0');
             
-            // 计算需要回滚的USDT价值
-            const tokenPrice = await this.getTokenPrice('SHIB');
-            const rollbackAmount = new Decimal(order.actualAmount).mul(new Decimal(tokenPrice));
+            // 使用订单中记录的USDT价值进行回滚
+            const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
             await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {

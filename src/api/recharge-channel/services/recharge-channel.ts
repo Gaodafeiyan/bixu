@@ -387,6 +387,7 @@ export default ({ strapi }) => ({
           requestTime: new Date(),
           fee: fee.toString(),
           actualAmount: actualAmount.toString(),
+          deductedUsdtValue: usdtValue.toString(), // 记录扣除的USDT价值
         }
       });
 
