@@ -20,7 +20,7 @@ async function getWalletTransactions(address: string, network: string) {
 async function getTokenPrice(tokenSymbol: string): Promise<number> {
   try {
     const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${tokenSymbol}USDT`);
-    const data = await response.json();
+    const data = await response.json() as { price: string };
     return parseFloat(data.price);
   } catch (error) {
     console.error(`获取${tokenSymbol}价格失败:`, error);

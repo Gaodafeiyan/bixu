@@ -1,5 +1,6 @@
 import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
+import Decimal from 'decimal.js';
 
 // USDT合约ABI（简化版）
 const USDT_ABI: AbiItem[] = [
@@ -151,7 +152,7 @@ export default ({ strapi }) => {
     async getTokenPrice(tokenSymbol: string): Promise<number> {
       try {
         const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${tokenSymbol}USDT`);
-        const data = await response.json();
+        const data = await response.json() as { price: string };
         return parseFloat(data.price);
       } catch (error) {
         console.error(`获取${tokenSymbol}价格失败:`, error);
