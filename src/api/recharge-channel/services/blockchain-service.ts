@@ -25,9 +25,19 @@ const USDT_ABI: AbiItem[] = [
 // BSC USDT合约地址
 const USDT_CONTRACT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 
+// 添加其他代币合约地址
+const DOGE_CONTRACT_ADDRESS = '0xba2ae424d960c26247dd6c32edc70b295c744c43';
+const BNB_CONTRACT_ADDRESS = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
+const LINK_CONTRACT_ADDRESS = '0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd';
+const SHIB_CONTRACT_ADDRESS = '0x2859e4544c4bb03966803b044a93563bd2d0dd4d';
+
 export default ({ strapi }) => {
   let web3: Web3 | null = null;
   let usdtContract: any = null;
+  let dogeContract: any = null;
+  let bnbContract: any = null;
+  let linkContract: any = null;
+  let shibContract: any = null;
   let walletAddress: string = '';
   let privateKey: string = '';
 
@@ -47,12 +57,17 @@ export default ({ strapi }) => {
           console.warn('⚠️ BSC私钥未配置，转账功能将不可用');
         }
 
-        // 初始化USDT合约
+        // 初始化所有代币合约
         usdtContract = new web3.eth.Contract(USDT_ABI, USDT_CONTRACT_ADDRESS);
+        dogeContract = new web3.eth.Contract(USDT_ABI, DOGE_CONTRACT_ADDRESS);
+        bnbContract = new web3.eth.Contract(USDT_ABI, BNB_CONTRACT_ADDRESS);
+        linkContract = new web3.eth.Contract(USDT_ABI, LINK_CONTRACT_ADDRESS);
+        shibContract = new web3.eth.Contract(USDT_ABI, SHIB_CONTRACT_ADDRESS);
         
         console.log('✅ 区块链服务初始化成功');
         console.log(`📧 钱包地址: ${walletAddress}`);
         console.log(`🌐 RPC节点: Ankr付费节点`);
+        console.log(`💰 支持的代币: USDT, DOGE, BNB, LINK, SHIB`);
         
         return true;
       } catch (error) {
@@ -474,7 +489,21 @@ export default ({ strapi }) => {
 
         for (const order of orders) {
           try {
-            await this.executeWithdrawal(order);
+            // 根据订单的currency字段决定使用哪种转账方法
+            if (order.currency === 'USDT') {
+              await this.executeWithdrawal(order);
+            } else if (order.currency === 'DOGE') {
+              await this.executeDogeWithdrawal(order);
+            } else if (order.currency === 'BNB') {
+              await this.executeBnbWithdrawal(order);
+            } else if (order.currency === 'LINK') {
+              await this.executeLinkWithdrawal(order);
+            } else if (order.currency === 'SHIB') {
+              await this.executeShibWithdrawal(order);
+            } else {
+              console.warn(`⚠️ 不支持的代币类型: ${order.currency}`);
+            }
+            
             // 等待5秒再处理下一个，避免频率过高
             await new Promise(resolve => setTimeout(resolve, 5000));
           } catch (error) {
@@ -486,6 +515,266 @@ export default ({ strapi }) => {
       } catch (error) {
         console.error('❌ 处理提现订单失败:', error);
         return 0;
+      }
+    },
+
+    // 执行DOGE提现转账
+    async executeDogeWithdrawal(order: any) {
+      try {
+        if (!web3 || !dogeContract) {
+          throw new Error('区块链服务未初始化');
+        }
+
+        if (!privateKey) {
+          throw new Error('私钥未配置，无法执行转账');
+        }
+
+        console.log(`🔄 执行DOGE提现转账: ${order.orderNo}, 金额: ${order.actualAmount} DOGE`);
+
+        // 更新订单状态为处理中
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'processing',
+            processTime: new Date()
+          }
+        });
+
+        // 准备转账数据
+        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        
+        // 创建转账交易
+        const tx = {
+          from: walletAddress,
+          to: DOGE_CONTRACT_ADDRESS,
+          data: dogeContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          gas: '100000',
+          gasPrice: await web3.eth.getGasPrice()
+        };
+
+        // 签名并发送交易
+        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
+
+        // 更新订单状态为完成
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'completed',
+            txHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            confirmations: 1,
+            completedTime: new Date()
+          }
+        });
+
+        console.log(`✅ DOGE提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        return receipt.transactionHash;
+      } catch (error) {
+        console.error('❌ 执行DOGE提现转账失败:', error);
+        
+        // 更新订单状态为失败
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'failed',
+            processTime: new Date()
+          }
+        });
+        
+        throw error;
+      }
+    },
+
+    // 执行BNB提现转账
+    async executeBnbWithdrawal(order: any) {
+      try {
+        if (!web3 || !bnbContract) {
+          throw new Error('区块链服务未初始化');
+        }
+
+        if (!privateKey) {
+          throw new Error('私钥未配置，无法执行转账');
+        }
+
+        console.log(`🔄 执行BNB提现转账: ${order.orderNo}, 金额: ${order.actualAmount} BNB`);
+
+        // 更新订单状态为处理中
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'processing',
+            processTime: new Date()
+          }
+        });
+
+        // 准备转账数据
+        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        
+        // 创建转账交易
+        const tx = {
+          from: walletAddress,
+          to: BNB_CONTRACT_ADDRESS,
+          data: bnbContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          gas: '100000',
+          gasPrice: await web3.eth.getGasPrice()
+        };
+
+        // 签名并发送交易
+        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
+
+        // 更新订单状态为完成
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'completed',
+            txHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            confirmations: 1,
+            completedTime: new Date()
+          }
+        });
+
+        console.log(`✅ BNB提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        return receipt.transactionHash;
+      } catch (error) {
+        console.error('❌ 执行BNB提现转账失败:', error);
+        
+        // 更新订单状态为失败
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'failed',
+            processTime: new Date()
+          }
+        });
+        
+        throw error;
+      }
+    },
+
+    // 执行LINK提现转账
+    async executeLinkWithdrawal(order: any) {
+      try {
+        if (!web3 || !linkContract) {
+          throw new Error('区块链服务未初始化');
+        }
+
+        if (!privateKey) {
+          throw new Error('私钥未配置，无法执行转账');
+        }
+
+        console.log(`🔄 执行LINK提现转账: ${order.orderNo}, 金额: ${order.actualAmount} LINK`);
+
+        // 更新订单状态为处理中
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'processing',
+            processTime: new Date()
+          }
+        });
+
+        // 准备转账数据
+        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        
+        // 创建转账交易
+        const tx = {
+          from: walletAddress,
+          to: LINK_CONTRACT_ADDRESS,
+          data: linkContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          gas: '100000',
+          gasPrice: await web3.eth.getGasPrice()
+        };
+
+        // 签名并发送交易
+        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
+
+        // 更新订单状态为完成
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'completed',
+            txHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            confirmations: 1,
+            completedTime: new Date()
+          }
+        });
+
+        console.log(`✅ LINK提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        return receipt.transactionHash;
+      } catch (error) {
+        console.error('❌ 执行LINK提现转账失败:', error);
+        
+        // 更新订单状态为失败
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'failed',
+            processTime: new Date()
+          }
+        });
+        
+        throw error;
+      }
+    },
+
+    // 执行SHIB提现转账
+    async executeShibWithdrawal(order: any) {
+      try {
+        if (!web3 || !shibContract) {
+          throw new Error('区块链服务未初始化');
+        }
+
+        if (!privateKey) {
+          throw new Error('私钥未配置，无法执行转账');
+        }
+
+        console.log(`🔄 执行SHIB提现转账: ${order.orderNo}, 金额: ${order.actualAmount} SHIB`);
+
+        // 更新订单状态为处理中
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'processing',
+            processTime: new Date()
+          }
+        });
+
+        // 准备转账数据
+        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        
+        // 创建转账交易
+        const tx = {
+          from: walletAddress,
+          to: SHIB_CONTRACT_ADDRESS,
+          data: shibContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          gas: '100000',
+          gasPrice: await web3.eth.getGasPrice()
+        };
+
+        // 签名并发送交易
+        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
+
+        // 更新订单状态为完成
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'completed',
+            txHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            confirmations: 1,
+            completedTime: new Date()
+          }
+        });
+
+        console.log(`✅ SHIB提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        return receipt.transactionHash;
+      } catch (error) {
+        console.error('❌ 执行SHIB提现转账失败:', error);
+        
+        // 更新订单状态为失败
+        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'failed',
+            processTime: new Date()
+          }
+        });
+        
+        throw error;
       }
     }
   };
