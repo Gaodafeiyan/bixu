@@ -133,10 +133,13 @@ export default ({ strapi }) => {
           throw new Error(`代币合约未初始化: ${tokenSymbol}`);
         }
 
+        console.log(`🔍 查询${tokenSymbol}余额 - 合约地址: ${contractAddress}`);
+        console.log(`🔍 查询${tokenSymbol}余额 - 钱包地址: ${walletAddress}`);
+
         const balance = await contract.methods.balanceOf(walletAddress).call();
         const balanceInEth = web3.utils.fromWei(balance, 'ether');
         
-        console.log(`💰 钱包${tokenSymbol}余额: ${balanceInEth}`);
+        console.log(`💰 钱包${tokenSymbol}余额: ${balanceInEth} (原始值: ${balance})`);
         return balanceInEth;
       } catch (error) {
         console.error(`❌ 获取${tokenSymbol}余额失败:`, error);
