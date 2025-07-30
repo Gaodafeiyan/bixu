@@ -697,7 +697,7 @@ export default ({ strapi }) => {
         // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
           const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: { id: order.user.id } }
+            filters: { user: { id: order.user } }
           });
           
           if (wallets && wallets.length > 0) {
@@ -790,13 +790,44 @@ export default ({ strapi }) => {
       } catch (error) {
         console.error('❌ 执行BNB提现转账失败:', error);
         
-        // 更新订单状态为失败
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'failed',
-            processTime: new Date()
+        // 回滚aiYue余额（提现失败时恢复用户余额）
+        try {
+          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+            filters: { user: { id: order.user } }
+          });
+          
+          if (wallets && wallets.length > 0) {
+            const wallet = wallets[0];
+            const currentAiYue = new Decimal(wallet.aiYue || '0');
+            
+            // 计算需要回滚的USDT价值
+            const tokenPrice = await this.getTokenPrice('BNB');
+            const rollbackAmount = new Decimal(order.actualAmount).mul(new Decimal(tokenPrice));
+            const newAiYue = currentAiYue.plus(rollbackAmount);
+            
+            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+              data: {
+                aiYue: newAiYue.toString()
+              }
+            });
+            
+            console.log(`🔄 回滚BNB提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额: ${newAiYue.toString()}`);
           }
-        });
+        } catch (rollbackError) {
+          console.error('❌ 回滚aiYue余额失败:', rollbackError);
+        }
+        
+        // 如果订单状态还不是failed，则更新为失败
+        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        if (currentOrder && currentOrder.status !== 'failed') {
+          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: error.message
+            }
+          });
+        }
         
         throw error;
       }
@@ -855,13 +886,44 @@ export default ({ strapi }) => {
       } catch (error) {
         console.error('❌ 执行LINK提现转账失败:', error);
         
-        // 更新订单状态为失败
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'failed',
-            processTime: new Date()
+        // 回滚aiYue余额（提现失败时恢复用户余额）
+        try {
+          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+            filters: { user: { id: order.user } }
+          });
+          
+          if (wallets && wallets.length > 0) {
+            const wallet = wallets[0];
+            const currentAiYue = new Decimal(wallet.aiYue || '0');
+            
+            // 计算需要回滚的USDT价值
+            const tokenPrice = await this.getTokenPrice('LINK');
+            const rollbackAmount = new Decimal(order.actualAmount).mul(new Decimal(tokenPrice));
+            const newAiYue = currentAiYue.plus(rollbackAmount);
+            
+            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+              data: {
+                aiYue: newAiYue.toString()
+              }
+            });
+            
+            console.log(`🔄 回滚LINK提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额: ${newAiYue.toString()}`);
           }
-        });
+        } catch (rollbackError) {
+          console.error('❌ 回滚aiYue余额失败:', rollbackError);
+        }
+        
+        // 如果订单状态还不是failed，则更新为失败
+        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        if (currentOrder && currentOrder.status !== 'failed') {
+          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: error.message
+            }
+          });
+        }
         
         throw error;
       }
@@ -920,13 +982,44 @@ export default ({ strapi }) => {
       } catch (error) {
         console.error('❌ 执行SHIB提现转账失败:', error);
         
-        // 更新订单状态为失败
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'failed',
-            processTime: new Date()
+        // 回滚aiYue余额（提现失败时恢复用户余额）
+        try {
+          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+            filters: { user: { id: order.user } }
+          });
+          
+          if (wallets && wallets.length > 0) {
+            const wallet = wallets[0];
+            const currentAiYue = new Decimal(wallet.aiYue || '0');
+            
+            // 计算需要回滚的USDT价值
+            const tokenPrice = await this.getTokenPrice('SHIB');
+            const rollbackAmount = new Decimal(order.actualAmount).mul(new Decimal(tokenPrice));
+            const newAiYue = currentAiYue.plus(rollbackAmount);
+            
+            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+              data: {
+                aiYue: newAiYue.toString()
+              }
+            });
+            
+            console.log(`🔄 回滚SHIB提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额: ${newAiYue.toString()}`);
           }
-        });
+        } catch (rollbackError) {
+          console.error('❌ 回滚aiYue余额失败:', rollbackError);
+        }
+        
+        // 如果订单状态还不是failed，则更新为失败
+        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        if (currentOrder && currentOrder.status !== 'failed') {
+          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: error.message
+            }
+          });
+        }
         
         throw error;
       }
