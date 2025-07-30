@@ -261,14 +261,13 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         console.log(`钱包余额更新: ${currentBalance.toString()} -> ${currentBalance.plus(totalPayout).toString()}`);
       }
 
-      // 处理AI代币奖励
+      // 处理AI代币奖励 - 自动转换为随机代币
       if (planData.aiBili) {
         const aiTokenReward = investmentAmount.mul(new Decimal(planData.aiBili).div(100)); // 转换为小数
         
         // 更新用户AI代币余额
         if (wallets && wallets.length > 0) {
           const userWallet = wallets[0];
-          const currentAiBalance = new Decimal(userWallet.aiYue || 0);
           
           // 随机选择代币类型 (1-6: LINK, SHIB, CAKE, TWT, DOGE, BNB)
           const tokenTypes = [1, 2, 3, 4, 5, 6];
@@ -285,20 +284,33 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
             tokenBalances = {};
           }
           
+          // 获取代币价格（这里使用固定价格，实际应该从API获取）
+          const tokenPrices = {
+            1: 17.82,    // LINK
+            2: 0.000023, // SHIB
+            3: 2.45,     // CAKE
+            4: 1.23,     // TWT
+            5: 0.12,     // DOGE
+            6: 580.0     // BNB
+          };
+          
+          // 将USDT奖励转换为选中的代币数量
+          const tokenPrice = new Decimal(tokenPrices[randomTokenId] || 1);
+          const tokenRewardAmount = aiTokenReward.div(tokenPrice);
+          
           // 更新随机选择的代币余额
           const currentTokenBalance = new Decimal(tokenBalances[randomTokenId] || 0);
-          const tokenRewardAmount = aiTokenReward.div(100); // 假设代币价值约为USDT的1%
           tokenBalances[randomTokenId] = currentTokenBalance.plus(tokenRewardAmount).toString();
           
           await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
             data: { 
-              aiYue: currentAiBalance.plus(aiTokenReward).toString(),
               aiTokenBalances: JSON.stringify(tokenBalances)
+              // 注意：不更新aiYue，因为AI代币奖励直接转换为具体代币
             }
           });
 
           const tokenNames = ['', 'LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
-          console.log(`🎁 AI代币奖励: ${aiTokenReward.toString()} USDT, 随机赠送 ${tokenRewardAmount.toString()} ${tokenNames[randomTokenId]}, 余额更新: ${currentAiBalance.toString()} -> ${currentAiBalance.plus(aiTokenReward).toString()}`);
+          console.log(`🎁 AI代币奖励: ${aiTokenReward.toString()} USDT 自动转换为 ${tokenRewardAmount.toString()} ${tokenNames[randomTokenId]} (价格: ${tokenPrice.toString()}), 余额更新: ${currentTokenBalance.toString()} -> ${currentTokenBalance.plus(tokenRewardAmount).toString()}`);
         }
       }
 
