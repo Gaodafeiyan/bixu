@@ -261,56 +261,23 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         console.log(`钱包余额更新: ${currentBalance.toString()} -> ${currentBalance.plus(totalPayout).toString()}`);
       }
 
-      // 处理AI代币奖励 - 自动转换为随机代币
+      // 处理AI代币奖励 - 直接累加到aiYue字段
       if (planData.aiBili) {
         const aiTokenReward = investmentAmount.mul(new Decimal(planData.aiBili).div(100)); // 转换为小数
         
         // 更新用户AI代币余额
         if (wallets && wallets.length > 0) {
           const userWallet = wallets[0];
-          
-          // 随机选择代币类型 (1-6: LINK, SHIB, CAKE, TWT, DOGE, BNB)
-          const tokenTypes = [1, 2, 3, 4, 5, 6];
-          const randomTokenId = tokenTypes[Math.floor(Math.random() * tokenTypes.length)];
-          
-          // 解析现有的代币余额
-          let tokenBalances = {};
-          try {
-            if (userWallet.aiTokenBalances && userWallet.aiTokenBalances !== '{}') {
-              tokenBalances = JSON.parse(userWallet.aiTokenBalances);
-            }
-          } catch (e) {
-            console.error('解析代币余额失败:', e);
-            tokenBalances = {};
-          }
-          
-          // 获取代币价格（这里使用固定价格，实际应该从API获取）
-          const tokenPrices = {
-            1: 17.82,    // LINK
-            2: 0.000023, // SHIB
-            3: 2.45,     // CAKE
-            4: 1.23,     // TWT
-            5: 0.12,     // DOGE
-            6: 580.0     // BNB
-          };
-          
-          // 将USDT奖励转换为选中的代币数量
-          const tokenPrice = new Decimal(tokenPrices[randomTokenId] || 1);
-          const tokenRewardAmount = aiTokenReward.div(tokenPrice);
-          
-          // 更新随机选择的代币余额
-          const currentTokenBalance = new Decimal(tokenBalances[randomTokenId] || 0);
-          tokenBalances[randomTokenId] = currentTokenBalance.plus(tokenRewardAmount).toString();
+          const currentAiYue = new Decimal(userWallet.aiYue || 0);
           
           await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
             data: { 
-              aiTokenBalances: JSON.stringify(tokenBalances)
-              // 注意：不更新aiYue，因为AI代币奖励直接转换为具体代币
+              aiYue: currentAiYue.plus(aiTokenReward).toString()
+              // 注意：不更新aiTokenBalances，因为前端将根据aiYue和实时价格动态计算代币数量
             }
           });
 
-          const tokenNames = ['', 'LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
-          console.log(`🎁 AI代币奖励: ${aiTokenReward.toString()} USDT 自动转换为 ${tokenRewardAmount.toString()} ${tokenNames[randomTokenId]} (价格: ${tokenPrice.toString()}), 余额更新: ${currentTokenBalance.toString()} -> ${currentTokenBalance.plus(tokenRewardAmount).toString()}`);
+          console.log(`🎁 AI代币奖励: ${aiTokenReward.toString()} USDT 累加到aiYue，余额更新: ${currentAiYue.toString()} -> ${currentAiYue.plus(aiTokenReward).toString()}`);
         }
       }
 
