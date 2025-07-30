@@ -1,6 +1,6 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreController('api::ai-token.ai-token', ({ strapi }) => ({
+export default factories.createCoreController('api::ai-token.ai-token' as any, ({ strapi }) => ({
   // 获取所有活跃代币
   async getActiveTokens(ctx) {
     try {

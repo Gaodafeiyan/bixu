@@ -1,10 +1,10 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreService('api::ai-token.ai-token', ({ strapi }) => ({
+export default factories.createCoreService('api::ai-token.ai-token' as any, ({ strapi }) => ({
   // 获取所有活跃的代币
   async getActiveTokens() {
     try {
-      const result = await strapi.entityService.findMany('api::ai-token.ai-token', {
+      const result = await strapi.entityService.findMany('api::ai-token.ai-token' as any, {
         filters: {
           is_active: true
         },
@@ -20,13 +20,13 @@ export default factories.createCoreService('api::ai-token.ai-token', ({ strapi }
   // 获取代币价格
   async getTokenPrice(tokenId: number) {
     try {
-      const token = await strapi.entityService.findOne('api::ai-token.ai-token', tokenId);
+      const token = await strapi.entityService.findOne('api::ai-token.ai-token' as any, tokenId);
       if (!token) {
         console.warn(`代币不存在: ${tokenId}`);
         return 0.01;
       }
 
-      const { price_source, price_api_id } = token;
+      const { price_source, price_api_id } = token as any;
       
       switch (price_source) {
         case 'coingecko':
@@ -87,7 +87,7 @@ export default factories.createCoreService('api::ai-token.ai-token', ({ strapi }
         throw new Error(`Binance API error: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = await response.json() as any;
       return parseFloat(data.price) || 0.01;
     } catch (error) {
       console.error('Binance API 请求失败:', error);
@@ -112,7 +112,7 @@ export default factories.createCoreService('api::ai-token.ai-token', ({ strapi }
         throw new Error(`DexScreener API error: ${response.status}`);
       }
       
-      const data = await response.json();
+      const data = await response.json() as any;
       return parseFloat(data.pairs?.[0]?.priceUsd) || 0.01;
     } catch (error) {
       console.error('DexScreener API 请求失败:', error);
@@ -194,12 +194,12 @@ export default factories.createCoreService('api::ai-token.ai-token', ({ strapi }
       ];
 
       for (const tokenData of defaultTokens) {
-        const existingToken = await strapi.entityService.findMany('api::ai-token.ai-token', {
+        const existingToken = await strapi.entityService.findMany('api::ai-token.ai-token' as any, {
           filters: { symbol: tokenData.symbol }
         });
         
-        if (!existingToken || existingToken.length === 0) {
-          await strapi.entityService.create('api::ai-token.ai-token', {
+        if (!existingToken || (Array.isArray(existingToken) && existingToken.length === 0)) {
+          await strapi.entityService.create('api::ai-token.ai-token' as any, {
             data: tokenData
           });
         }
