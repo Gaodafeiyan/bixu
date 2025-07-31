@@ -26,8 +26,7 @@ async function getTokenPrice(tokenSymbol: string): Promise<number> {
     console.error(`获取${tokenSymbol}价格失败:`, error);
     // 返回默认价格作为备用
     const defaultPrices: { [key: string]: number } = {
-      'DOGE': 0.216690,
-      'BNB': 300.0,
+      'ADA': 0.5,
       'LINK': 15.0,
       'SHIB': 0.00002
     };

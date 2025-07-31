@@ -27,16 +27,14 @@ const USDT_ABI: AbiItem[] = [
 const USDT_CONTRACT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 
 // 添加其他代币合约地址
-const DOGE_CONTRACT_ADDRESS = '0xba2ae424d960c26247dd6c32edc70b295c744c43';
-const BNB_CONTRACT_ADDRESS = '0xbb4cdb9cbd36b01bd1cbaebf2de08d9173bc095c';
+const ADA_CONTRACT_ADDRESS = '0x3ee2200efb3400fabb9aacf31297cbdd1d435d47';
 const LINK_CONTRACT_ADDRESS = '0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd';
 const SHIB_CONTRACT_ADDRESS = '0x2859e4544c4bb03966803b044a93563bd2d0dd4d';
 
 export default ({ strapi }) => {
   let web3: Web3 | null = null;
   let usdtContract: any = null;
-  let dogeContract: any = null;
-  let bnbContract: any = null;
+  let adaContract: any = null;
   let linkContract: any = null;
   let shibContract: any = null;
   let walletAddress: string = '';
@@ -60,15 +58,14 @@ export default ({ strapi }) => {
 
         // 初始化所有代币合约
         usdtContract = new web3.eth.Contract(USDT_ABI, USDT_CONTRACT_ADDRESS);
-        dogeContract = new web3.eth.Contract(USDT_ABI, DOGE_CONTRACT_ADDRESS);
-        bnbContract = new web3.eth.Contract(USDT_ABI, BNB_CONTRACT_ADDRESS);
+        adaContract = new web3.eth.Contract(USDT_ABI, ADA_CONTRACT_ADDRESS);
         linkContract = new web3.eth.Contract(USDT_ABI, LINK_CONTRACT_ADDRESS);
         shibContract = new web3.eth.Contract(USDT_ABI, SHIB_CONTRACT_ADDRESS);
         
         console.log('✅ 区块链服务初始化成功');
         console.log(`📧 钱包地址: ${walletAddress}`);
         console.log(`🌐 RPC节点: Ankr付费节点`);
-        console.log(`💰 支持的代币: USDT, DOGE, BNB, LINK, SHIB`);
+        console.log(`💰 支持的代币: USDT, ADA, LINK, SHIB`);
         
         return true;
       } catch (error) {
@@ -113,13 +110,9 @@ export default ({ strapi }) => {
             contract = usdtContract;
             contractAddress = USDT_CONTRACT_ADDRESS;
             break;
-          case 'DOGE':
-            contract = dogeContract;
-            contractAddress = DOGE_CONTRACT_ADDRESS;
-            break;
-          case 'BNB':
-            contract = bnbContract;
-            contractAddress = BNB_CONTRACT_ADDRESS;
+          case 'ADA':
+            contract = adaContract;
+            contractAddress = ADA_CONTRACT_ADDRESS;
             break;
           case 'LINK':
             contract = linkContract;
@@ -169,8 +162,7 @@ export default ({ strapi }) => {
         console.error(`获取${tokenSymbol}价格失败:`, error);
         // 返回默认价格作为备用
         const defaultPrices: { [key: string]: number } = {
-          'DOGE': 0.216690,
-          'BNB': 300.0,
+          'ADA': 0.5,
           'LINK': 15.0,
           'SHIB': 0.00002
         };
@@ -611,10 +603,8 @@ export default ({ strapi }) => {
             // 根据订单的currency字段决定使用哪种转账方法
             if (order.currency === 'USDT') {
               await this.executeWithdrawal(order);
-            } else if (order.currency === 'DOGE') {
-              await this.executeDogeWithdrawal(order);
-            } else if (order.currency === 'BNB') {
-              await this.executeBnbWithdrawal(order);
+            } else if (order.currency === 'ADA') {
+              await this.executeAdaWithdrawal(order);
             } else if (order.currency === 'LINK') {
               await this.executeLinkWithdrawal(order);
             } else if (order.currency === 'SHIB') {
@@ -637,10 +627,10 @@ export default ({ strapi }) => {
       }
     },
 
-    // 执行DOGE提现转账
-    async executeDogeWithdrawal(order: any) {
+    // 执行ADA提现转账
+    async executeAdaWithdrawal(order: any) {
       try {
-        if (!web3 || !dogeContract) {
+        if (!web3 || !adaContract) {
           throw new Error('区块链服务未初始化');
         }
 
@@ -648,15 +638,15 @@ export default ({ strapi }) => {
           throw new Error('私钥未配置，无法执行转账');
         }
 
-        console.log(`🔄 执行DOGE提现转账: ${order.orderNo}, 金额: ${order.actualAmount} DOGE`);
+        console.log(`🔄 执行ADA提现转账: ${order.orderNo}, 金额: ${order.actualAmount} ADA`);
 
-        // 检查钱包DOGE余额
-        const walletBalance = await this.getTokenBalance('DOGE');
+        // 检查钱包ADA余额
+        const walletBalance = await this.getTokenBalance('ADA');
         const requiredAmount = parseFloat(order.actualAmount);
         const currentBalance = parseFloat(walletBalance);
 
         if (currentBalance < requiredAmount) {
-          const errorMsg = `钱包DOGE余额不足: 需要 ${requiredAmount} DOGE, 当前余额 ${currentBalance} DOGE`;
+          const errorMsg = `钱包ADA余额不足: 需要 ${requiredAmount} ADA, 当前余额 ${currentBalance} ADA`;
           console.error(`❌ ${errorMsg}`);
           
           // 更新订单状态为失败
@@ -679,21 +669,21 @@ export default ({ strapi }) => {
           }
         });
 
-        // 获取DOGE代币的decimals
-        const decimals = await dogeContract.methods.decimals().call();
-        console.log(`🔍 DOGE decimals: ${decimals}`);
+        // 获取ADA代币的decimals
+        const decimals = await adaContract.methods.decimals().call();
+        console.log(`🔍 ADA decimals: ${decimals}`);
         
         // 根据decimals计算转账金额
         const base = new Decimal(10).pow(decimals);
         const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
         
-        console.log(`💰 转账金额: ${order.actualAmount} DOGE = ${amountInSmallestUnit.toString()} (最小单位)`);
+        console.log(`💰 转账金额: ${order.actualAmount} ADA = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
           from: walletAddress,
-          to: DOGE_CONTRACT_ADDRESS,
-          data: dogeContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
+          to: ADA_CONTRACT_ADDRESS,
+          data: adaContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
           gasPrice: await web3.eth.getGasPrice()
         };
@@ -713,7 +703,7 @@ export default ({ strapi }) => {
           }
         });
 
-        console.log(`✅ DOGE提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        console.log(`✅ ADA提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
         return receipt.transactionHash;
       } catch (error) {
         console.error('❌ 执行DOGE提现转账失败:', error);
@@ -760,107 +750,7 @@ export default ({ strapi }) => {
       }
     },
 
-    // 执行BNB提现转账
-    async executeBnbWithdrawal(order: any) {
-      try {
-        if (!web3 || !bnbContract) {
-          throw new Error('区块链服务未初始化');
-        }
 
-        if (!privateKey) {
-          throw new Error('私钥未配置，无法执行转账');
-        }
-
-        console.log(`🔄 执行BNB提现转账: ${order.orderNo}, 金额: ${order.actualAmount} BNB`);
-
-        // 更新订单状态为处理中
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'processing',
-            processTime: new Date()
-          }
-        });
-
-        // 获取BNB代币的decimals
-        const decimals = await bnbContract.methods.decimals().call();
-        console.log(`🔍 BNB decimals: ${decimals}`);
-        
-        // 根据decimals计算转账金额
-        const base = new Decimal(10).pow(decimals);
-        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
-        
-        console.log(`💰 转账金额: ${order.actualAmount} BNB = ${amountInSmallestUnit.toString()} (最小单位)`);
-        
-        // 创建转账交易
-        const tx = {
-          from: walletAddress,
-          to: BNB_CONTRACT_ADDRESS,
-          data: bnbContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
-          gas: '100000',
-          gasPrice: await web3.eth.getGasPrice()
-        };
-
-        // 签名并发送交易
-        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
-        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
-
-        // 更新订单状态为完成
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'completed',
-            txHash: receipt.transactionHash,
-            blockNumber: receipt.blockNumber,
-            confirmations: 1,
-            completedTime: new Date()
-          }
-        });
-
-        console.log(`✅ BNB提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
-        return receipt.transactionHash;
-      } catch (error) {
-        console.error('❌ 执行BNB提现转账失败:', error);
-        
-        // 回滚aiYue余额（提现失败时恢复用户余额）
-        try {
-          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: order.user }
-          });
-          
-          if (wallets && wallets.length > 0) {
-            const wallet = wallets[0];
-            const currentAiYue = new Decimal(wallet.aiYue || '0');
-            
-            // 使用订单中记录的USDT价值进行回滚
-            const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
-            const newAiYue = currentAiYue.plus(rollbackAmount);
-            
-            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
-              data: {
-                aiYue: newAiYue.toString()
-              }
-            });
-            
-            console.log(`🔄 回滚BNB提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额: ${newAiYue.toString()}`);
-          }
-        } catch (rollbackError) {
-          console.error('❌ 回滚aiYue余额失败:', rollbackError);
-        }
-        
-        // 如果订单状态还不是failed，则更新为失败
-        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
-        if (currentOrder && currentOrder.status !== 'failed') {
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-            data: {
-              status: 'failed',
-              processTime: new Date(),
-              remark: error.message
-            }
-          });
-        }
-        
-        throw error;
-      }
-    },
 
     // 执行LINK提现转账
     async executeLinkWithdrawal(order: any) {

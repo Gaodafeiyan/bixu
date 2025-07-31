@@ -612,7 +612,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       }
 
       // 验证代币符号
-      const supportedTokens = ['LINK', 'SHIB', 'CAKE', 'TWT', 'DOGE', 'BNB'];
+      const supportedTokens = ['LINK', 'SHIB', 'CAKE', 'TWT', 'ADA'];
       if (!supportedTokens.includes(tokenSymbol)) {
         return ctx.badRequest('不支持的代币类型');
       }
