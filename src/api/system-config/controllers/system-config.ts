@@ -182,7 +182,7 @@ export default factories.createCoreController('api::system-config.system-config'
           };
         }
         planStats[planCode].orderCount++;
-        planStats[planCode].totalAmount += parseFloat(order.amount);
+        planStats[planCode].totalAmount += parseFloat(order.amount.toString());
       });
 
       ctx.body = {
@@ -190,7 +190,7 @@ export default factories.createCoreController('api::system-config.system-config'
         data: {
           date: targetDate.toISOString().split('T')[0],
           totalOrders: dailyOrders.length,
-          totalAmount: dailyOrders.reduce((sum, order) => sum + parseFloat(order.amount), 0),
+          totalAmount: dailyOrders.reduce((sum, order) => sum + parseFloat(order.amount.toString()), 0),
           planStats: planStats
         }
       };
@@ -211,7 +211,7 @@ export default factories.createCoreController('api::system-config.system-config'
           data: {
             daily_order_count: 0,
             last_reset_date: new Date()
-          }
+          } as any
         });
       } else {
         // 重置所有计划
@@ -221,7 +221,7 @@ export default factories.createCoreController('api::system-config.system-config'
             data: {
               daily_order_count: 0,
               last_reset_date: new Date()
-            }
+            } as any
           });
         }
       }

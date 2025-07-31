@@ -39,7 +39,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
             data: {
               daily_order_count: 0,
               last_reset_date: beijingToday
-            }
+            } as any
           });
           resetCount++;
           console.log(`✅ 计划 ${planData.jihuaCode} 每日限购计数已重置`);

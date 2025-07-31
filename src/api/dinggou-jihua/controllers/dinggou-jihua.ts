@@ -119,8 +119,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       today.setHours(0, 0, 0, 0);
       
       // 检查是否需要重置每日计数（北京时间0:00:00）
-      const beijingTime = new Date(Date.now() + 8 * 60 * 60 * 1000);
-      const beijingToday = new Date(beijingTime);
+      const beijingTimeForReset = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      const beijingToday = new Date(beijingTimeForReset);
       beijingToday.setHours(0, 0, 0, 0);
       
       let shouldReset = false;
@@ -143,7 +143,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           data: {
             daily_order_count: 0,
             last_reset_date: beijingToday
-          }
+          } as any
         });
         planData.daily_order_count = 0;
         console.log(`计划 ${planData.jihuaCode} 每日限购计数已重置`);
@@ -211,7 +211,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         data: { 
           current_slots: (plan.current_slots || 0) + 1,
           daily_order_count: (planData.daily_order_count || 0) + 1
-        }
+        } as any
       });
 
       // 记录操作日志
