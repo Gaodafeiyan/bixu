@@ -323,21 +323,32 @@ export default ({ strapi }) => ({
       }
 
       // 获取可用的提现通道
-      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+      console.log(`🔍 查找提现通道参数: tokenSymbol=${tokenSymbol}, network=${network}`);
+      
+      // 先查找所有可用的提现通道，不限制asset
+      const allChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
         filters: {
           status: 'active',
-          channelType: { $in: ['withdrawal', 'both'] },
-          network: network,
-          asset: tokenSymbol
+          channelType: { $in: ['withdrawal', 'both'] }
         }
       });
-
-      const channelList = Array.isArray(channels) ? channels : [channels];
-      if (channelList.length === 0) {
+      
+      console.log(`🔍 所有可用的提现通道:`, allChannels);
+      
+      // 根据NAME字段匹配tokenSymbol
+      const matchedChannels = allChannels.filter((channel: any) => 
+        channel.name && channel.name.toUpperCase() === tokenSymbol.toUpperCase()
+      );
+      
+      console.log(`🔍 根据NAME字段匹配的通道:`, matchedChannels);
+      
+      if (matchedChannels.length === 0) {
+        console.error(`❌ 没有找到NAME为${tokenSymbol}的提现通道`);
+        console.error(`❌ 请检查后台充值通道配置中是否有: NAME=${tokenSymbol}, channelType=withdrawal, status=active`);
         throw new Error(`没有可用的${tokenSymbol}提现通道`);
       }
 
-      const channel = channelList[0]; // 选择第一个可用通道
+      const channel = matchedChannels[0]; // 选择第一个匹配的通道
 
       // 验证金额
       const amountDecimal = new Decimal(amount);
@@ -405,10 +416,21 @@ export default ({ strapi }) => ({
       };
       
       console.log(`🔍 准备更新钱包数据:`, updateData);
+      console.log(`🔍 钱包ID: ${wallet.id}`);
+      console.log(`🔍 用户ID: ${userId}`);
       
-      await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
-        data: updateData
-      });
+      try {
+        const updatedWallet = await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+          data: updateData
+        });
+        
+        console.log(`✅ 钱包更新成功:`, updatedWallet);
+        console.log(`✅ 更新后的aiYue: ${updatedWallet.aiYue}`);
+        console.log(`✅ 更新后的aiTokenBalances: ${updatedWallet.aiTokenBalances}`);
+      } catch (updateError) {
+        console.error(`❌ 钱包更新失败:`, updateError);
+        throw new Error(`钱包更新失败: ${updateError.message}`);
+      }
 
       console.log(`💰 更新钱包余额: aiYue减少${usdtValue.toString()} USDT, ${tokenSymbol}增加${actualAmount.toString()}`);
 
