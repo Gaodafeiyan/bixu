@@ -73,7 +73,7 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
   // 获取发货统计
   async getShippingStats(ctx) {
     try {
-      const shippingService = strapi.service('shipping-service');
+      const shippingService = strapi.service('shipping-service' as any);
       const stats = await shippingService.getShippingStats();
 
       ctx.body = {
@@ -96,7 +96,7 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
         return ctx.badRequest('请选择要发货的订单');
       }
 
-      const shippingService = strapi.service('shipping-service');
+      const shippingService = strapi.service('shipping-service' as any);
       const results = [];
 
       for (const orderId of orderIds) {
@@ -126,7 +126,7 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
   async exportOrders(ctx) {
     try {
       const { filters } = ctx.query;
-      const shippingService = strapi.service('shipping-service');
+      const shippingService = strapi.service('shipping-service' as any);
       const csvData = await shippingService.exportShippingOrders(filters);
 
       ctx.body = {

@@ -102,7 +102,7 @@ export default {
       console.log('🎰 初始化抽奖系统服务...');
       
       // 初始化抽奖引擎
-      const lotteryEngine = strapi.service('lottery-engine');
+      const lotteryEngine = strapi.service('lottery-engine' as any);
       if (lotteryEngine) {
         console.log('✅ 抽奖引擎初始化完成');
       }
@@ -122,7 +122,7 @@ export default {
       console.log('📦 初始化发货服务...');
       
       // 初始化发货队列
-      const shippingService = strapi.service('shipping-service');
+      const shippingService = strapi.service('shipping-service' as any);
       if (shippingService) {
         await shippingService.initializeShippingQueue();
         console.log('✅ 发货队列初始化完成');

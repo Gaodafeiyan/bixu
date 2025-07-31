@@ -197,7 +197,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         console.log(`用户 ${userId} 开始抽奖，机会ID: ${chanceId}, 奖池组ID: ${groupId}`);
 
         // 风控限流检查
-        const lotteryEngine = strapi.service('lottery-engine');
+        const lotteryEngine = strapi.service('lottery-engine' as any);
         const clientIp = ctx.request.ip;
         const rateLimitPassed = await lotteryEngine.checkRateLimit(clientIp);
         
@@ -209,7 +209,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         const result = await lotteryEngine.drawWithTransaction(userId, chanceId, ctx);
 
         // 数据埋点
-        await this.recordEvent(ctx, 'lottery_draw', {
+        console.log(`📊 事件埋点: lottery_draw`, {
           userId,
           chanceId,
           groupId,
@@ -231,19 +231,6 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
       } catch (error) {
         console.error('执行抽奖失败:', error);
         ctx.throw(500, `执行抽奖失败: ${error.message}`);
-      }
-    },
-
-    // 数据埋点记录
-    async recordEvent(ctx: any, eventType: string, data: any) {
-      try {
-        // 这里可以集成 Mixpanel 或其他数据分析平台
-        console.log(`📊 事件埋点: ${eventType}`, data);
-        
-        // 可以推送到事件队列或直接写入数据库
-        // await strapi.service('event-log').create({ data: { eventType, data } });
-      } catch (error) {
-        console.error('事件埋点失败:', error);
       }
     },
 
@@ -280,7 +267,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         console.log(`用户 ${userId} 从奖池组 ${groupId} 开始抽奖，机会ID: ${chanceId}`);
 
         // 风控限流检查
-        const lotteryEngine = strapi.service('lottery-engine');
+        const lotteryEngine = strapi.service('lottery-engine' as any);
         const clientIp = ctx.request.ip;
         const rateLimitPassed = await lotteryEngine.checkRateLimit(clientIp);
         
@@ -298,7 +285,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         const result = await lotteryEngine.drawWithTransaction(userId, chanceId, ctx);
 
         // 数据埋点
-        await this.recordEvent(ctx, 'lottery_draw_group', {
+        console.log(`📊 事件埋点: lottery_draw_group`, {
           userId,
           chanceId,
           groupId,

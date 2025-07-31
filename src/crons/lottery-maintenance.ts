@@ -84,7 +84,7 @@ export default {
   // 检查库存预警
   async checkStockWarnings(strapi: any) {
     try {
-      const lotteryEngine = strapi.service('lottery-engine');
+      const lotteryEngine = strapi.service('lottery-engine' as any);
       await lotteryEngine.checkStockWarning();
     } catch (error) {
       console.error('检查库存预警失败:', error);
