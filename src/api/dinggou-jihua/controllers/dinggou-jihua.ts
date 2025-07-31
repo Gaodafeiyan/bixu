@@ -108,10 +108,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('认购计划已暂停');
       }
 
-      // 检查槽位是否已满
-      if (plan.current_slots >= plan.max_slots) {
-        return ctx.badRequest('认购计划槽位已满');
-      }
+      // 移除槽位检查，只使用每日限购
 
       // 检查每日限购
       const planData = plan as any;
@@ -206,10 +203,9 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         data: { usdtYue: walletBalance.minus(investmentAmount).toString() }
       });
 
-      // 更新计划当前槽位和每日限购计数
+      // 更新每日限购计数
       await strapi.entityService.update('api::dinggou-jihua.dinggou-jihua', planId, {
         data: { 
-          current_slots: (plan.current_slots || 0) + 1,
           daily_order_count: (planData.daily_order_count || 0) + 1
         } as any
       });
