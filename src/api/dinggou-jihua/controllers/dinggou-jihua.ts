@@ -266,9 +266,9 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.forbidden('无权操作此订单');
       }
 
-      // 检查订单状态 - 允许redeemable状态或已到期的running状态
-      const now = new Date();
-      const isExpired = order.end_at && new Date(order.end_at) <= now;
+      // 检查订单状态 - 允许redeemable状态或已到期的running状态（使用北京时间）
+      const beijingNow = new Date(Date.now() + 8 * 60 * 60 * 1000); // 北京时间 UTC+8
+      const isExpired = order.end_at && new Date(order.end_at) <= beijingNow;
       
       if (order.status !== 'redeemable' && !(order.status === 'running' && isExpired)) {
         return ctx.badRequest('订单尚未到期，无法赎回');

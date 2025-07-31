@@ -165,12 +165,12 @@ export default ({ strapi }: { strapi: Strapi }) => ({
   // 检查并处理到期的投资
   async checkAndProcessExpiredInvestments() {
     try {
-      const now = new Date();
+      const beijingNow = new Date(Date.now() + 8 * 60 * 60 * 1000); // 北京时间 UTC+8
       
       // 查找已到期但未处理的订单
       const expiredOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: {
-          end_at: { $lte: now },
+          end_at: { $lte: beijingNow },
           status: 'running'
         },
         populate: ['user', 'jihua']

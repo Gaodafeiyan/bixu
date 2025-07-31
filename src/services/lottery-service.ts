@@ -88,8 +88,9 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         throw new Error('抽奖机会已失效');
       }
 
-      // 检查有效期
-      if (chance.validUntil && new Date() > new Date(chance.validUntil)) {
+      // 检查有效期（使用北京时间）
+      const beijingNow = new Date(Date.now() + 8 * 60 * 60 * 1000); // 北京时间 UTC+8
+      if (chance.validUntil && beijingNow > new Date(chance.validUntil)) {
         throw new Error('抽奖机会已过期');
       }
 

@@ -270,13 +270,14 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         const userId = ctx.state.user.id;
         console.log('获取用户抽奖机会，用户ID:', userId);
 
+        const beijingNow = new Date(Date.now() + 8 * 60 * 60 * 1000); // 北京时间 UTC+8
         const chances = await strapi.entityService.findMany('api::choujiang-jihui.choujiang-jihui' as any, {
           filters: {
             user: { id: userId },
             isActive: true,
             $or: [
               { validUntil: null },
-              { validUntil: { $gt: new Date() } }
+              { validUntil: { $gt: beijingNow } }
             ]
           },
           populate: ['user', 'jiangpin'],
@@ -346,8 +347,9 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
           return ctx.badRequest('抽奖机会已失效');
         }
 
-        // 检查有效期
-        if (chance.validUntil && new Date() > new Date(chance.validUntil)) {
+        // 检查有效期（使用北京时间）
+        const beijingNow = new Date(Date.now() + 8 * 60 * 60 * 1000); // 北京时间 UTC+8
+        if (chance.validUntil && beijingNow > new Date(chance.validUntil)) {
           return ctx.badRequest('抽奖机会已过期');
         }
 
