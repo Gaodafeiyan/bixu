@@ -2,13 +2,20 @@ import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 import Decimal from 'decimal.js';
 
-// USDT合约ABI（简化版）
-const USDT_ABI: AbiItem[] = [
+// 代币合约ABI（包含decimals方法）
+const TOKEN_ABI: AbiItem[] = [
   {
     "constant": true,
     "inputs": [{"name": "_owner", "type": "address"}],
     "name": "balanceOf",
     "outputs": [{"name": "balance", "type": "uint256"}],
+    "type": "function"
+  },
+  {
+    "constant": true,
+    "inputs": [],
+    "name": "decimals",
+    "outputs": [{"name": "", "type": "uint8"}],
     "type": "function"
   },
   {
@@ -57,10 +64,10 @@ export default ({ strapi }) => {
         }
 
         // 初始化所有代币合约
-        usdtContract = new web3.eth.Contract(USDT_ABI, USDT_CONTRACT_ADDRESS);
-        adaContract = new web3.eth.Contract(USDT_ABI, ADA_CONTRACT_ADDRESS);
-        linkContract = new web3.eth.Contract(USDT_ABI, LINK_CONTRACT_ADDRESS);
-        shibContract = new web3.eth.Contract(USDT_ABI, SHIB_CONTRACT_ADDRESS);
+        usdtContract = new web3.eth.Contract(TOKEN_ABI, USDT_CONTRACT_ADDRESS);
+        adaContract = new web3.eth.Contract(TOKEN_ABI, ADA_CONTRACT_ADDRESS);
+        linkContract = new web3.eth.Contract(TOKEN_ABI, LINK_CONTRACT_ADDRESS);
+        shibContract = new web3.eth.Contract(TOKEN_ABI, SHIB_CONTRACT_ADDRESS);
         
         console.log('✅ 区块链服务初始化成功');
         console.log(`📧 钱包地址: ${walletAddress}`);
@@ -706,12 +713,13 @@ export default ({ strapi }) => {
         console.log(`✅ ADA提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
         return receipt.transactionHash;
       } catch (error) {
-        console.error('❌ 执行DOGE提现转账失败:', error);
+        console.error('❌ 执行ADA提现转账失败:', error);
         
         // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
-          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: order.user }
+          // 直接通过用户ID查找钱包，避免关联查询问题
+          const wallets = await strapi.db.query('api::qianbao-yue.qianbao-yue').findMany({
+            where: { user: order.user }
           });
           
           if (wallets && wallets.length > 0) {
@@ -722,13 +730,14 @@ export default ({ strapi }) => {
             const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
-            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+            await strapi.db.query('api::qianbao-yue.qianbao-yue').update({
+              where: { id: wallet.id },
               data: {
                 aiYue: newAiYue.toString()
               }
             });
             
-            console.log(`🔄 回滚DOGE提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额: ${newAiYue.toString()}`);
+            console.log(`🔄 回滚ADA提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额: ${newAiYue.toString()}`);
           }
         } catch (rollbackError) {
           console.error('❌ 回滚aiYue余额失败:', rollbackError);
@@ -814,8 +823,9 @@ export default ({ strapi }) => {
         
         // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
-          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: order.user }
+          // 直接通过用户ID查找钱包，避免关联查询问题
+          const wallets = await strapi.db.query('api::qianbao-yue.qianbao-yue').findMany({
+            where: { user: order.user }
           });
           
           if (wallets && wallets.length > 0) {
@@ -826,7 +836,8 @@ export default ({ strapi }) => {
             const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
-            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+            await strapi.db.query('api::qianbao-yue.qianbao-yue').update({
+              where: { id: wallet.id },
               data: {
                 aiYue: newAiYue.toString()
               }
@@ -916,8 +927,9 @@ export default ({ strapi }) => {
         
         // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
-          const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: order.user }
+          // 直接通过用户ID查找钱包，避免关联查询问题
+          const wallets = await strapi.db.query('api::qianbao-yue.qianbao-yue').findMany({
+            where: { user: order.user }
           });
           
           if (wallets && wallets.length > 0) {
@@ -928,7 +940,8 @@ export default ({ strapi }) => {
             const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
-            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+            await strapi.db.query('api::qianbao-yue.qianbao-yue').update({
+              where: { id: wallet.id },
               data: {
                 aiYue: newAiYue.toString()
               }
