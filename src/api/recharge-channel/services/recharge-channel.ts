@@ -405,19 +405,28 @@ export default ({ strapi }) => ({
       const feeRate = new Decimal(channel.feeRate);
       const fixedFee = new Decimal(channel.fixedFee);
       const fee = amountDecimal.mul(feeRate).add(fixedFee);
-      const actualAmount = amountDecimal.sub(fee);
-
+      
       // 获取实时价格并计算USDT价值
       let usdtValue: Decimal;
+      let actualAmount: Decimal;
+      
       if (tokenSymbol === 'USDT') {
         // USDT直接使用数量作为价值
         usdtValue = amountDecimal;
+        actualAmount = amountDecimal.sub(fee);
       } else {
-        // 其他代币需要根据实时价格计算USDT价值
+        // 其他代币：用户输入的是USDT价值，需要计算代币数量
         const tokenPrice = await getTokenPrice(tokenSymbol);
-        usdtValue = amountDecimal.mul(new Decimal(tokenPrice));
+        usdtValue = amountDecimal; // 用户输入的就是USDT价值
+        const tokenAmount = usdtValue.div(new Decimal(tokenPrice)); // 计算代币数量
         console.log(`💰 ${tokenSymbol}实时价格: ${tokenPrice} USDT`);
-        console.log(`💰 提现${amount} ${tokenSymbol} = ${usdtValue.toString()} USDT`);
+        console.log(`💰 用户输入${amount} USDT价值，转换为${tokenAmount.toString()} ${tokenSymbol}`);
+        
+        // 计算手续费（基于代币数量）
+        const feeRate = new Decimal(channel.feeRate);
+        const fixedFee = new Decimal(channel.fixedFee);
+        const fee = tokenAmount.mul(feeRate).add(fixedFee);
+        actualAmount = tokenAmount.sub(fee);
       }
 
       // 检查余额是否足够
