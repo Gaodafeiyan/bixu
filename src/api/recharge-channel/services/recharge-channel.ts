@@ -375,11 +375,31 @@ export default ({ strapi }) => ({
       // 立即扣除用户AI代币价值余额（扣除USDT价值）
       const newAiYueBalance = aiYueBalance.sub(usdtValue);
       
+      // 解析现有的aiTokenBalances
+      let tokenBalances = {};
+      if (wallet.aiTokenBalances) {
+        try {
+          tokenBalances = JSON.parse(wallet.aiTokenBalances);
+        } catch (error) {
+          console.error('解析aiTokenBalances失败:', error);
+          tokenBalances = {};
+        }
+      }
+
+      // 将转换后的代币数量添加到aiTokenBalances中
+      const currentTokenBalance = new Decimal(tokenBalances[tokenSymbol] || '0');
+      const newTokenBalance = currentTokenBalance.add(actualAmount);
+      tokenBalances[tokenSymbol] = newTokenBalance.toString();
+
+      // 更新钱包余额：扣除aiYue，添加代币余额
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
         data: {
-          aiYue: newAiYueBalance.toString()
+          aiYue: newAiYueBalance.toString(),
+          aiTokenBalances: JSON.stringify(tokenBalances)
         }
       });
+
+      console.log(`💰 更新钱包余额: aiYue减少${usdtValue.toString()} USDT, ${tokenSymbol}增加${actualAmount.toString()}`);
 
       // 创建提现订单
       const orderNo = generateOrderNo('withdrawal');
