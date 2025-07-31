@@ -1,5 +1,6 @@
 import { factories } from '@strapi/strapi';
 import Decimal from 'decimal.js';
+import lotteryEngineService from '../../../services/lottery-engine';
 
 export default factories.createCoreController('api::choujiang-jihui.choujiang-jihui' as any, ({ strapi }) => {
   return {
@@ -197,7 +198,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         console.log(`用户 ${userId} 开始抽奖，机会ID: ${chanceId}, 奖池组ID: ${groupId}`);
 
         // 风控限流检查
-        const lotteryEngine = strapi.service('lottery-engine' as any);
+        const lotteryEngine = lotteryEngineService({ strapi });
         const clientIp = ctx.request.ip;
         const rateLimitPassed = await lotteryEngine.checkRateLimit(clientIp);
         
@@ -267,7 +268,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
         console.log(`用户 ${userId} 从奖池组 ${groupId} 开始抽奖，机会ID: ${chanceId}`);
 
         // 风控限流检查
-        const lotteryEngine = strapi.service('lottery-engine' as any);
+        const lotteryEngine = lotteryEngineService({ strapi });
         const clientIp = ctx.request.ip;
         const rateLimitPassed = await lotteryEngine.checkRateLimit(clientIp);
         
