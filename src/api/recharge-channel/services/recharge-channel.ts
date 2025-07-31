@@ -209,7 +209,7 @@ export default ({ strapi }) => ({
   },
 
   // 创建提现订单
-  async createWithdrawalOrder(userId: number, amount: string, address: string, network: string) {
+  async createWithdrawalOrder(userId: number, amount: string, address: string, network: string, currency: string = 'USDT') {
     try {
       // 验证用户余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
@@ -221,11 +221,32 @@ export default ({ strapi }) => ({
         throw new Error('用户钱包不存在');
       }
 
-      const walletBalance = new Decimal(wallet.usdtYue || 0);
+      let walletBalance: Decimal;
+      let balanceField: string;
+
+      if (currency === 'USDT') {
+        // USDT余额检查
+        walletBalance = new Decimal(wallet.usdtYue || 0);
+        balanceField = 'usdtYue';
+      } else {
+        // 其他代币余额检查
+        let tokenBalances = {};
+        if (wallet.aiTokenBalances) {
+          try {
+            tokenBalances = JSON.parse(wallet.aiTokenBalances);
+          } catch (error) {
+            console.error('解析aiTokenBalances失败:', error);
+            tokenBalances = {};
+          }
+        }
+        walletBalance = new Decimal(tokenBalances[currency] || 0);
+        balanceField = 'aiTokenBalances';
+      }
+
       const withdrawalAmount = new Decimal(amount);
 
       if (walletBalance.lessThan(withdrawalAmount)) {
-        throw new Error('余额不足');
+        throw new Error(`${currency}余额不足`);
       }
 
       // 获取可用的提现通道
@@ -233,13 +254,14 @@ export default ({ strapi }) => ({
         filters: {
           status: 'active',
           channelType: { $in: ['withdrawal', 'both'] },
-          network: network
+          network: network,
+          asset: currency
         }
       });
 
       const channelList = Array.isArray(channels) ? channels : [channels];
       if (channelList.length === 0) {
-        throw new Error('没有可用的提现通道');
+        throw new Error(`没有可用的${currency}提现通道`);
       }
 
       const channel = channelList[0]; // 选择第一个可用通道
@@ -250,7 +272,7 @@ export default ({ strapi }) => ({
       const maxAmount = new Decimal(channel.maxAmount);
 
       if (amountDecimal.lessThan(minAmount) || amountDecimal.greaterThan(maxAmount)) {
-        throw new Error(`提现金额必须在 ${minAmount} - ${maxAmount} 之间`);
+        throw new Error(`${currency}提现金额必须在 ${minAmount} - ${maxAmount} 之间`);
       }
 
       // 计算手续费
@@ -266,15 +288,35 @@ export default ({ strapi }) => ({
       
       // 如果扣除手续费后金额太小，则拒绝提现
       if (actualAmount.lessThanOrEqualTo(0)) {
-        throw new Error(`提现金额扣除手续费后不足，请增加提现金额或选择其他代币`);
+        throw new Error(`${currency}提现金额扣除手续费后不足，请增加提现金额或选择其他代币`);
       }
 
       // 立即扣除用户余额
-      const newBalance = walletBalance.sub(withdrawalAmount);
-      await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
-        data: {
-          usdtYue: newBalance.toString()
+      let updateData: any = {};
+      
+      if (currency === 'USDT') {
+        const newBalance = walletBalance.sub(withdrawalAmount);
+        updateData.usdtYue = newBalance.toString();
+      } else {
+        // 更新aiTokenBalances中的特定代币余额
+        let tokenBalances = {};
+        if (wallet.aiTokenBalances) {
+          try {
+            tokenBalances = JSON.parse(wallet.aiTokenBalances);
+          } catch (error) {
+            console.error('解析aiTokenBalances失败:', error);
+            tokenBalances = {};
+          }
         }
+        
+        const currentBalance = new Decimal(tokenBalances[currency] || 0);
+        const newBalance = currentBalance.sub(withdrawalAmount);
+        tokenBalances[currency] = newBalance.toString();
+        updateData.aiTokenBalances = JSON.stringify(tokenBalances);
+      }
+
+      await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+        data: updateData
       });
 
       // 创建提现订单
@@ -283,7 +325,7 @@ export default ({ strapi }) => ({
         data: {
           orderNo,
           amount: amount,
-          currency: channel.asset,
+          currency: currency,
           status: 'pending',
           user: userId,
           channel: channel.id,
@@ -295,7 +337,7 @@ export default ({ strapi }) => ({
         }
       });
 
-      console.log(`创建提现订单: ${orderNo}, 用户: ${userId}, 金额: ${amount}, 手续费: ${actualFee}`);
+      console.log(`创建${currency}提现订单: ${orderNo}, 用户: ${userId}, 金额: ${amount}, 手续费: ${actualFee}`);
       return withdrawalOrder;
     } catch (error) {
       console.error('创建提现订单失败:', error);
