@@ -84,6 +84,21 @@ export default {
       type: 'integer',
       description: '关联抽奖奖品ID',
     },
+    // 新增每日限购字段
+    daily_order_limit: {
+      type: 'integer',
+      default: 100,
+      description: '每日可投资订单数量限制',
+    },
+    daily_order_count: {
+      type: 'integer',
+      default: 0,
+      description: '今日已投资订单数量',
+    },
+    last_reset_date: {
+      type: 'date',
+      description: '最后重置日期（北京时间）',
+    },
     dingdanList: {
       type: 'relation',
       relation: 'oneToMany',

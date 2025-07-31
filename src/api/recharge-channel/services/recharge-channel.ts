@@ -258,7 +258,17 @@ export default ({ strapi }) => ({
       const feeRate = new Decimal(channel.feeRate);
       const fixedFee = new Decimal(channel.fixedFee);
       const fee = amountDecimal.mul(feeRate).add(fixedFee);
-      const actualAmount = amountDecimal.sub(fee);
+      
+      // 确保手续费不会超过提现金额
+      const maxFee = amountDecimal.mul(new Decimal('0.1')); // 最大手续费为提现金额的10%
+      const actualFee = fee.greaterThan(maxFee) ? maxFee : fee;
+      
+      const actualAmount = amountDecimal.sub(actualFee);
+      
+      // 如果扣除手续费后金额太小，则拒绝提现
+      if (actualAmount.lessThanOrEqualTo(0)) {
+        throw new Error(`提现金额扣除手续费后不足，请增加提现金额或选择其他代币`);
+      }
 
       // 立即扣除用户余额
       const newBalance = walletBalance.sub(withdrawalAmount);
@@ -281,12 +291,12 @@ export default ({ strapi }) => ({
           withdrawAddress: address,
           withdrawNetwork: network,
           requestTime: new Date(),
-          fee: fee.toString(),
+          fee: actualFee.toString(),
           actualAmount: actualAmount.toString(),
         }
       });
 
-      console.log(`创建提现订单: ${orderNo}, 用户: ${userId}, 金额: ${amount}, 手续费: ${fee}`);
+      console.log(`创建提现订单: ${orderNo}, 用户: ${userId}, 金额: ${amount}, 手续费: ${actualFee}`);
       return withdrawalOrder;
     } catch (error) {
       console.error('创建提现订单失败:', error);

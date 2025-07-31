@@ -24,4 +24,6 @@ export default {
   'withdrawal-order': () => import('./withdrawal-order/routes/withdrawal-order'),
   // AI代币路由
   'ai-token': () => import('./ai-token/routes/ai-token'),
+  // 系统配置路由
+  'system-config': () => import('./system-config/routes/system-config'),
 }; 

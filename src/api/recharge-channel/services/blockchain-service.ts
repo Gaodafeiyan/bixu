@@ -84,11 +84,14 @@ export default ({ strapi }) => {
           throw new Error('区块链服务未初始化');
         }
 
-        const balance = await usdtContract.methods.balanceOf(walletAddress).call();
-        const balanceInEth = web3.utils.fromWei(balance, 'ether');
+        // 使用动态decimals而不是硬编码1e18
+        const rawBalance = await usdtContract.methods.balanceOf(walletAddress).call();
+        const decimals = await usdtContract.methods.decimals().call();
+        const base = new Decimal(10).pow(decimals);
+        const balance = new Decimal(rawBalance).dividedBy(base);
         
-        console.log(`💰 钱包USDT余额: ${balanceInEth}`);
-        return balanceInEth;
+        console.log(`💰 钱包USDT余额: ${balance.toString()} (原始值: ${rawBalance}, decimals: ${decimals})`);
+        return balance.toString();
       } catch (error) {
         console.error('❌ 获取钱包余额失败:', error);
         return '0';
@@ -137,11 +140,19 @@ export default ({ strapi }) => {
         console.log(`🔍 查询${tokenSymbol}余额 - 合约地址: ${contractAddress}`);
         console.log(`🔍 查询${tokenSymbol}余额 - 钱包地址: ${walletAddress}`);
 
-        const balance = await contract.methods.balanceOf(walletAddress).call();
-        const balanceInEth = web3.utils.fromWei(balance, 'ether');
+        // 获取原始余额
+        const rawBalance = await contract.methods.balanceOf(walletAddress).call();
         
-        console.log(`💰 钱包${tokenSymbol}余额: ${balanceInEth} (原始值: ${balance})`);
-        return balanceInEth;
+        // 动态读取代币的decimals
+        const decimals = await contract.methods.decimals().call();
+        console.log(`🔍 ${tokenSymbol} decimals: ${decimals}`);
+        
+        // 根据decimals计算实际余额
+        const base = new Decimal(10).pow(decimals);
+        const balance = new Decimal(rawBalance).dividedBy(base);
+        
+        console.log(`💰 钱包${tokenSymbol}余额: ${balance.toString()} (原始值: ${rawBalance}, decimals: ${decimals})`);
+        return balance.toString();
       } catch (error) {
         console.error(`❌ 获取${tokenSymbol}余额失败:`, error);
         return '0';
@@ -400,7 +411,11 @@ export default ({ strapi }) => {
         ], tx.data, [tx.topics[1], tx.topics[2]]);
 
         const fromAddress = decodedData.from;
-        const amount = web3.utils.fromWei(decodedData.value as string, 'ether'); // 类型断言为string
+        // 使用动态decimals而不是硬编码1e18
+        const rawValue = decodedData.value as string;
+        const decimals = await usdtContract.methods.decimals().call();
+        const base = new Decimal(10).pow(decimals);
+        const amount = new Decimal(rawValue).dividedBy(base).toString();
         const txHash = tx.transactionHash;
 
         console.log(`💰 收到转账: ${amount} USDT from ${fromAddress}, tx: ${txHash}`);
@@ -528,14 +543,16 @@ export default ({ strapi }) => {
           }
         });
 
-        // 准备转账数据
-        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        // 准备转账数据 - 使用动态decimals
+        const decimals = await usdtContract.methods.decimals().call();
+        const base = new Decimal(10).pow(decimals);
+        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
         
         // 创建转账交易
         const tx = {
           from: walletAddress,
           to: USDT_CONTRACT_ADDRESS,
-          data: usdtContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          data: usdtContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
           gasPrice: await web3.eth.getGasPrice()
         };
@@ -662,14 +679,21 @@ export default ({ strapi }) => {
           }
         });
 
-        // 准备转账数据
-        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        // 获取DOGE代币的decimals
+        const decimals = await dogeContract.methods.decimals().call();
+        console.log(`🔍 DOGE decimals: ${decimals}`);
+        
+        // 根据decimals计算转账金额
+        const base = new Decimal(10).pow(decimals);
+        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
+        
+        console.log(`💰 转账金额: ${order.actualAmount} DOGE = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
           from: walletAddress,
           to: DOGE_CONTRACT_ADDRESS,
-          data: dogeContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          data: dogeContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
           gasPrice: await web3.eth.getGasPrice()
         };
@@ -697,7 +721,7 @@ export default ({ strapi }) => {
         // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
           const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: { id: order.user } }
+            filters: { user: order.user }
           });
           
           if (wallets && wallets.length > 0) {
@@ -757,14 +781,21 @@ export default ({ strapi }) => {
           }
         });
 
-        // 准备转账数据
-        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        // 获取BNB代币的decimals
+        const decimals = await bnbContract.methods.decimals().call();
+        console.log(`🔍 BNB decimals: ${decimals}`);
+        
+        // 根据decimals计算转账金额
+        const base = new Decimal(10).pow(decimals);
+        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
+        
+        console.log(`💰 转账金额: ${order.actualAmount} BNB = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
           from: walletAddress,
           to: BNB_CONTRACT_ADDRESS,
-          data: bnbContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          data: bnbContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
           gasPrice: await web3.eth.getGasPrice()
         };
@@ -792,7 +823,7 @@ export default ({ strapi }) => {
         // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
           const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: { id: order.user } }
+            filters: { user: order.user }
           });
           
           if (wallets && wallets.length > 0) {
@@ -852,14 +883,21 @@ export default ({ strapi }) => {
           }
         });
 
-        // 准备转账数据
-        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        // 获取LINK代币的decimals
+        const decimals = await linkContract.methods.decimals().call();
+        console.log(`🔍 LINK decimals: ${decimals}`);
+        
+        // 根据decimals计算转账金额
+        const base = new Decimal(10).pow(decimals);
+        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
+        
+        console.log(`💰 转账金额: ${order.actualAmount} LINK = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
           from: walletAddress,
           to: LINK_CONTRACT_ADDRESS,
-          data: linkContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          data: linkContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
           gasPrice: await web3.eth.getGasPrice()
         };
@@ -887,7 +925,7 @@ export default ({ strapi }) => {
         // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
           const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: { id: order.user } }
+            filters: { user: order.user }
           });
           
           if (wallets && wallets.length > 0) {
@@ -947,14 +985,21 @@ export default ({ strapi }) => {
           }
         });
 
-        // 准备转账数据
-        const amountInWei = web3.utils.toWei(order.actualAmount, 'ether');
+        // 获取SHIB代币的decimals
+        const decimals = await shibContract.methods.decimals().call();
+        console.log(`🔍 SHIB decimals: ${decimals}`);
+        
+        // 根据decimals计算转账金额
+        const base = new Decimal(10).pow(decimals);
+        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
+        
+        console.log(`💰 转账金额: ${order.actualAmount} SHIB = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
           from: walletAddress,
           to: SHIB_CONTRACT_ADDRESS,
-          data: shibContract.methods.transfer(order.withdrawAddress, amountInWei).encodeABI(),
+          data: shibContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
           gasPrice: await web3.eth.getGasPrice()
         };
@@ -982,7 +1027,7 @@ export default ({ strapi }) => {
         // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
           const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
-            filters: { user: { id: order.user } }
+            filters: { user: order.user }
           });
           
           if (wallets && wallets.length > 0) {

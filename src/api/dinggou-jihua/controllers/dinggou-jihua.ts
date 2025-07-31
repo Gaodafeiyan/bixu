@@ -113,8 +113,51 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('认购计划槽位已满');
       }
 
-      // 使用计划中预设的投资金额 - 使用类型断言
+      // 检查每日限购
       const planData = plan as any;
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      // 检查是否需要重置每日计数（北京时间0:00:00）
+      const beijingTime = new Date(Date.now() + 8 * 60 * 60 * 1000);
+      const beijingToday = new Date(beijingTime);
+      beijingToday.setHours(0, 0, 0, 0);
+      
+      let shouldReset = false;
+      if (!planData.last_reset_date) {
+        shouldReset = true;
+      } else {
+        const lastReset = new Date(planData.last_reset_date);
+        const lastResetBeijing = new Date(lastReset.getTime() + 8 * 60 * 60 * 1000);
+        const lastResetToday = new Date(lastResetBeijing);
+        lastResetToday.setHours(0, 0, 0, 0);
+        
+        if (beijingToday.getTime() > lastResetToday.getTime()) {
+          shouldReset = true;
+        }
+      }
+      
+      // 如果需要重置，更新计数和重置日期
+      if (shouldReset) {
+        await strapi.entityService.update('api::dinggou-jihua.dinggou-jihua', planId, {
+          data: {
+            daily_order_count: 0,
+            last_reset_date: beijingToday
+          }
+        });
+        planData.daily_order_count = 0;
+        console.log(`计划 ${planData.jihuaCode} 每日限购计数已重置`);
+      }
+      
+      // 检查每日限购
+      const dailyLimit = planData.daily_order_limit || 100;
+      const currentCount = planData.daily_order_count || 0;
+      
+      if (currentCount >= dailyLimit) {
+        return ctx.badRequest(`今日投资订单数量已达上限（${dailyLimit}单），请明天再试`);
+      }
+
+      // 使用计划中预设的投资金额 - 使用类型断言
       const investmentAmount = new Decimal(planData.benjinUSDT || 0);
       if (investmentAmount.isZero()) {
         return ctx.badRequest('认购计划金额未设置');
@@ -163,9 +206,12 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         data: { usdtYue: walletBalance.minus(investmentAmount).toString() }
       });
 
-      // 更新计划当前槽位
+      // 更新计划当前槽位和每日限购计数
       await strapi.entityService.update('api::dinggou-jihua.dinggou-jihua', planId, {
-        data: { current_slots: (plan.current_slots || 0) + 1 }
+        data: { 
+          current_slots: (plan.current_slots || 0) + 1,
+          daily_order_count: (planData.daily_order_count || 0) + 1
+        }
       });
 
       // 记录操作日志
