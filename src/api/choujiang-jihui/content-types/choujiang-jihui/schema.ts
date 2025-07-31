@@ -26,7 +26,7 @@ export default {
       type: 'relation',
       relation: 'manyToOne',
       target: 'api::choujiang-jiangpin.choujiang-jiangpin',
-      required: true,
+      required: false, // 改为非必需，支持随机抽奖
     },
     count: {
       type: 'integer',
@@ -60,13 +60,19 @@ export default {
       required: true,
       default: true,
     },
-    // 暂时注释掉sourceOrder字段，避免SQLite错误
-    // sourceOrder: {
-    //   type: 'relation',
-    //   relation: 'manyToOne',
-    //   target: 'api::dinggou-dingdan.dinggou-dingdan',
-    //   required: false,
-    //   configurable: false,
-    // },
+    // 新增：来源订单关联（支持多种订单类型）
+    sourceOrder: {
+      type: 'relation',
+      relation: 'manyToOne',
+      target: 'api::dinggou-dingdan.dinggou-dingdan',
+      required: false,
+    },
+    // 新增：来源邀请记录
+    sourceInviteRecord: {
+      type: 'relation',
+      relation: 'manyToOne',
+      target: 'api::yaoqing-jiangli.yaoqing-jiangli',
+      required: false,
+    },
   },
 } as const;

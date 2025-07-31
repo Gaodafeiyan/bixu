@@ -26,6 +26,22 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    {
+      method: 'GET',
+      path: '/choujiang-jihuis/lottery-groups',
+      handler: 'choujiang-jihui.getLotteryGroups',
+      config: {
+        auth: false,  // 公开接口
+      },
+    },
+    {
+      method: 'POST',
+      path: '/choujiang-jihuis/draw-from-group',
+      handler: 'choujiang-jihui.drawFromGroup',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
     
     // 默认的CRUD路由 - 放在自定义路由之后
     {

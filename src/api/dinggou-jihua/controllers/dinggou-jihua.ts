@@ -324,8 +324,16 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       }
 
       // 处理抽奖机会 - 实际赠送抽奖次数
+      console.log(`🔍 🔍 🔍 === 后端抽奖机会调试 === 🔍 🔍 🔍`);
+      console.log(`🔍 计划数据:`, planData);
+      console.log(`🔍 planData.lottery_chances 原始值:`, planData.lottery_chances);
+      console.log(`🔍 planData.lottery_chances 类型:`, typeof planData.lottery_chances);
+      console.log(`🔍 planData.lottery_chances 是否为null:`, planData.lottery_chances === null);
+      console.log(`🔍 planData.lottery_chances 是否为undefined:`, planData.lottery_chances === undefined);
+      
       const lotteryChances = planData.lottery_chances || 0; // 改为默认0，只有明确配置了才赠送
       console.log(`🔍 检查抽奖机会配置: 计划 ${planData.jihuaCode || planData.name}, lottery_chances: ${planData.lottery_chances}, 计算后: ${lotteryChances}`);
+      console.log(`🔍 🔍 🔍 === 后端抽奖机会调试结束 === 🔍 🔍 🔍`);
       
       if (lotteryChances > 0) {
         try {
@@ -476,20 +484,29 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       // 记录操作日志
       console.log(`用户 ${userId} 赎回订单 ${orderId}，总收益: ${totalPayout.toString()} USDT，邀请奖励: ${invitationReward} USDT`);
 
+      console.log(`🔍 🔍 🔍 === 后端响应调试 === 🔍 🔍 🔍`);
+      console.log(`🔍 准备返回的lotteryChances:`, lotteryChances);
+      console.log(`🔍 lotteryChances类型:`, typeof lotteryChances);
+      
+      const responseData = {
+        orderId: order.id,
+        investmentAmount: investmentAmount.toString(),
+        staticYield: staticYield.toString(),
+        totalPayout: totalPayout.toString(),
+        aiTokenReward: planData.aiBili ? investmentAmount.mul(planData.aiBili).toString() : '0',
+        lotteryChances: lotteryChances,
+        invitationReward: invitationReward,
+        inviterInfo: inviterInfo,
+        rewardCalculation: rewardCalculation,
+        parentTier: parentTier
+      };
+      
+      console.log(`🔍 完整响应数据:`, responseData);
+      console.log(`🔍 🔍 🔍 === 后端响应调试结束 === 🔍 🔍 🔍`);
+      
       ctx.body = {
         success: true,
-        data: {
-          orderId: order.id,
-          investmentAmount: investmentAmount.toString(),
-          staticYield: staticYield.toString(),
-          totalPayout: totalPayout.toString(),
-          aiTokenReward: planData.aiBili ? investmentAmount.mul(planData.aiBili).toString() : '0',
-          lotteryChances: lotteryChances,
-          invitationReward: invitationReward,
-          inviterInfo: inviterInfo,
-          rewardCalculation: rewardCalculation,
-          parentTier: parentTier
-        },
+        data: responseData,
         message: '赎回成功'
       };
     } catch (error) {

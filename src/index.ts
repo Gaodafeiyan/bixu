@@ -87,6 +87,49 @@ export default {
       }
     });
 
+    // 初始化抽奖系统服务
+    this.initializeLotteryServices(strapi);
+
+    // 初始化发货服务
+    this.initializeShippingServices(strapi);
+
     console.log('✅ 定时任务启动完成');
   },
+
+  // 初始化抽奖系统服务
+  async initializeLotteryServices(strapi: any) {
+    try {
+      console.log('🎰 初始化抽奖系统服务...');
+      
+      // 初始化抽奖引擎
+      const lotteryEngine = strapi.service('lottery-engine');
+      if (lotteryEngine) {
+        console.log('✅ 抽奖引擎初始化完成');
+      }
+
+      // 检查库存预警
+      await lotteryEngine.checkStockWarning();
+      console.log('✅ 库存预警检查完成');
+      
+    } catch (error) {
+      console.error('❌ 抽奖系统服务初始化失败:', error);
+    }
+  },
+
+  // 初始化发货服务
+  async initializeShippingServices(strapi: any) {
+    try {
+      console.log('📦 初始化发货服务...');
+      
+      // 初始化发货队列
+      const shippingService = strapi.service('shipping-service');
+      if (shippingService) {
+        await shippingService.initializeShippingQueue();
+        console.log('✅ 发货队列初始化完成');
+      }
+      
+    } catch (error) {
+      console.error('❌ 发货服务初始化失败:', error);
+    }
+  }
 };

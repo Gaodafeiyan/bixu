@@ -68,5 +68,30 @@ export default {
       type: 'text',
       required: false,
     },
+    // 新增：追踪ID（UUID）
+    traceId: {
+      type: 'string',
+      required: true,
+      unique: true,
+      maxLength: 36,
+    },
+    // 新增：奖品快照（JSON格式）
+    prizeSnapshot: {
+      type: 'json',
+      required: false,
+    },
+    // 新增：客户端IP（更详细的IP信息）
+    clientIp: {
+      type: 'string',
+      required: false,
+      maxLength: 45,
+    },
+    // 新增：关联发货订单
+    shippingOrder: {
+      type: 'relation',
+      relation: 'oneToOne',
+      target: 'api::shipping-order.shipping-order',
+      required: false,
+    },
   },
 } as const; 

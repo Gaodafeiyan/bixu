@@ -33,6 +33,13 @@ export default {
       required: false,
       allowedTypes: ['images'],
     },
+    // 新增：缩略图字段
+    imageThumb: {
+      type: 'media',
+      multiple: false,
+      required: false,
+      allowedTypes: ['images'],
+    },
     jiangpinType: {
       type: 'enumeration',
       enum: ['usdt', 'ai_token', 'physical', 'virtual'],
@@ -51,6 +58,13 @@ export default {
       min: 0,
       max: 100,
       default: 1.0,
+    },
+    // 新增：AB测试灰度概率
+    probability_test: {
+      type: 'decimal',
+      required: false,
+      min: 0,
+      max: 100,
     },
     maxQuantity: {
       type: 'integer',
@@ -95,6 +109,13 @@ export default {
       required: false,
       min: 0,
       default: 0,
+    },
+    // 新增：关联奖池组
+    group: {
+      type: 'relation',
+      relation: 'manyToOne',
+      target: 'api::lottery-group.lottery-group',
+      required: false,
     },
   },
 } as const;
