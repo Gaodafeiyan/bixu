@@ -380,23 +380,34 @@ export default ({ strapi }) => ({
       if (wallet.aiTokenBalances) {
         try {
           tokenBalances = JSON.parse(wallet.aiTokenBalances);
+          console.log(`🔍 解析现有aiTokenBalances: ${wallet.aiTokenBalances}`);
+          console.log(`🔍 解析后的tokenBalances:`, tokenBalances);
         } catch (error) {
           console.error('解析aiTokenBalances失败:', error);
           tokenBalances = {};
         }
+      } else {
+        console.log(`🔍 用户钱包aiTokenBalances为空或null`);
       }
 
       // 将转换后的代币数量添加到aiTokenBalances中
       const currentTokenBalance = new Decimal(tokenBalances[tokenSymbol] || '0');
       const newTokenBalance = currentTokenBalance.add(actualAmount);
       tokenBalances[tokenSymbol] = newTokenBalance.toString();
+      
+      console.log(`🔍 更新${tokenSymbol}余额: 当前${currentTokenBalance.toString()} + 新增${actualAmount.toString()} = ${newTokenBalance.toString()}`);
+      console.log(`🔍 更新后的tokenBalances:`, tokenBalances);
 
       // 更新钱包余额：扣除aiYue，添加代币余额
+      const updateData = {
+        aiYue: newAiYueBalance.toString(),
+        aiTokenBalances: JSON.stringify(tokenBalances)
+      };
+      
+      console.log(`🔍 准备更新钱包数据:`, updateData);
+      
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
-        data: {
-          aiYue: newAiYueBalance.toString(),
-          aiTokenBalances: JSON.stringify(tokenBalances)
-        }
+        data: updateData
       });
 
       console.log(`💰 更新钱包余额: aiYue减少${usdtValue.toString()} USDT, ${tokenSymbol}增加${actualAmount.toString()}`);
