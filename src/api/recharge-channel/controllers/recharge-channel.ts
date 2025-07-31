@@ -139,7 +139,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
   async createWithdrawal(ctx) {
     try {
       const userId = ctx.state.user.id;
-      const { amount, address, network = 'BSC' } = ctx.request.body;
+      const { amount, address, network = 'BSC', currency = 'USDT' } = ctx.request.body;
 
       if (!amount || !address) {
         return ctx.badRequest('缺少必要参数');
@@ -157,7 +157,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
 
       const withdrawalOrder = await strapi
         .service('api::recharge-channel.recharge-channel')
-        .createWithdrawalOrder(userId, amount, address, network);
+        .createWithdrawalOrder(userId, amount, address, network, currency);
 
       ctx.body = {
         success: true,
