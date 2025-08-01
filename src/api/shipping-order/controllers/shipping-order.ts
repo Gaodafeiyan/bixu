@@ -260,7 +260,14 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
         data: {
           record: recordId,
           status: 'pending',
-          remark: `奖品: ${(record as any).jiangpin?.name || '未知奖品'}`
+          remark: `奖品: ${(record as any).jiangpin?.name || '未知奖品'}`,
+          // 提供默认值，后续通过updateAddress更新
+          receiverName: '待填写',
+          mobile: '待填写',
+          province: '待填写',
+          city: '待填写',
+          district: '待填写',
+          address: '待填写',
         }
       });
       
