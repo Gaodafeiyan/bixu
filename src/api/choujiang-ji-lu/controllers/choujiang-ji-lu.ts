@@ -99,7 +99,12 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
 
       const result = await strapi.entityService.findPage('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
         filters,
-        populate: ['jiangpin', 'chance'],
+        populate: {
+          jiangpin: {
+            populate: ['image'] // 添加图片populate
+          },
+          chance: true
+        },
         pagination: {
           page: parseInt(String(page)),
           pageSize: parseInt(String(pageSize))
