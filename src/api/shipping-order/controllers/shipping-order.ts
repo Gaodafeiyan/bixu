@@ -230,5 +230,48 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
       console.error('获取待发货订单失败:', error);
       ctx.throw(500, `获取待发货订单失败: ${error.message}`);
     }
+  },
+
+  // 手动创建发货订单（用于处理现有记录）
+  async createFromRecord(ctx) {
+    try {
+      const { recordId } = ctx.request.body;
+      
+      // 检查是否已存在发货订单
+      const existingOrder = await strapi.entityService.findMany('api::shipping-order.shipping-order' as any, {
+        filters: { record: recordId }
+      });
+      
+      if (existingOrder && existingOrder.length > 0) {
+        return ctx.badRequest('该记录已存在发货订单');
+      }
+      
+      // 获取抽奖记录
+      const record = await strapi.entityService.findOne('api::choujiang-ji-lu.choujiang-ji-lu' as any, recordId, {
+        populate: ['jiangpin']
+      });
+      
+      if (!record) {
+        return ctx.badRequest('抽奖记录不存在');
+      }
+      
+      // 创建发货订单
+      const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
+        data: {
+          record: recordId,
+          status: 'pending',
+          remark: `奖品: ${record.jiangpin?.name || '未知奖品'}`
+        }
+      });
+      
+      ctx.body = {
+        success: true,
+        data: shippingOrder,
+        message: '发货订单创建成功'
+      };
+    } catch (error) {
+      console.error('创建发货订单失败:', error);
+      ctx.throw(500, `创建发货订单失败: ${error.message}`);
+    }
   }
 })); 

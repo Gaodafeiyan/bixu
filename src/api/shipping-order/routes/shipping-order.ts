@@ -50,6 +50,14 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    {
+      method: 'POST',
+      path: '/shipping-orders/create-from-record',
+      handler: 'shipping-order.createFromRecord',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
     
     // 默认的CRUD路由 - 放在自定义路由之后
     {
