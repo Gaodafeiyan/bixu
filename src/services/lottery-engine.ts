@@ -233,7 +233,7 @@ export default ({ strapi }) => ({
       });
 
       // 8. 如果是实物奖品且中奖，创建发货订单
-      if (isWon && selectedPrize.jiangpinType === 'physical') {
+      if (isWon) {
         await this.createShippingOrder(record.id, selectedPrize);
       }
 
