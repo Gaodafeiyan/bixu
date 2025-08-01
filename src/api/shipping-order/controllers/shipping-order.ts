@@ -260,7 +260,7 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
         data: {
           record: recordId,
           status: 'pending',
-          remark: `奖品: ${record.jiangpin?.name || '未知奖品'}`
+          remark: `奖品: ${(record as any).jiangpin?.name || '未知奖品'}`
         }
       });
       
