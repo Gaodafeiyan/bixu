@@ -8,11 +8,18 @@ export default factories.createCoreController('api::lottery-group.lottery-group'
   // 继承默认的find方法
   async find(ctx) {
     try {
-      // 直接使用strapi.entityService
-      const result = await strapi.entityService.findPage('api::lottery-group.lottery-group' as any, {
-        ...ctx.query,
+      console.log('🔍 开始获取奖池组列表');
+      console.log('🔍 查询参数:', ctx.query);
+      
+      // 使用findMany而不是findPage
+      const result = await strapi.entityService.findMany('api::lottery-group.lottery-group' as any, {
         populate: ['coverImage', 'prizes']
       });
+      
+      console.log('🔍 查询结果:', result);
+      console.log('🔍 结果类型:', typeof result);
+      console.log('🔍 结果长度:', Array.isArray(result) ? result.length : '不是数组');
+      
       return result;
     } catch (error) {
       console.error('获取奖池组列表失败:', error);
