@@ -23,7 +23,7 @@ export default ({ strapi }) => ({
     }
   },
 
-  // 从奖品池中随机选择奖品（增强版）
+  // 从奖品池中随机选择奖品（轮盘式选择）
   async selectRandomPrize(groupId?: number): Promise<any> {
     try {
       const filters: any = {
@@ -57,9 +57,26 @@ export default ({ strapi }) => ({
 
       console.log(`可用奖品数量: ${availablePrizes.length}`);
 
+      // 检查是否所有奖品都是100%中奖概率
+      const all100Percent = availablePrizes.every(prize => 
+        new Decimal(prize.zhongJiangLv || 0).toNumber() >= 100
+      );
+
+      if (all100Percent) {
+        // 轮盘式随机选择：所有奖品都是100%概率时，随机选择一个
+        const randomIndex = Math.floor(Math.random() * availablePrizes.length);
+        const selectedPrize = availablePrizes[randomIndex];
+        console.log(`轮盘式选择: 选中奖品 ${selectedPrize.name}, 索引: ${randomIndex}/${availablePrizes.length}`);
+        return selectedPrize;
+      }
+
+      // 传统概率式选择（当不是所有奖品都是100%时）
+      console.log('使用传统概率式选择');
+      
       // 计算总概率
       const totalProbability = availablePrizes.reduce((sum, prize) => {
-        return sum + new Decimal(prize.zhongJiangLv || 0).toNumber();
+        const probability = new Decimal(prize.zhongJiangLv || 0).toNumber();
+        return sum + probability;
       }, 0);
 
       console.log(`总概率: ${totalProbability}%`);
@@ -167,12 +184,22 @@ export default ({ strapi }) => ({
         }
       }
 
-      // 4. 计算中奖概率
-      const winRate = await this.calculateProbability(selectedPrize, userId);
-      const random = Math.random() * 100;
-      const isWon = random <= winRate;
-
-      console.log(`抽奖结果: 随机数 ${random}, 中奖概率 ${winRate}%, 是否中奖: ${isWon}`);
+      // 4. 判断是否中奖
+      // 如果奖品中奖概率 >= 100%，直接中奖
+      // 否则按概率判断
+      const winRate = new Decimal(selectedPrize.zhongJiangLv || 0).toNumber();
+      let isWon = false;
+      
+      if (winRate >= 100) {
+        // 100%中奖概率，直接中奖
+        isWon = true;
+        console.log(`100%中奖概率，直接中奖: ${selectedPrize.name}`);
+      } else {
+        // 按概率判断是否中奖
+        const random = Math.random() * 100;
+        isWon = random <= winRate;
+        console.log(`抽奖结果: 随机数 ${random}, 中奖概率 ${winRate}%, 是否中奖: ${isWon}`);
+      }
 
       // 5. 发放奖品
       if (isWon) {
