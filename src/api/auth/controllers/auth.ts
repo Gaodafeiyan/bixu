@@ -564,44 +564,54 @@ export default factories.createCoreController(
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Zenithus投资平台 - APP下载</title>
+    <title>Zenithus AI大健康出海平台 - APP下载</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             margin: 0;
             padding: 0;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: linear-gradient(135deg, #0A0F1A 0%, #1C263B 100%);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
         }
         .container {
-            background: white;
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 20px;
             padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
             text-align: center;
             max-width: 400px;
             width: 90%;
+            backdrop-filter: blur(10px);
         }
         .logo {
             width: 80px;
             height: 80px;
-            background: linear-gradient(45deg, #667eea, #764ba2);
-            border-radius: 20px;
+            background: linear-gradient(45deg, #0A0F1A, #1C263B);
+            border-radius: 16px;
             margin: 0 auto 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 24px;
-            font-weight: bold;
+            position: relative;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .diamond {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
         }
         h1 {
-            color: #333;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin-bottom: 10px;
             font-size: 24px;
+            font-weight: bold;
         }
         .subtitle {
             color: #666;
@@ -609,20 +619,24 @@ export default factories.createCoreController(
             font-size: 16px;
         }
         .invite-info {
-            background: #f8f9fa;
-            border-radius: 10px;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
             padding: 20px;
             margin: 20px 0;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #D4AF37;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
         }
         .invite-code {
             font-size: 18px;
             font-weight: bold;
-            color: #667eea;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
             margin: 10px 0;
         }
         .download-btn {
-            background: linear-gradient(45deg, #667eea, #764ba2);
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
             color: white;
             border: none;
             padding: 15px 30px;
@@ -631,10 +645,12 @@ export default factories.createCoreController(
             font-weight: bold;
             cursor: pointer;
             margin: 10px;
-            transition: transform 0.2s;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
         }
         .download-btn:hover {
             transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(212, 175, 55, 0.4);
         }
         .features {
             margin: 30px 0;
@@ -649,7 +665,7 @@ export default factories.createCoreController(
         .feature-icon {
             width: 20px;
             height: 20px;
-            background: #667eea;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
             border-radius: 50%;
             margin-right: 10px;
             display: flex;
@@ -658,13 +674,25 @@ export default factories.createCoreController(
             color: white;
             font-size: 12px;
         }
+        .platform-tag {
+            display: inline-block;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: bold;
+            margin: 5px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
-        <div class="logo">Z</div>
-        <h1>Zenithus投资平台</h1>
-        <p class="subtitle">高收益投资，安全可靠</p>
+        <div class="logo">
+            <div class="diamond"></div>
+        </div>
+        <h1>Zenithus AI大健康出海平台</h1>
+        <p class="subtitle">AI驱动的健康科技，全球化的投资机遇</p>
         
         ${inviterInfo ? `
         <div class="invite-info">
@@ -681,20 +709,30 @@ export default factories.createCoreController(
         <div class="features">
             <div class="feature">
                 <div class="feature-icon">✓</div>
-                <span>高收益投资计划</span>
+                <span>AI健康科技投资</span>
             </div>
             <div class="feature">
                 <div class="feature-icon">✓</div>
-                <span>一层推荐奖励机制</span>
+                <span>全球化出海机遇</span>
             </div>
             <div class="feature">
                 <div class="feature-icon">✓</div>
-                <span>抽奖好礼等你来</span>
+                <span>邀请有礼</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>抽奖豪华礼包免费赠送</span>
             </div>
             <div class="feature">
                 <div class="feature-icon">✓</div>
                 <span>安全可靠的投资环境</span>
             </div>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <span class="platform-tag">AI科技</span>
+            <span class="platform-tag">大健康</span>
+            <span class="platform-tag">出海平台</span>
         </div>
     </div>
     
