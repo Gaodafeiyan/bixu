@@ -17,9 +17,9 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
       const cartItems = await strapi.entityService.findMany('api::shop-cart.shop-cart' as any, {
         filters: { user: { id: userId } },
         populate: ['product', 'product.images']
-      });
+      }) as any[];
 
-      console.log(`找到 ${cartItems.length} 个购物车商品`);
+      console.log(`找到 ${cartItems?.length || 0} 个购物车商品`);
 
       ctx.body = {
         success: true,

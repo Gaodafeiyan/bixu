@@ -26,9 +26,9 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
         populate: ['product', 'product.images'],
         page,
         pageSize
-      });
+      }) as any;
 
-      console.log(`找到 ${result.results?.length || 0} 个订单`);
+      console.log(`找到 ${result?.results?.length || 0} 个订单`);
 
       ctx.body = {
         success: true,
