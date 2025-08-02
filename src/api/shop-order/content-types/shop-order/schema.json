@@ -1,0 +1,60 @@
+{
+  "kind": "collectionType",
+  "collectionName": "shop_orders",
+  "info": {
+    "singularName": "shop-order",
+    "pluralName": "shop-orders",
+    "displayName": "Shop Order",
+    "description": "商城订单"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "orderNumber": {
+      "type": "string",
+      "required": true,
+      "unique": true
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "shop_orders"
+    },
+    "product": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::shop-product.shop-product",
+      "inversedBy": "shop_orders"
+    },
+    "quantity": {
+      "type": "integer",
+      "required": true,
+      "min": 1
+    },
+    "totalAmount": {
+      "type": "decimal",
+      "required": true
+    },
+    "status": {
+      "type": "enumeration",
+      "enum": ["pending", "paid", "shipped", "delivered", "cancelled"],
+      "default": "pending"
+    },
+    "paymentMethod": {
+      "type": "string",
+      "default": "usdt"
+    },
+    "shippingAddress": {
+      "type": "json"
+    },
+    "productPrice": {
+      "type": "decimal"
+    },
+    "productName": {
+      "type": "string"
+    }
+  }
+} 

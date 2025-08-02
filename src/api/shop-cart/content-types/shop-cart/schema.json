@@ -1,0 +1,33 @@
+{
+  "kind": "collectionType",
+  "collectionName": "shop_carts",
+  "info": {
+    "singularName": "shop-cart",
+    "pluralName": "shop-carts",
+    "displayName": "Shop Cart",
+    "description": "购物车商品"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "shop_carts"
+    },
+    "product": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::shop-product.shop-product",
+      "inversedBy": "shop_carts"
+    },
+    "quantity": {
+      "type": "integer",
+      "default": 1,
+      "min": 1
+    }
+  }
+} 
