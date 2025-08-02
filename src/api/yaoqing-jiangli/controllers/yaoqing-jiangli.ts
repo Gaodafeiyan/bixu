@@ -277,9 +277,10 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         }
       } as any) as any[];
 
-      // 获取总收益
+      // 获取总收益和奖励记录
       const totalRewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
-        filters: { tuijianRen: userId }
+        filters: { tuijianRen: userId },
+        populate: ['tuijianRen', 'laiyuanRen', 'laiyuanDan']
       }) as any[];
 
       const totalEarnings = totalRewards.reduce((sum, reward) => {
@@ -309,7 +310,8 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
             staticRate: 0,
             referralRate: 0,
             maxCommission: 0
-          }
+          },
+          rewards: totalRewards // 添加奖励记录
         }
       };
     } catch (error) {
@@ -335,9 +337,10 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         }
       } as any) as any[];
 
-      // 获取总收益
+      // 获取总收益和奖励记录
       const totalRewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
-        filters: { tuijianRen: userId }
+        filters: { tuijianRen: userId },
+        populate: ['tuijianRen', 'laiyuanRen', 'laiyuanDan']
       }) as any[];
 
       const totalEarnings = totalRewards.reduce((sum, reward) => {
@@ -367,7 +370,8 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
             staticRate: 0,
             referralRate: 0,
             maxCommission: 0
-          }
+          },
+          rewards: totalRewards // 添加奖励记录
         }
       };
     } catch (error) {
