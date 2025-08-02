@@ -6,9 +6,7 @@ export default {
       path: '/shop-orders',
       handler: 'shop-order.getUserOrders',
       config: {
-        auth: {
-          scope: ['authenticated']
-        }
+        auth: {}  // 空对象表示需要登录
       }
     },
     // 获取订单详情
@@ -17,9 +15,7 @@ export default {
       path: '/shop-orders/:id',
       handler: 'shop-order.getOrderDetail',
       config: {
-        auth: {
-          scope: ['authenticated']
-        }
+        auth: {}  // 空对象表示需要登录
       }
     },
     // 从购物车创建订单
@@ -28,9 +24,7 @@ export default {
       path: '/shop-orders/from-cart',
       handler: 'shop-order.createOrderFromCart',
       config: {
-        auth: {
-          scope: ['authenticated']
-        }
+        auth: {}  // 空对象表示需要登录
       }
     },
     // 创建单个商品订单
@@ -39,9 +33,7 @@ export default {
       path: '/shop-orders/single',
       handler: 'shop-order.createSingleOrder',
       config: {
-        auth: {
-          scope: ['authenticated']
-        }
+        auth: {}  // 空对象表示需要登录
       }
     },
     // 取消订单
@@ -50,9 +42,7 @@ export default {
       path: '/shop-orders/:id/cancel',
       handler: 'shop-order.cancelOrder',
       config: {
-        auth: {
-          scope: ['authenticated']
-        }
+        auth: {}  // 空对象表示需要登录
       }
     },
     // 确认收货
@@ -61,9 +51,7 @@ export default {
       path: '/shop-orders/:id/confirm',
       handler: 'shop-order.confirmReceived',
       config: {
-        auth: {
-          scope: ['authenticated']
-        }
+        auth: {}  // 空对象表示需要登录
       }
     }
   ]
