@@ -304,5 +304,36 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
       console.error('创建发货订单失败:', error);
       ctx.throw(500, `创建发货订单失败: ${error.message}`);
     }
+  },
+
+  // 获取所有发货订单（管理后台用）
+  async getAllOrders(ctx) {
+    try {
+      const { page = 1, pageSize = 20, status } = ctx.query;
+
+      const filters: any = {};
+      if (status) {
+        filters.status = status;
+      }
+
+      const result = await strapi.entityService.findPage('api::shipping-order.shipping-order' as any, {
+        filters,
+        populate: ['record', 'record.user', 'record.jiangpin'],
+        pagination: {
+          page: parseInt(String(page)),
+          pageSize: parseInt(String(pageSize))
+        },
+        sort: { createdAt: 'desc' }
+      });
+
+      ctx.body = {
+        success: true,
+        data: result,
+        message: '获取发货订单列表成功'
+      };
+    } catch (error) {
+      console.error('获取发货订单列表失败:', error);
+      ctx.throw(500, `获取发货订单列表失败: ${error.message}`);
+    }
   }
 })); 

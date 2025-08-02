@@ -51,6 +51,14 @@ export default {
       },
     },
     {
+      method: 'GET',
+      path: '/shipping-orders/all',
+      handler: 'shipping-order.getAllOrders',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    {
       method: 'POST',
       path: '/shipping-orders/create-from-record',
       handler: 'shipping-order.createFromRecord',
