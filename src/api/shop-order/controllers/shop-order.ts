@@ -189,10 +189,10 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
       // 如果是实物商品，创建发货订单
       if (orderItems[0].product.isPhysical) {
         try {
-          // 直接在控制器中创建发货订单
-          const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
+          // 创建商城发货订单
+          const shippingOrder = await strapi.entityService.create('api::shop-shipping-order.shop-shipping-order' as any, {
             data: {
-              orderNumber: `SH${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+              orderNumber: `SS${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
               user: userId,
               product: orderItems[0].product.id,
               quantity: orderItems[0].quantity,
@@ -204,12 +204,12 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
               district: shippingAddress?.district || '待填写',
               address: shippingAddress?.address || '待填写',
               zipCode: shippingAddress?.zipCode || '',
-              shopOrderId: order.id
+              shopOrder: order.id
             }
           });
-          console.log(`✅ 发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
+          console.log(`✅ 商城发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
         } catch (error) {
-          console.error('❌ 创建发货订单失败:', error);
+          console.error('❌ 创建商城发货订单失败:', error);
           // 不抛出错误，让订单创建继续
         }
       }
@@ -309,10 +309,10 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
       // 如果是实物商品，创建发货订单
       if (product.isPhysical) {
         try {
-          // 直接在控制器中创建发货订单
-          const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
+          // 创建商城发货订单
+          const shippingOrder = await strapi.entityService.create('api::shop-shipping-order.shop-shipping-order' as any, {
             data: {
-              orderNumber: `SH${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+              orderNumber: `SS${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
               user: userId,
               product: productId,
               quantity: quantity,
@@ -324,12 +324,12 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
               district: shippingAddress?.district || '待填写',
               address: shippingAddress?.address || '待填写',
               zipCode: shippingAddress?.zipCode || '',
-              shopOrderId: order.id
+              shopOrder: order.id
             }
           });
-          console.log(`✅ 发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
+          console.log(`✅ 商城发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
         } catch (error) {
-          console.error('❌ 创建发货订单失败:', error);
+          console.error('❌ 创建商城发货订单失败:', error);
           // 不抛出错误，让订单创建继续
         }
       }
