@@ -5,16 +5,21 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
   // 获取用户购物车
   async getUserCart(ctx) {
     try {
-      const userId = ctx.state.user.id;
+      const userId = ctx.state.user?.id;
       
       if (!userId) {
+        console.log('用户未认证，返回401');
         return ctx.unauthorized('用户未认证');
       }
+
+      console.log(`获取用户购物车 - 用户ID: ${userId}`);
 
       const cartItems = await strapi.entityService.findMany('api::shop-cart.shop-cart' as any, {
         filters: { user: { id: userId } },
         populate: ['product', 'product.images']
       });
+
+      console.log(`找到 ${cartItems.length} 个购物车商品`);
 
       ctx.body = {
         success: true,

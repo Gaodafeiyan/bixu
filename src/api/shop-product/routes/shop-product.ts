@@ -1,5 +1,14 @@
 export default {
   routes: [
+    // 获取商品分类 - 必须放在 /:id 路由之前
+    {
+      method: 'GET',
+      path: '/shop-products/categories',
+      handler: 'shop-product.getCategories',
+      config: {
+        auth: false, // 公开接口，无需认证
+      }
+    },
     // 获取商品列表
     {
       method: 'GET',
@@ -49,15 +58,6 @@ export default {
         auth: {
           scope: ['admin']
         }
-      }
-    },
-    // 获取商品分类
-    {
-      method: 'GET',
-      path: '/shop-products/categories',
-      handler: 'shop-product.getCategories',
-      config: {
-        auth: false, // 公开接口，无需认证
       }
     },
     // 更新商品库存（管理员）

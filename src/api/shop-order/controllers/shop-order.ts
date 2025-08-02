@@ -5,12 +5,15 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
   // 获取用户订单列表
   async getUserOrders(ctx) {
     try {
-      const userId = ctx.state.user.id;
+      const userId = ctx.state.user?.id;
       const { status, page = 1, pageSize = 20 } = ctx.query;
 
       if (!userId) {
+        console.log('用户未认证，返回401');
         return ctx.unauthorized('用户未认证');
       }
+
+      console.log(`获取用户订单列表 - 用户ID: ${userId}, 状态: ${status}`);
 
       const filters: any = { user: { id: userId } };
       if (status) {
@@ -24,6 +27,8 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
         page,
         pageSize
       });
+
+      console.log(`找到 ${result.results?.length || 0} 个订单`);
 
       ctx.body = {
         success: true,
