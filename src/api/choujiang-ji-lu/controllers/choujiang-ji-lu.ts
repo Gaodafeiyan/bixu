@@ -103,7 +103,10 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
           jiangpin: {
             populate: ['image'] // 添加图片populate
           },
-          chance: true
+          chance: true,
+          shippingOrder: {
+            populate: ['receiverName', 'mobile', 'province', 'city', 'district', 'address', 'zipCode', 'status', 'trackingNo', 'carrier', 'shippedAt', 'deliveredAt']
+          }
         },
         pagination: {
           page: parseInt(String(page)),

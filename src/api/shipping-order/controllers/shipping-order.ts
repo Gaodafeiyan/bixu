@@ -146,6 +146,9 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
       const { id } = ctx.params;
       const { receiverName, mobile, province, city, district, address, zipCode } = ctx.request.body;
 
+      console.log('更新收货地址 - 订单ID:', id);
+      console.log('接收到的地址数据:', { receiverName, mobile, province, city, district, address, zipCode });
+
       const updateData = {
         receiverName,
         mobile,
@@ -156,9 +159,13 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
         zipCode
       };
 
+      console.log('准备更新的数据:', updateData);
+
       const result = await strapi.entityService.update('api::shipping-order.shipping-order' as any, id, {
         data: updateData
       });
+
+      console.log('更新结果:', result);
 
       ctx.body = {
         success: true,
@@ -237,13 +244,26 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
     try {
       const { recordId } = ctx.request.body;
       
+      console.log('创建发货订单 - 记录ID:', recordId);
+      
       // 检查是否已存在发货订单
-      const existingOrder = await strapi.entityService.findMany('api::shipping-order.shipping-order' as any, {
+      const existingOrders = await strapi.entityService.findMany('api::shipping-order.shipping-order' as any, {
         filters: { record: recordId }
       });
       
-      if (existingOrder && existingOrder.length > 0) {
-        return ctx.badRequest('该记录已存在发货订单');
+      console.log('现有订单数量:', existingOrders.length);
+      
+      if (existingOrders && existingOrders.length > 0) {
+        // 如果已存在订单，返回现有订单而不是报错
+        const existingOrder = existingOrders[0];
+        console.log('返回现有订单:', existingOrder);
+        
+        ctx.body = {
+          success: true,
+          data: existingOrder,
+          message: '发货订单已存在'
+        };
+        return;
       }
       
       // 获取抽奖记录
@@ -254,6 +274,8 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
       if (!record) {
         return ctx.badRequest('抽奖记录不存在');
       }
+      
+      console.log('创建新发货订单');
       
       // 创建发货订单
       const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
@@ -270,6 +292,8 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
           address: '待填写',
         }
       });
+      
+      console.log('新创建的发货订单:', shippingOrder);
       
       ctx.body = {
         success: true,
