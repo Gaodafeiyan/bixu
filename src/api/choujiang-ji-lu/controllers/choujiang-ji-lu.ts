@@ -224,13 +224,103 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
         }
       });
 
+      // 计算奖品类型统计的百分比
+      const prizeTypeStatsWithPercentage: any = {};
+      Object.keys(typeStats).forEach(type => {
+        const stats = typeStats[type];
+        const percentage = totalDraws > 0 ? (stats.total / totalDraws * 100).toFixed(2) : '0.00';
+        prizeTypeStatsWithPercentage[type] = {
+          count: stats.total,
+          wins: stats.wins,
+          percentage: `${percentage}%`
+        };
+      });
+
+      // 月度统计（最近6个月）
+      const monthlyStats = [];
+      for (let i = 5; i >= 0; i--) {
+        const date = new Date();
+        date.setMonth(date.getMonth() - i);
+        const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
+        const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0);
+        
+        const monthDraws = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
+          filters: {
+            drawTime: {
+              $gte: startOfMonth,
+              $lte: endOfMonth
+            }
+          }
+        });
+        
+        const monthWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
+          filters: {
+            drawTime: {
+              $gte: startOfMonth,
+              $lte: endOfMonth
+            },
+            isWon: true
+          }
+        });
+        
+        const monthRate = monthDraws > 0 ? (monthWins / monthDraws * 100).toFixed(2) : '0.00';
+        
+        monthlyStats.push({
+          period: `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`,
+          draws: monthDraws,
+          wins: monthWins,
+          rate: `${monthRate}%`
+        });
+      }
+
+      // 周度统计（最近4周）
+      const weeklyStats = [];
+      for (let i = 3; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - (i * 7));
+        const startOfWeek = new Date(date);
+        startOfWeek.setDate(date.getDate() - date.getDay());
+        const endOfWeek = new Date(startOfWeek);
+        endOfWeek.setDate(startOfWeek.getDate() + 6);
+        
+        const weekDraws = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
+          filters: {
+            drawTime: {
+              $gte: startOfWeek,
+              $lte: endOfWeek
+            }
+          }
+        });
+        
+        const weekWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
+          filters: {
+            drawTime: {
+              $gte: startOfWeek,
+              $lte: endOfWeek
+            },
+            isWon: true
+          }
+        });
+        
+        const weekRate = weekDraws > 0 ? (weekWins / weekDraws * 100).toFixed(2) : '0.00';
+        
+        weeklyStats.push({
+          period: `第${4-i}周`,
+          draws: weekDraws,
+          wins: weekWins,
+          rate: `${weekRate}%`
+        });
+      }
+
       ctx.body = {
         success: true,
         data: {
           totalDraws,
           totalWins,
           winRate: totalDraws > 0 ? (totalWins / totalDraws * 100).toFixed(2) : '0.00',
-          typeStats
+          typeStats: prizeTypeStatsWithPercentage,
+          monthlyStats,
+          weeklyStats
         },
         message: '获取抽奖统计成功'
       };
