@@ -168,7 +168,7 @@ export default factories.createCoreController('api::shop-product.shop-product' a
       const products = await strapi.entityService.findMany('api::shop-product.shop-product' as any, {
         filters: { status: 'active' },
         fields: ['category']
-      });
+      }) as any[];
 
       // 提取所有分类并去重
       const categories = [...new Set(products.map((product: any) => product.category).filter(Boolean))];

@@ -177,7 +177,7 @@ export default {
         return '0';
       }
 
-      return wallets[0].usdtYue || '0';
+      return String(wallets[0].usdtYue || '0');
     } catch (error) {
       console.error('获取用户钱包余额失败:', error);
       return '0';
@@ -189,9 +189,9 @@ export default {
     try {
       const shopOrder = await strapi.entityService.findOne('api::shop-order.shop-order' as any, shopOrderId, {
         populate: ['product', 'user']
-      });
+      }) as any;
 
-      if (!shopOrder || !shopOrder.product.isPhysical) {
+      if (!shopOrder || !shopOrder.product?.isPhysical) {
         return false;
       }
 
@@ -199,17 +199,17 @@ export default {
       const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
         data: {
           orderNumber: `SH${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
-          user: shopOrder.user.id,
-          product: shopOrder.product.id,
+          user: shopOrder.user?.id,
+          product: shopOrder.product?.id,
           quantity: shopOrder.quantity,
           status: 'pending',
-          receiverName: shopOrder.shippingAddress.receiverName,
-          mobile: shopOrder.shippingAddress.mobile,
-          province: shopOrder.shippingAddress.province,
-          city: shopOrder.shippingAddress.city,
-          district: shopOrder.shippingAddress.district,
-          address: shopOrder.shippingAddress.address,
-          zipCode: shopOrder.shippingAddress.zipCode || '',
+          receiverName: shopOrder.shippingAddress?.receiverName,
+          mobile: shopOrder.shippingAddress?.mobile,
+          province: shopOrder.shippingAddress?.province,
+          city: shopOrder.shippingAddress?.city,
+          district: shopOrder.shippingAddress?.district,
+          address: shopOrder.shippingAddress?.address,
+          zipCode: shopOrder.shippingAddress?.zipCode || '',
           shopOrderId: shopOrderId
         }
       });

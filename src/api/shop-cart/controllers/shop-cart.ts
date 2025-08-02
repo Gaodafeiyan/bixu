@@ -70,7 +70,7 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
       let result;
       if (existingCartItem && existingCartItem.length > 0) {
         // 更新现有购物车商品数量
-        const cartItem = existingCartItem[0];
+        const cartItem = existingCartItem[0] as any;
         const newQuantity = cartItem.quantity + quantity;
         
         if (product.stock < newQuantity) {
@@ -120,18 +120,18 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
       // 验证购物车商品是否存在且属于当前用户
       const cartItem = await strapi.entityService.findOne('api::shop-cart.shop-cart' as any, id, {
         populate: ['product']
-      });
+      }) as any;
 
       if (!cartItem) {
         return ctx.notFound('购物车商品不存在');
       }
 
-      if (cartItem.user.id !== userId) {
+      if (cartItem.user?.id !== userId) {
         return ctx.forbidden('无权操作此购物车商品');
       }
 
       // 验证库存
-      if (cartItem.product.stock < quantity) {
+      if (cartItem.product?.stock < quantity) {
         return ctx.badRequest('商品库存不足');
       }
 
@@ -161,13 +161,13 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
       }
 
       // 验证购物车商品是否存在且属于当前用户
-      const cartItem = await strapi.entityService.findOne('api::shop-cart.shop-cart' as any, id);
+      const cartItem = await strapi.entityService.findOne('api::shop-cart.shop-cart' as any, id) as any;
 
       if (!cartItem) {
         return ctx.notFound('购物车商品不存在');
       }
 
-      if (cartItem.user.id !== userId) {
+      if (cartItem.user?.id !== userId) {
         return ctx.forbidden('无权操作此购物车商品');
       }
 
@@ -195,7 +195,7 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
       // 获取用户所有购物车商品
       const cartItems = await strapi.entityService.findMany('api::shop-cart.shop-cart' as any, {
         filters: { user: { id: userId } }
-      });
+      }) as any[];
 
       // 批量删除
       for (const item of cartItems) {
@@ -223,7 +223,7 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
 
       const cartItems = await strapi.entityService.findMany('api::shop-cart.shop-cart' as any, {
         filters: { user: { id: userId } }
-      });
+      }) as any[];
 
       const totalCount = cartItems.reduce((sum: number, item: any) => sum + item.quantity, 0);
 

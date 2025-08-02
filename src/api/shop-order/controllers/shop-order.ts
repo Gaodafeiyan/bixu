@@ -48,13 +48,13 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
 
       const order = await strapi.entityService.findOne('api::shop-order.shop-order' as any, id, {
         populate: ['product', 'product.images', 'user']
-      });
+      }) as any;
 
       if (!order) {
         return ctx.notFound('订单不存在');
       }
 
-      if (order.user.id !== userId) {
+      if (order.user?.id !== userId) {
         return ctx.forbidden('无权查看此订单');
       }
 
@@ -104,7 +104,7 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
           user: { id: userId }
         },
         populate: ['product']
-      });
+      }) as any[];
 
       if (cartItems.length === 0) {
         return ctx.badRequest('购物车商品不存在');
@@ -306,13 +306,13 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
 
       const order = await strapi.entityService.findOne('api::shop-order.shop-order' as any, id, {
         populate: ['product']
-      });
+      }) as any;
 
       if (!order) {
         return ctx.notFound('订单不存在');
       }
 
-      if (order.user.id !== userId) {
+      if (order.user?.id !== userId) {
         return ctx.forbidden('无权操作此订单');
       }
 
@@ -342,8 +342,8 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
       }
 
       // 恢复商品库存
-      const newStock = order.product.stock + order.quantity;
-      await strapi.entityService.update('api::shop-product.shop-product' as any, order.product.id, {
+      const newStock = order.product?.stock + order.quantity;
+      await strapi.entityService.update('api::shop-product.shop-product' as any, order.product?.id, {
         data: { stock: newStock }
       });
 
@@ -367,13 +367,13 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
         return ctx.unauthorized('用户未认证');
       }
 
-      const order = await strapi.entityService.findOne('api::shop-order.shop-order' as any, id);
+      const order = await strapi.entityService.findOne('api::shop-order.shop-order' as any, id) as any;
 
       if (!order) {
         return ctx.notFound('订单不存在');
       }
 
-      if (order.user.id !== userId) {
+      if (order.user?.id !== userId) {
         return ctx.forbidden('无权操作此订单');
       }
 
