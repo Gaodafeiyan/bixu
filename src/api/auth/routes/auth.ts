@@ -35,6 +35,46 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    // 获取完整邀请信息
+    {
+      method: 'GET',
+      path: '/auth/invite-info',
+      handler: 'auth.getInviteInfo',
+      config: {
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    // 生成邀请链接
+    {
+      method: 'GET',
+      path: '/auth/generate-invite-link',
+      handler: 'auth.generateInviteLink',
+      config: {
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    // 生成邀请二维码
+    {
+      method: 'GET',
+      path: '/auth/invite-qr-code',
+      handler: 'auth.getInviteQRCode',
+      config: {
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    // 记录分享行为
+    {
+      method: 'POST',
+      path: '/auth/track-invite-share',
+      handler: 'auth.trackInviteShare',
+      config: {
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
     // 获取我的团队
     {
       method: 'GET',

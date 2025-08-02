@@ -1,4 +1,5 @@
 import { factories } from '@strapi/strapi';
+import QRCode from 'qrcode';
 
 export default factories.createCoreController(
   'plugin::users-permissions.user',
@@ -316,7 +317,178 @@ export default factories.createCoreController(
         console.error('验证邀请码失败:', error);
         ctx.throw(500, `验证邀请码失败: ${error.message}`);
       }
-    }
+    },
+
+    // 获取完整邀请信息
+    async getInviteInfo(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        const user = await strapi.entityService.findOne('plugin::users-permissions.user', userId);
+        
+        if (!user) {
+          return ctx.notFound('用户不存在');
+        }
+
+        // 生成邀请链接
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://your-domain.com'}/register?invite=${user.inviteCode}`;
+        
+        // 使用qrcode库生成SVG格式的二维码
+        const qrCodeData = await QRCode.toDataURL(inviteLink, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+
+        // 获取分享统计（如果有的话）
+        const shareStats = await this.getShareStats(userId);
+
+        ctx.body = {
+          success: true,
+          data: {
+            inviteCode: user.inviteCode,
+            inviteLink: inviteLink,
+            qrCodeData: qrCodeData,
+            shareStats: shareStats,
+            username: user.username
+          }
+        };
+      } catch (error) {
+        console.error('获取邀请信息失败:', error);
+        ctx.throw(500, `获取邀请信息失败: ${error.message}`);
+      }
+    },
+
+    // 生成邀请链接
+    async generateInviteLink(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        const user = await strapi.entityService.findOne('plugin::users-permissions.user', userId);
+        
+        if (!user) {
+          return ctx.notFound('用户不存在');
+        }
+
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://your-domain.com'}/register?invite=${user.inviteCode}`;
+
+        ctx.body = {
+          success: true,
+          data: {
+            inviteLink: inviteLink,
+            inviteCode: user.inviteCode
+          }
+        };
+      } catch (error) {
+        console.error('生成邀请链接失败:', error);
+        ctx.throw(500, `生成邀请链接失败: ${error.message}`);
+      }
+    },
+
+    // 生成邀请二维码
+    async getInviteQRCode(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        const user = await strapi.entityService.findOne('plugin::users-permissions.user', userId);
+        
+        if (!user) {
+          return ctx.notFound('用户不存在');
+        }
+
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://your-domain.com'}/register?invite=${user.inviteCode}`;
+        
+        // 使用qrcode库生成SVG格式的二维码
+        const qrCodeData = await QRCode.toDataURL(inviteLink, {
+          width: 200,
+          margin: 2,
+          color: {
+            dark: '#000000',
+            light: '#FFFFFF'
+          }
+        });
+
+        ctx.body = {
+          success: true,
+          data: {
+            qrCodeData: qrCodeData,
+            inviteLink: inviteLink
+          }
+        };
+      } catch (error) {
+        console.error('生成邀请二维码失败:', error);
+        ctx.throw(500, `生成邀请二维码失败: ${error.message}`);
+      }
+    },
+
+    // 记录分享行为
+    async trackInviteShare(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { shareType, sharePlatform } = ctx.request.body;
+
+        // 这里可以记录分享统计到数据库
+        // 暂时只记录日志
+        console.log(`用户 ${userId} 通过 ${sharePlatform} 分享了邀请码，分享类型: ${shareType}`);
+
+        ctx.body = {
+          success: true,
+          message: '分享记录成功'
+        };
+      } catch (error) {
+        console.error('记录分享失败:', error);
+        ctx.throw(500, `记录分享失败: ${error.message}`);
+      }
+    },
+
+    // 获取分享统计
+    async getShareStats(userId: number) {
+      try {
+        // 这里可以从数据库获取分享统计
+        // 暂时返回模拟数据
+        return {
+          totalShares: 0,
+          successfulInvites: 0,
+          conversionRate: 0
+        };
+      } catch (error) {
+        console.error('获取分享统计失败:', error);
+        return {
+          totalShares: 0,
+          successfulInvites: 0,
+          conversionRate: 0
+        };
+      }
+    },
+
+    // 生成二维码SVG数据（保留作为备用方法）
+    generateQRCodeSVG(text: string): string {
+      // 简单的二维码SVG生成
+      // 在实际项目中，建议使用专业的二维码库
+      const size = 200;
+      const cellSize = 4;
+      const cells = Math.floor(size / cellSize);
+      
+      // 生成简单的二维码模式（这里只是示例）
+      let svg = `<svg width="${size}" height="${size}" xmlns="http://www.w3.org/2000/svg">`;
+      svg += `<rect width="${size}" height="${size}" fill="white"/>`;
+      
+      // 生成简单的二维码图案（实际应该根据文本生成）
+      for (let i = 0; i < cells; i++) {
+        for (let j = 0; j < cells; j++) {
+          // 简单的随机模式，实际应该根据文本生成
+          if ((i + j) % 2 === 0) {
+            svg += `<rect x="${i * cellSize}" y="${j * cellSize}" width="${cellSize}" height="${cellSize}" fill="black"/>`;
+          }
+        }
+      }
+      
+      svg += '</svg>';
+      return svg;
+    },
   })
 );
 

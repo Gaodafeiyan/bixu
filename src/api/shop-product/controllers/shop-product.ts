@@ -4,7 +4,7 @@ export default factories.createCoreController('api::shop-product.shop-product' a
   // 获取商品列表
   async find(ctx) {
     try {
-      const { category, status, page = 1, pageSize = 20 } = ctx.query;
+      const { category, status, page = 1, pageSize = 20, search } = ctx.query;
       
       const filters: any = {};
       
@@ -19,6 +19,22 @@ export default factories.createCoreController('api::shop-product.shop-product' a
       } else {
         // 默认只显示上架商品
         filters.status = 'active';
+      }
+
+      // 搜索过滤
+      if (search) {
+        filters.$or = [
+          {
+            name: {
+              $containsi: search
+            }
+          },
+          {
+            description: {
+              $containsi: search
+            }
+          }
+        ];
       }
 
       const result = await strapi.entityService.findPage('api::shop-product.shop-product' as any, {
