@@ -109,5 +109,17 @@ export default {
         middlewares: [],
       },
     },
+    // 下载页面路由
+    {
+      method: 'GET',
+      path: '/auth/download',
+      handler: 'auth.downloadPage',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 }; 

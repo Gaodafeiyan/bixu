@@ -330,14 +330,14 @@ export default factories.createCoreController(
           return ctx.notFound('用户不存在');
         }
 
-        // 生成包含邀请码的APP下载链接
-        const appDownloadLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158:1337'}/downloads/app-release.apk?invite=${user.inviteCode}`;
+        // 生成包含邀请码的深度链接
+        const deepLink = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/invite/${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
-        const inviteLink = `${process.env.FRONTEND_URL || 'https://your-domain.com'}/register?invite=${user.inviteCode}`;
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://yourapp.com'}/register?invite=${user.inviteCode}`;
         
-        // 生成包含邀请码的二维码（指向APP下载链接）
-        const qrCodeData = await QRCode.toDataURL(appDownloadLink, {
+        // 生成包含邀请码的二维码（指向深度链接）
+        const qrCodeData = await QRCode.toDataURL(deepLink, {
           width: 200,
           margin: 2,
           color: {
@@ -354,7 +354,7 @@ export default factories.createCoreController(
           data: {
             inviteCode: user.inviteCode,
             inviteLink: inviteLink,
-            appDownloadLink: appDownloadLink,
+            appDownloadLink: deepLink,
             qrCodeData: qrCodeData,
             shareStats: shareStats,
             username: user.username
@@ -404,7 +404,7 @@ export default factories.createCoreController(
         }
 
         // 生成包含邀请码的APP下载链接
-        const appDownloadLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158:1337'}/downloads/app-release.apk?invite=${user.inviteCode}`;
+        const appDownloadLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158'}/download?invite=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
         const inviteLink = `${process.env.FRONTEND_URL || 'https://your-domain.com'}/register?invite=${user.inviteCode}`;
@@ -525,7 +525,7 @@ export default factories.createCoreController(
           success: true,
           message: 'APK下载功能已启用',
           inviteCode: invite || null,
-          downloadUrl: `${process.env.FRONTEND_URL || 'http://118.107.4.158:1337'}/downloads/app-release.apk`
+          downloadUrl: `${process.env.FRONTEND_URL || 'http://118.107.4.158'}/downloads/app-release.apk`
         };
         
         // 在实际部署时，这里应该返回真实的APK文件
@@ -534,6 +534,186 @@ export default factories.createCoreController(
       } catch (error) {
         console.error('APK下载失败:', error);
         ctx.throw(500, `APK下载失败: ${error.message}`);
+      }
+    },
+
+    // 下载页面处理
+    async downloadPage(ctx) {
+      try {
+        const { invite } = ctx.query;
+        
+        // 如果有邀请码，验证其有效性
+        let inviterInfo = null;
+        if (invite) {
+          const inviteUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
+            filters: { inviteCode: invite } as any
+          });
+          
+          if (inviteUser.length > 0) {
+            inviterInfo = {
+              username: inviteUser[0].username,
+              inviteCode: invite
+            };
+          }
+        }
+
+        // 返回HTML下载页面
+        const html = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenithus投资平台 - APP下载</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 24px;
+        }
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        .invite-info {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #667eea;
+        }
+        .invite-code {
+            font-size: 18px;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+        .download-btn {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        .download-btn:hover {
+            transform: translateY(-2px);
+        }
+        .features {
+            margin: 30px 0;
+            text-align: left;
+        }
+        .feature {
+            display: flex;
+            align-items: center;
+            margin: 15px 0;
+            color: #555;
+        }
+        .feature-icon {
+            width: 20px;
+            height: 20px;
+            background: #667eea;
+            border-radius: 50%;
+            margin-right: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">Z</div>
+        <h1>Zenithus投资平台</h1>
+        <p class="subtitle">高收益投资，安全可靠</p>
+        
+        ${inviterInfo ? `
+        <div class="invite-info">
+            <p>🎉 您被 <strong>${inviterInfo.username}</strong> 邀请加入</p>
+            <p>邀请码：<span class="invite-code">${inviterInfo.inviteCode}</span></p>
+            <p style="font-size: 14px; color: #666;">注册时邀请码将自动填入</p>
+        </div>
+        ` : ''}
+        
+        <button class="download-btn" onclick="downloadApp()">
+            📱 立即下载APP
+        </button>
+        
+        <div class="features">
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>高收益投资计划</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>一层推荐奖励机制</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>抽奖好礼等你来</span>
+            </div>
+            <div class="feature">
+                <div class="feature-icon">✓</div>
+                <span>安全可靠的投资环境</span>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function downloadApp() {
+            // 下载APK文件
+            const downloadUrl = '${process.env.FRONTEND_URL || 'http://118.107.4.158'}/api/auth/download-apk${inviterInfo ? `?invite=${inviterInfo.inviteCode}` : ''}';
+            window.location.href = downloadUrl;
+        }
+    </script>
+</body>
+</html>`;
+
+        ctx.set('Content-Type', 'text/html');
+        ctx.body = html;
+        
+      } catch (error) {
+        console.error('下载页面生成失败:', error);
+        ctx.throw(500, `下载页面生成失败: ${error.message}`);
       }
     },
   })
