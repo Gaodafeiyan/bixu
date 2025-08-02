@@ -16,12 +16,17 @@ export default {
     },
   },
   attributes: {
-    // 关联抽奖记录
+    // 关联抽奖记录（可选，支持商城订单）
     record: {
       type: 'relation',
       relation: 'oneToOne',
       target: 'api::choujiang-ji-lu.choujiang-ji-lu',
-      required: true,
+      required: false,
+    },
+    // 关联商城订单（可选，支持抽奖订单）
+    shopOrderId: {
+      type: 'integer',
+      required: false,
     },
     // 收货人信息
     receiverName: {
