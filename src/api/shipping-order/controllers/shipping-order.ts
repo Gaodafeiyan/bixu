@@ -156,7 +156,9 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
         city,
         district,
         address,
-        zipCode
+        zipCode,
+        status: 'processing', // 更新状态为处理中
+        updatedAt: new Date()
       };
 
       console.log('准备更新的数据:', updateData);
