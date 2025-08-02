@@ -330,11 +330,14 @@ export default factories.createCoreController(
           return ctx.notFound('用户不存在');
         }
 
-        // 生成邀请链接
+        // 生成包含邀请码的APP下载链接
+        const appDownloadLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158:1337'}/downloads/app-release.apk?invite=${user.inviteCode}`;
+        
+        // 生成邀请链接（用于网页分享）
         const inviteLink = `${process.env.FRONTEND_URL || 'https://your-domain.com'}/register?invite=${user.inviteCode}`;
         
-        // 使用qrcode库生成SVG格式的二维码
-        const qrCodeData = await QRCode.toDataURL(inviteLink, {
+        // 生成包含邀请码的二维码（指向APP下载链接）
+        const qrCodeData = await QRCode.toDataURL(appDownloadLink, {
           width: 200,
           margin: 2,
           color: {
@@ -351,6 +354,7 @@ export default factories.createCoreController(
           data: {
             inviteCode: user.inviteCode,
             inviteLink: inviteLink,
+            appDownloadLink: appDownloadLink,
             qrCodeData: qrCodeData,
             shareStats: shareStats,
             username: user.username
@@ -399,10 +403,14 @@ export default factories.createCoreController(
           return ctx.notFound('用户不存在');
         }
 
+        // 生成包含邀请码的APP下载链接
+        const appDownloadLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158:1337'}/downloads/app-release.apk?invite=${user.inviteCode}`;
+        
+        // 生成邀请链接（用于网页分享）
         const inviteLink = `${process.env.FRONTEND_URL || 'https://your-domain.com'}/register?invite=${user.inviteCode}`;
         
-        // 使用qrcode库生成SVG格式的二维码
-        const qrCodeData = await QRCode.toDataURL(inviteLink, {
+        // 生成包含邀请码的二维码（指向APP下载链接）
+        const qrCodeData = await QRCode.toDataURL(appDownloadLink, {
           width: 200,
           margin: 2,
           color: {
@@ -415,7 +423,8 @@ export default factories.createCoreController(
           success: true,
           data: {
             qrCodeData: qrCodeData,
-            inviteLink: inviteLink
+            inviteLink: inviteLink,
+            appDownloadLink: appDownloadLink
           }
         };
       } catch (error) {
@@ -488,6 +497,44 @@ export default factories.createCoreController(
       
       svg += '</svg>';
       return svg;
+    },
+
+    // APK下载处理
+    async downloadApk(ctx) {
+      try {
+        const { invite } = ctx.query;
+        
+        // 如果有邀请码，验证其有效性
+        if (invite) {
+          const inviteUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
+            filters: { inviteCode: invite } as any
+          });
+          
+          if (inviteUser.length === 0) {
+            return ctx.badRequest('邀请码无效');
+          }
+        }
+
+        // 设置响应头，告诉浏览器这是一个文件下载
+        ctx.set('Content-Type', 'application/vnd.android.package-archive');
+        ctx.set('Content-Disposition', 'attachment; filename="app-release.apk"');
+        
+        // 这里应该返回实际的APK文件
+        // 在开发阶段，我们可以返回一个简单的响应，说明文件下载功能
+        ctx.body = {
+          success: true,
+          message: 'APK下载功能已启用',
+          inviteCode: invite || null,
+          downloadUrl: `${process.env.FRONTEND_URL || 'http://118.107.4.158:1337'}/downloads/app-release.apk`
+        };
+        
+        // 在实际部署时，这里应该返回真实的APK文件
+        // ctx.body = fs.createReadStream('/path/to/your/app-release.apk');
+        
+      } catch (error) {
+        console.error('APK下载失败:', error);
+        ctx.throw(500, `APK下载失败: ${error.message}`);
+      }
     },
   })
 );

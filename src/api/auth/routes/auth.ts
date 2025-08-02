@@ -97,5 +97,17 @@ export default {
         middlewares: [],
       },
     },
+    // APK下载路由
+    {
+      method: 'GET',
+      path: '/auth/download-apk',
+      handler: 'auth.downloadApk',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 }; 
