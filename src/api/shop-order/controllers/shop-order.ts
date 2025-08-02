@@ -188,7 +188,30 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
 
       // 如果是实物商品，创建发货订单
       if (orderItems[0].product.isPhysical) {
-        await strapi.service('shop-service' as any).createShippingOrderFromShopOrder(order.id);
+        try {
+          // 直接在控制器中创建发货订单
+          const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
+            data: {
+              orderNumber: `SH${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+              user: userId,
+              product: orderItems[0].product.id,
+              quantity: orderItems[0].quantity,
+              status: 'pending',
+              receiverName: shippingAddress?.receiverName || '待填写',
+              mobile: shippingAddress?.mobile || '待填写',
+              province: shippingAddress?.province || '待填写',
+              city: shippingAddress?.city || '待填写',
+              district: shippingAddress?.district || '待填写',
+              address: shippingAddress?.address || '待填写',
+              zipCode: shippingAddress?.zipCode || '',
+              shopOrderId: order.id
+            }
+          });
+          console.log(`✅ 发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
+        } catch (error) {
+          console.error('❌ 创建发货订单失败:', error);
+          // 不抛出错误，让订单创建继续
+        }
       }
 
       ctx.body = {
@@ -285,7 +308,30 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
 
       // 如果是实物商品，创建发货订单
       if (product.isPhysical) {
-        await strapi.service('shop-service' as any).createShippingOrderFromShopOrder(order.id);
+        try {
+          // 直接在控制器中创建发货订单
+          const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
+            data: {
+              orderNumber: `SH${Date.now()}${Math.random().toString(36).substr(2, 5).toUpperCase()}`,
+              user: userId,
+              product: productId,
+              quantity: quantity,
+              status: 'pending',
+              receiverName: shippingAddress?.receiverName || '待填写',
+              mobile: shippingAddress?.mobile || '待填写',
+              province: shippingAddress?.province || '待填写',
+              city: shippingAddress?.city || '待填写',
+              district: shippingAddress?.district || '待填写',
+              address: shippingAddress?.address || '待填写',
+              zipCode: shippingAddress?.zipCode || '',
+              shopOrderId: order.id
+            }
+          });
+          console.log(`✅ 发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
+        } catch (error) {
+          console.error('❌ 创建发货订单失败:', error);
+          // 不抛出错误，让订单创建继续
+        }
       }
 
       ctx.body = {
