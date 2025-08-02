@@ -97,6 +97,9 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
         filters.isWon = isWon === 'true';
       }
 
+      console.log('🔍 获取用户抽奖历史 - 用户ID:', userId);
+      console.log('🔍 过滤条件:', filters);
+
       const result = await strapi.entityService.findPage('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
         filters,
         populate: {
@@ -104,7 +107,9 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
             populate: ['image'] // 添加图片populate
           },
           chance: true,
-          shippingOrder: true
+          shippingOrder: {
+            populate: ['record', 'record.jiangpin'] // 确保发货订单包含完整信息
+          }
         },
         pagination: {
           page: parseInt(String(page)),
@@ -112,6 +117,23 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
         },
         sort: { drawTime: 'desc' }
       });
+
+      console.log('🔍 查询结果数量:', result.results?.length || 0);
+      
+      // 调试：打印每个记录的发货订单信息
+      if (result.results) {
+        result.results.forEach((record: any, index: number) => {
+          console.log(`🔍 记录 ${index + 1}:`);
+          console.log(`   奖品: ${record.jiangpin?.name || '未知'}`);
+          console.log(`   中奖: ${record.isWon}`);
+          console.log(`   发货订单: ${record.shippingOrder ? '存在' : '不存在'}`);
+          if (record.shippingOrder) {
+            console.log(`   收货人: ${record.shippingOrder.receiverName || 'null'}`);
+            console.log(`   状态: ${record.shippingOrder.status || 'null'}`);
+            console.log(`   手机: ${record.shippingOrder.mobile || 'null'}`);
+          }
+        });
+      }
 
       // 计算统计信息
       const totalDraws = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
