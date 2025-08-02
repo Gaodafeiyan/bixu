@@ -20,14 +20,12 @@
     "user": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "plugin::users-permissions.user",
-      "inversedBy": "shop_orders"
+      "target": "plugin::users-permissions.user"
     },
     "product": {
       "type": "relation",
       "relation": "manyToOne",
-      "target": "api::shop-product.shop-product",
-      "inversedBy": "shop_orders"
+      "target": "api::shop-product.shop-product"
     },
     "quantity": {
       "type": "integer",

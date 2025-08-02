@@ -46,18 +46,6 @@
       "type": "media",
       "multiple": true,
       "allowedTypes": ["images"]
-    },
-    "shop_carts": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::shop-cart.shop-cart",
-      "mappedBy": "product"
-    },
-    "shop_orders": {
-      "type": "relation",
-      "relation": "oneToMany",
-      "target": "api::shop-order.shop-order",
-      "mappedBy": "product"
     }
   }
 } 
