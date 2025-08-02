@@ -107,9 +107,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
             populate: ['image'] // 添加图片populate
           },
           chance: true,
-          shippingOrder: {
-            populate: ['record', 'record.jiangpin'] // 确保发货订单包含完整信息
-          }
+          // 移除错误的shippingOrder populate，因为发货订单是通过record关联的
         },
         pagination: {
           page: parseInt(String(page)),
@@ -120,19 +118,32 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
 
       console.log('🔍 查询结果数量:', result.results?.length || 0);
       
-      // 调试：打印每个记录的发货订单信息
+      // 为每个记录单独查询发货订单
       if (result.results) {
-        result.results.forEach((record: any, index: number) => {
-          console.log(`🔍 记录 ${index + 1}:`);
+        for (let i = 0; i < result.results.length; i++) {
+          const record = result.results[i];
+          console.log(`🔍 记录 ${i + 1}:`);
           console.log(`   奖品: ${record.jiangpin?.name || '未知'}`);
           console.log(`   中奖: ${record.isWon}`);
-          console.log(`   发货订单: ${record.shippingOrder ? '存在' : '不存在'}`);
-          if (record.shippingOrder) {
+          
+          // 查询该记录对应的发货订单
+          const shippingOrders = await strapi.entityService.findMany('api::shipping-order.shipping-order' as any, {
+            filters: {
+              record: { id: record.id }
+            },
+            populate: ['record', 'record.jiangpin']
+          });
+          
+          if (shippingOrders && shippingOrders.length > 0) {
+            record.shippingOrder = shippingOrders[0];
+            console.log(`   发货订单: 存在`);
             console.log(`   收货人: ${record.shippingOrder.receiverName || 'null'}`);
             console.log(`   状态: ${record.shippingOrder.status || 'null'}`);
             console.log(`   手机: ${record.shippingOrder.mobile || 'null'}`);
+          } else {
+            console.log(`   发货订单: 不存在`);
           }
-        });
+        }
       }
 
       // 计算统计信息
