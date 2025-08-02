@@ -5,4 +5,5 @@ export default {
   'api::log-service.log-service': () => import('./log-service'),
   'lottery-engine': () => import('./lottery-engine'),
   'shipping-service': () => import('./shipping-service'),
+  'shop-service': () => import('./shop-service'),
 };

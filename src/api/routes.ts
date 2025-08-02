@@ -26,4 +26,10 @@ export default {
   'ai-token': () => import('./ai-token/routes/ai-token'),
   // 系统配置路由
   'system-config': () => import('./system-config/routes/system-config'),
+  // 商城商品路由
+  'shop-product': () => import('./shop-product/routes/shop-product'),
+  // 商城购物车路由
+  'shop-cart': () => import('./shop-cart/routes/shop-cart'),
+  // 商城订单路由
+  'shop-order': () => import('./shop-order/routes/shop-order'),
 }; 
