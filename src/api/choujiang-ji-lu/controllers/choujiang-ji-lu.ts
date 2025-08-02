@@ -121,7 +121,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
       // 为每个记录单独查询发货订单
       if (result.results) {
         for (let i = 0; i < result.results.length; i++) {
-          const record = result.results[i];
+          const record = result.results[i] as any;
           console.log(`🔍 记录 ${i + 1}:`);
           console.log(`   奖品: ${record.jiangpin?.name || '未知'}`);
           console.log(`   中奖: ${record.isWon}`);
@@ -132,7 +132,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
               record: { id: record.id }
             },
             populate: ['record', 'record.jiangpin']
-          });
+          }) as any[];
           
           if (shippingOrders && shippingOrders.length > 0) {
             record.shippingOrder = shippingOrders[0];
