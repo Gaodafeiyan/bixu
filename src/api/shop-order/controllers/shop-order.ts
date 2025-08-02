@@ -188,7 +188,7 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
 
       // 如果是实物商品，创建发货订单
       if (orderItems[0].product.isPhysical) {
-        await strapi.service('shipping-service' as any).createShippingOrderFromShopOrder(order.id);
+        await strapi.service('shop-service' as any).createShippingOrderFromShopOrder(order.id);
       }
 
       ctx.body = {
@@ -285,7 +285,7 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
 
       // 如果是实物商品，创建发货订单
       if (product.isPhysical) {
-        await strapi.service('shipping-service' as any).createShippingOrderFromShopOrder(order.id);
+        await strapi.service('shop-service' as any).createShippingOrderFromShopOrder(order.id);
       }
 
       ctx.body = {
