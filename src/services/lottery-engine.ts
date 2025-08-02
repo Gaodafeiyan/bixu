@@ -142,7 +142,10 @@ export default ({ strapi }) => ({
     const traceId = uuidv4();
     
     try {
+      console.log(`🎰 开始抽奖流程 - 用户ID: ${userId}, 机会ID: ${chanceId}, 追踪ID: ${traceId}`);
+      
       // 1. 获取抽奖机会
+      console.log('🔍 步骤1: 获取抽奖机会');
       const chance = await strapi.entityService.findOne('api::choujiang-jihui.choujiang-jihui' as any, chanceId, {
         populate: ['user']
       }) as any;
@@ -150,6 +153,8 @@ export default ({ strapi }) => ({
       if (!chance) {
         throw new Error('抽奖机会不存在');
       }
+
+      console.log(`🔍 抽奖机会信息: ID=${chance.id}, 用户=${chance.user?.id}, 类型=${chance.type}, 已用=${chance.usedCount}/${chance.count}`);
 
       // 验证用户权限
       if (chance.user.id !== userId) {
@@ -173,45 +178,59 @@ export default ({ strapi }) => ({
         throw new Error('抽奖机会已用完');
       }
 
+      console.log(`✅ 抽奖机会验证通过，可用次数: ${availableCount}`);
+
       // 2. 选择奖品
+      console.log('🔍 步骤2: 选择奖品');
       const selectedPrize = await this.selectRandomPrize();
+      console.log(`✅ 选中奖品: ${selectedPrize.name}, 类型: ${selectedPrize.jiangpinType}, 概率: ${selectedPrize.zhongJiangLv}%`);
       
       // 3. 检查库存并扣减
+      console.log('🔍 步骤3: 检查库存');
       if (selectedPrize.maxQuantity > 0) {
         const stockAvailable = await this.decrementStock(selectedPrize.id);
         if (!stockAvailable) {
           throw new Error('奖品库存不足，请稍后重试');
         }
+        console.log(`✅ 库存扣减成功`);
+      } else {
+        console.log(`✅ 无限制库存，跳过库存检查`);
       }
 
       // 4. 判断是否中奖
-      // 如果奖品中奖概率 >= 100%，直接中奖
-      // 否则按概率判断
+      console.log('🔍 步骤4: 判断中奖');
       const winRate = new Decimal(selectedPrize.zhongJiangLv || 0).toNumber();
       let isWon = false;
       
       if (winRate >= 100) {
         // 100%中奖概率，直接中奖
         isWon = true;
-        console.log(`100%中奖概率，直接中奖: ${selectedPrize.name}`);
+        console.log(`✅ 100%中奖概率，直接中奖: ${selectedPrize.name}`);
       } else {
         // 按概率判断是否中奖
         const random = Math.random() * 100;
         isWon = random <= winRate;
-        console.log(`抽奖结果: 随机数 ${random}, 中奖概率 ${winRate}%, 是否中奖: ${isWon}`);
+        console.log(`🎲 抽奖结果: 随机数 ${random.toFixed(2)}, 中奖概率 ${winRate}%, 是否中奖: ${isWon}`);
       }
 
       // 5. 发放奖品
       if (isWon) {
+        console.log('🔍 步骤5: 发放奖品');
         await this.grantPrize(userId, selectedPrize);
+        console.log(`✅ 奖品发放成功`);
+      } else {
+        console.log(`✅ 未中奖，跳过奖品发放`);
       }
 
       // 6. 更新抽奖机会使用次数
+      console.log('🔍 步骤6: 更新抽奖机会');
       await strapi.entityService.update('api::choujiang-jihui.choujiang-jihui' as any, chanceId, {
         data: { usedCount: (chance.usedCount || 0) + 1 }
       });
+      console.log(`✅ 抽奖机会使用次数更新成功`);
 
       // 7. 记录抽奖记录
+      console.log('🔍 步骤7: 创建抽奖记录');
       const recordData = {
         user: userId,
         jiangpin: selectedPrize.id,
@@ -231,23 +250,33 @@ export default ({ strapi }) => ({
       const record = await strapi.entityService.create('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
         data: recordData
       });
+      console.log(`✅ 抽奖记录创建成功，记录ID: ${record.id}`);
 
       // 8. 如果是实物奖品且中奖，创建发货订单
-      if (isWon) {
+      const isPhysicalPrize = selectedPrize.jiangpinType === 'physical' || 
+                              selectedPrize.name?.includes('宝马') || 
+                              selectedPrize.name?.includes('手机') || 
+                              selectedPrize.name?.includes('电脑');
+      
+      if (isWon && isPhysicalPrize) {
+        console.log('🔍 步骤8: 创建发货订单');
         await this.createShippingOrder(record.id, selectedPrize);
+        console.log(`✅ 发货订单创建成功`);
+      } else {
+        console.log(`✅ 跳过发货订单创建（非实物奖品或未中奖）`);
       }
 
+      console.log(`🎉 抽奖流程完成 - 用户: ${userId}, 中奖: ${isWon}, 奖品: ${selectedPrize.name}`);
+
       return {
-        success: true,
-        traceId: traceId,
         isWon: isWon,
         prize: isWon ? selectedPrize : null,
         remainingChances: availableCount - 1,
-        recordId: record.id
+        traceId: traceId
       };
-
     } catch (error) {
-      console.error('抽奖事务失败:', error);
+      console.error(`❌ 抽奖流程失败 - 用户: ${userId}, 机会: ${chanceId}, 错误: ${error.message}`);
+      console.error(`❌ 错误堆栈: ${error.stack}`);
       throw error;
     }
   },
@@ -255,35 +284,55 @@ export default ({ strapi }) => ({
   // 发放奖品
   async grantPrize(userId: number, prize: any): Promise<void> {
     try {
-      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+      let wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: { id: userId } }
       }) as any[];
 
-      if (wallets && wallets.length > 0) {
-        const userWallet = wallets[0];
+      let userWallet;
+      
+      // 如果用户没有钱包，创建一个
+      if (!wallets || wallets.length === 0) {
+        console.log(`用户 ${userId} 没有钱包，创建新钱包`);
+        userWallet = await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
+          data: {
+            user: userId,
+            usdtYue: '0',
+            aiYue: '0',
+            totalRecharge: '0',
+            totalWithdraw: '0'
+          }
+        });
+      } else {
+        userWallet = wallets[0];
+      }
 
-        switch (prize.jiangpinType) {
-          case 'usdt':
-            const currentBalance = new Decimal(userWallet.usdtYue || 0);
-            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-              data: { usdtYue: currentBalance.plus(prize.value).toString() }
-            });
-            console.log(`用户 ${userId} 获得 USDT 奖励: ${prize.value}`);
-            break;
+      switch (prize.jiangpinType) {
+        case 'usdt':
+          const currentBalance = new Decimal(userWallet.usdtYue || 0);
+          const newBalance = currentBalance.plus(prize.value);
+          await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+            data: { usdtYue: newBalance.toString() }
+          });
+          console.log(`用户 ${userId} 获得 USDT 奖励: ${prize.value}, 新余额: ${newBalance}`);
+          break;
 
-          case 'ai_token':
-            const currentAiBalance = new Decimal(userWallet.aiYue || 0);
-            await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-              data: { aiYue: currentAiBalance.plus(prize.value).toString() }
-            });
-            console.log(`用户 ${userId} 获得 AI代币 奖励: ${prize.value}`);
-            break;
+        case 'ai_token':
+          const currentAiBalance = new Decimal(userWallet.aiYue || 0);
+          const newAiBalance = currentAiBalance.plus(prize.value);
+          await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
+            data: { aiYue: newAiBalance.toString() }
+          });
+          console.log(`用户 ${userId} 获得 AI代币 奖励: ${prize.value}, 新余额: ${newAiBalance}`);
+          break;
 
-          case 'physical':
-          case 'virtual':
-            console.log(`用户 ${userId} 获得 ${prize.jiangpinType} 奖品: ${prize.name}`);
-            break;
-        }
+        case 'physical':
+        case 'virtual':
+          console.log(`用户 ${userId} 获得 ${prize.jiangpinType} 奖品: ${prize.name}`);
+          break;
+          
+        default:
+          console.log(`用户 ${userId} 获得未知类型奖品: ${prize.jiangpinType} - ${prize.name}`);
+          break;
       }
     } catch (error) {
       console.error('发放奖品失败:', error);
@@ -294,16 +343,39 @@ export default ({ strapi }) => ({
   // 创建发货订单
   async createShippingOrder(recordId: number, prize: any): Promise<void> {
     try {
-      await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
-        data: {
-          record: recordId,
-          status: 'pending',
-          remark: `奖品: ${prize.name}`
-        }
+      // 检查是否为实体商品（包括宝马x5等）
+      const isPhysicalPrize = prize.jiangpinType === 'physical' || 
+                              prize.name?.includes('宝马') || 
+                              prize.name?.includes('手机') || 
+                              prize.name?.includes('电脑');
+      
+      if (!isPhysicalPrize) {
+        console.log(`跳过创建发货订单 - 奖品类型: ${prize.jiangpinType}, 奖品: ${prize.name}`);
+        return;
+      }
+
+      console.log(`创建发货订单 - 记录ID: ${recordId}, 奖品: ${prize.name}, 类型: ${prize.jiangpinType}`);
+      
+      const shippingOrderData = {
+        record: recordId,
+        status: 'pending',
+        remark: `奖品: ${prize.name}`,
+        receiverName: '待填写',
+        mobile: '待填写',
+        province: '待填写',
+        city: '待填写',
+        district: '待填写',
+        address: '待填写',
+        zipCode: '待填写'
+      };
+
+      const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
+        data: shippingOrderData
       });
-      console.log(`创建发货订单: 记录ID ${recordId}, 奖品 ${prize.name}`);
+      
+      console.log(`✅ 发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
     } catch (error) {
-      console.error('创建发货订单失败:', error);
+      console.error('❌ 创建发货订单失败:', error);
       throw error;
     }
   },
