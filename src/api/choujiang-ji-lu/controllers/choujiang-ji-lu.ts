@@ -250,7 +250,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
               $gte: startOfMonth,
               $lte: endOfMonth
             }
-          }
+          } as any
         });
         
         const monthWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
@@ -260,7 +260,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
               $lte: endOfMonth
             },
             isWon: true
-          }
+          } as any
         });
         
         const monthRate = monthDraws > 0 ? (monthWins / monthDraws * 100).toFixed(2) : '0.00';
@@ -289,7 +289,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
               $gte: startOfWeek,
               $lte: endOfWeek
             }
-          }
+          } as any
         });
         
         const weekWins = await strapi.entityService.count('api::choujiang-ji-lu.choujiang-ji-lu' as any, {
@@ -299,7 +299,7 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
               $lte: endOfWeek
             },
             isWon: true
-          }
+          } as any
         });
         
         const weekRate = weekDraws > 0 ? (weekWins / weekDraws * 100).toFixed(2) : '0.00';
