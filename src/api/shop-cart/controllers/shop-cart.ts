@@ -124,14 +124,16 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
 
       // 验证购物车商品是否存在且属于当前用户
       const cartItem = await strapi.entityService.findOne('api::shop-cart.shop-cart' as any, id, {
-        populate: ['product']
+        populate: ['product', 'user']
       }) as any;
 
       if (!cartItem) {
         return ctx.notFound('购物车商品不存在');
       }
 
-      if (cartItem.user?.id !== userId) {
+      // 修复权限检查，确保ID类型一致
+      if (cartItem.user?.id?.toString() !== userId?.toString()) {
+        console.log(`权限检查失败 - 购物车用户ID: ${cartItem.user?.id}, 当前用户ID: ${userId}`);
         return ctx.forbidden('无权操作此购物车商品');
       }
 
@@ -166,13 +168,17 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
       }
 
       // 验证购物车商品是否存在且属于当前用户
-      const cartItem = await strapi.entityService.findOne('api::shop-cart.shop-cart' as any, id) as any;
+      const cartItem = await strapi.entityService.findOne('api::shop-cart.shop-cart' as any, id, {
+        populate: ['user']
+      }) as any;
 
       if (!cartItem) {
         return ctx.notFound('购物车商品不存在');
       }
 
-      if (cartItem.user?.id !== userId) {
+      // 修复权限检查，确保ID类型一致
+      if (cartItem.user?.id?.toString() !== userId?.toString()) {
+        console.log(`权限检查失败 - 购物车用户ID: ${cartItem.user?.id}, 当前用户ID: ${userId}`);
         return ctx.forbidden('无权操作此购物车商品');
       }
 

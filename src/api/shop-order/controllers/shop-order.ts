@@ -187,7 +187,7 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
       }
 
       // 如果是实物商品，创建发货订单
-      if (orderItems[0].product.isPhysical) {
+      if (orderItems[0].product.isPhysical === true) {
         try {
           // 创建商城发货订单
           const shippingOrder = await strapi.entityService.create('api::shop-shipping-order.shop-shipping-order' as any, {
@@ -210,8 +210,17 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
           console.log(`✅ 商城发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
         } catch (error) {
           console.error('❌ 创建商城发货订单失败:', error);
-          // 不抛出错误，让订单创建继续
+          // 如果发货订单创建失败，回滚订单创建
+          try {
+            await strapi.entityService.delete('api::shop-order.shop-order' as any, order.id);
+            console.log('✅ 订单创建已回滚');
+          } catch (rollbackError) {
+            console.error('❌ 订单回滚失败:', rollbackError);
+          }
+          return ctx.badRequest('创建发货订单失败，请重试');
         }
+      } else {
+        console.log('商品不是实物商品，跳过发货订单创建');
       }
 
       ctx.body = {
@@ -307,7 +316,7 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
       });
 
       // 如果是实物商品，创建发货订单
-      if (product.isPhysical) {
+      if (product.isPhysical === true) {
         try {
           // 创建商城发货订单
           const shippingOrder = await strapi.entityService.create('api::shop-shipping-order.shop-shipping-order' as any, {
@@ -330,8 +339,17 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
           console.log(`✅ 商城发货订单创建成功 - 订单ID: ${shippingOrder.id}`);
         } catch (error) {
           console.error('❌ 创建商城发货订单失败:', error);
-          // 不抛出错误，让订单创建继续
+          // 如果发货订单创建失败，回滚订单创建
+          try {
+            await strapi.entityService.delete('api::shop-order.shop-order' as any, order.id);
+            console.log('✅ 订单创建已回滚');
+          } catch (rollbackError) {
+            console.error('❌ 订单回滚失败:', rollbackError);
+          }
+          return ctx.badRequest('创建发货订单失败，请重试');
         }
+      } else {
+        console.log('商品不是实物商品，跳过发货订单创建');
       }
 
       ctx.body = {

@@ -39,7 +39,7 @@ export default {
     // 清空购物车
     {
       method: 'DELETE',
-      path: '/shop-carts',
+      path: '/shop-carts/clear',
       handler: 'shop-cart.clearCart',
       config: {
         auth: {}  // 空对象表示需要登录
