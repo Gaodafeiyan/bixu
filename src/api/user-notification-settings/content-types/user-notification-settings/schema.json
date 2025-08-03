@@ -1,0 +1,38 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_notification_settings",
+  "info": {
+    "singularName": "user-notification-setting",
+    "pluralName": "user-notification-settings",
+    "displayName": "User Notification Settings",
+    "description": "用户通知设置"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "user_notification_settings"
+    },
+    "systemNotifications": {
+      "type": "boolean",
+      "default": true
+    },
+    "emailNotifications": {
+      "type": "boolean",
+      "default": false
+    },
+    "pushNotifications": {
+      "type": "boolean",
+      "default": true
+    },
+    "marketingNotifications": {
+      "type": "boolean",
+      "default": false
+    }
+  }
+} 

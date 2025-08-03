@@ -1,0 +1,30 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_notification_reads",
+  "info": {
+    "singularName": "user-notification-read",
+    "pluralName": "user-notification-reads",
+    "displayName": "User Notification Read",
+    "description": "用户通知读取记录"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "user_notification_reads"
+    },
+    "noticeId": {
+      "type": "integer",
+      "required": true
+    },
+    "readAt": {
+      "type": "datetime",
+      "required": true
+    }
+  }
+} 

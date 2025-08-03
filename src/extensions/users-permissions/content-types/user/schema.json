@@ -88,6 +88,18 @@
       "relation": "oneToOne",
       "target": "api::qianbao-yue.qianbao-yue",
       "mappedBy": "user"
+    },
+    "user_notification_reads": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::user-notification-read.user-notification-read",
+      "mappedBy": "user"
+    },
+    "user_notification_settings": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::user-notification-settings.user-notification-settings",
+      "mappedBy": "user"
     }
   }
 } 
