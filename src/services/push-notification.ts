@@ -20,18 +20,18 @@ try {
       projectId: 'mock-project',
     }, 'mock-firebase-app');
     
-    // 重写messaging方法为模拟实现
-    const originalMessaging = firebaseApp.messaging;
-    firebaseApp.messaging = () => ({
-      sendEachForMulticast: async (message: any) => {
-        console.log('📱 模拟推送通知:', message);
-        return {
-          successCount: message.tokens.length,
-          failureCount: 0,
-          responses: message.tokens.map(() => ({ success: true }))
-        };
-      }
-    });
+         // 重写messaging方法为模拟实现
+     const originalMessaging = firebaseApp.messaging;
+     firebaseApp.messaging = () => ({
+       sendEachForMulticast: async (message: any) => {
+         console.log('📱 模拟推送通知:', message);
+         return {
+           successCount: message.tokens.length,
+           failureCount: 0,
+           responses: message.tokens.map(() => ({ success: true }))
+         };
+       }
+     } as any);
   } else {
     // 如果有完整配置，正常初始化
     const serviceAccount = {
