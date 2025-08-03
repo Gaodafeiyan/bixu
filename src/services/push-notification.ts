@@ -6,16 +6,44 @@ let firebaseApp: admin.app.App;
 try {
   firebaseApp = admin.app();
 } catch (error) {
-  // 如果还没有初始化，则初始化
-  const serviceAccount = {
-    projectId: process.env.FIREBASE_PROJECT_ID || 'your-project-id',
-    privateKey: process.env.FIREBASE_PRIVATE_KEY?.replace(/\\n/g, '\n') || '',
-    clientEmail: process.env.FIREBASE_CLIENT_EMAIL || '',
-  };
+  // 检查是否有Firebase配置
+  const projectId = process.env.FIREBASE_PROJECT_ID;
+  const privateKey = process.env.FIREBASE_PRIVATE_KEY;
+  const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
 
-  firebaseApp = admin.initializeApp({
-    credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-  });
+  // 如果没有配置Firebase，创建一个模拟的推送服务
+  if (!projectId || !privateKey || !clientEmail) {
+    console.log('⚠️ Firebase配置不完整，使用模拟推送服务');
+    
+    // 创建一个模拟的Firebase App
+    firebaseApp = admin.initializeApp({
+      projectId: 'mock-project',
+    }, 'mock-firebase-app');
+    
+    // 重写messaging方法为模拟实现
+    const originalMessaging = firebaseApp.messaging;
+    firebaseApp.messaging = () => ({
+      sendEachForMulticast: async (message: any) => {
+        console.log('📱 模拟推送通知:', message);
+        return {
+          successCount: message.tokens.length,
+          failureCount: 0,
+          responses: message.tokens.map(() => ({ success: true }))
+        };
+      }
+    });
+  } else {
+    // 如果有完整配置，正常初始化
+    const serviceAccount = {
+      projectId,
+      privateKey: privateKey.replace(/\\n/g, '\n'),
+      clientEmail,
+    };
+
+    firebaseApp = admin.initializeApp({
+      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+    });
+  }
 }
 
 export class PushNotificationService {
