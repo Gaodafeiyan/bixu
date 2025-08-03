@@ -215,14 +215,16 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
   async debugUserOrders(ctx) {
     try {
       const userId = ctx.state.user.id;
+      console.log(`🔍 调试用户订单 - 用户ID: ${userId}`);
       
       // 获取用户所有订单（不限制状态）
       const allOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { user: { id: userId } },
-        populate: ['jihua']
+        populate: ['jihua', 'user']
       }) as any[];
 
-      console.log(`用户 ${userId} 的所有订单:`);
+      console.log(`用户 ${userId} 的所有订单数量: ${allOrders.length}`);
+      console.log('所有订单详情:');
       allOrders.forEach((order, index) => {
         console.log(`订单 ${index + 1}:`);
         console.log(`  - ID: ${order.id}`);
@@ -230,15 +232,52 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         console.log(`  - 金额: ${order.principal || order.amount}`);
         console.log(`  - 计划ID: ${order.jihua?.id}`);
         console.log(`  - 计划名称: ${order.jihua?.name}`);
+        console.log(`  - 用户ID: ${order.user?.id}`);
+        console.log(`  - 用户名: ${order.user?.username}`);
         console.log(`  - 创建时间: ${order.createdAt}`);
         console.log(`  - 更新时间: ${order.updatedAt}`);
       });
+
+      // 也检查一下所有状态的订单
+      const runningOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+        filters: { 
+          user: { id: userId },
+          status: 'running'
+        },
+        populate: ['jihua']
+      }) as any[];
+
+      const pendingOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+        filters: { 
+          user: { id: userId },
+          status: 'pending'
+        },
+        populate: ['jihua']
+      }) as any[];
+
+      const finishedOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+        filters: { 
+          user: { id: userId },
+          status: 'finished'
+        },
+        populate: ['jihua']
+      }) as any[];
+
+      console.log(`状态统计:`);
+      console.log(`  - running: ${runningOrders.length}`);
+      console.log(`  - pending: ${pendingOrders.length}`);
+      console.log(`  - finished: ${finishedOrders.length}`);
 
       ctx.body = {
         success: true,
         data: {
           userId,
           totalOrders: allOrders.length,
+          statusStats: {
+            running: runningOrders.length,
+            pending: pendingOrders.length,
+            finished: finishedOrders.length
+          },
           orders: allOrders.map(order => ({
             id: order.id,
             status: order.status,
@@ -246,6 +285,8 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
             amount: order.amount,
             jihuaId: order.jihua?.id,
             jihuaName: order.jihua?.name,
+            userId: order.user?.id,
+            username: order.user?.username,
             createdAt: order.createdAt,
             updatedAt: order.updatedAt
           }))
