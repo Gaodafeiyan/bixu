@@ -104,6 +104,11 @@ export default ({ strapi }) => {
 
     // 获取指定代币余额
     async getTokenBalance(tokenSymbol: string): Promise<string> {
+      return this.getTokenBalanceFromAddress(tokenSymbol, walletAddress);
+    },
+
+    // 从指定地址获取代币余额
+    async getTokenBalanceFromAddress(tokenSymbol: string, address: string): Promise<string> {
       try {
         if (!web3) {
           throw new Error('区块链服务未初始化');
@@ -138,10 +143,10 @@ export default ({ strapi }) => {
         }
 
         console.log(`🔍 查询${tokenSymbol}余额 - 合约地址: ${contractAddress}`);
-        console.log(`🔍 查询${tokenSymbol}余额 - 钱包地址: ${walletAddress}`);
+        console.log(`🔍 查询${tokenSymbol}余额 - 钱包地址: ${address}`);
 
         // 获取原始余额
-        const rawBalance = await contract.methods.balanceOf(walletAddress).call();
+        const rawBalance = await contract.methods.balanceOf(address).call();
         
         // 动态读取代币的decimals
         const decimals = await contract.methods.decimals().call();
@@ -546,19 +551,38 @@ export default ({ strapi }) => {
           throw new Error('区块链服务未初始化');
         }
 
-        if (!privateKey) {
-          throw new Error('私钥未配置，无法执行转账');
+        // 获取提现通道配置
+        const withdrawalChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+          filters: {
+            status: 'active',
+            channelType: { $in: ['withdrawal', 'both'] },
+            asset: 'USDT'
+          }
+        }) as any[];
+
+        if (withdrawalChannels.length === 0) {
+          throw new Error('没有找到活跃的USDT提现通道');
+        }
+
+        // 选择第一个可用的提现通道
+        const channel = withdrawalChannels[0];
+        const channelWalletAddress = channel.walletAddress;
+        const channelPrivateKey = channel.walletPrivateKey;
+
+        if (!channelPrivateKey) {
+          throw new Error('提现通道私钥未配置，无法执行转账');
         }
 
         console.log(`🔄 执行提现转账: ${order.orderNo}, 金额: ${order.actualAmount} USDT`);
+        console.log(`📧 使用提现通道: ${channel.name}, 钱包地址: ${channelWalletAddress}`);
 
-        // 检查钱包USDT余额
-        const walletBalance = await this.getTokenBalance('USDT');
+        // 检查提现通道钱包USDT余额
+        const walletBalance = await this.getTokenBalanceFromAddress('USDT', channelWalletAddress);
         const requiredAmount = parseFloat(order.actualAmount);
         const currentBalance = parseFloat(walletBalance);
 
         if (currentBalance < requiredAmount) {
-          const errorMsg = `钱包USDT余额不足: 需要 ${requiredAmount} USDT, 当前余额 ${currentBalance} USDT`;
+          const errorMsg = `提现通道钱包USDT余额不足: 需要 ${requiredAmount} USDT, 当前余额 ${currentBalance} USDT`;
           console.error(`❌ ${errorMsg}`);
           
           // 更新订单状态为失败
@@ -588,7 +612,7 @@ export default ({ strapi }) => {
         
         // 创建转账交易
         const tx = {
-          from: walletAddress,
+          from: channelWalletAddress,
           to: USDT_CONTRACT_ADDRESS,
           data: usdtContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
@@ -596,7 +620,7 @@ export default ({ strapi }) => {
         };
 
         // 签名并发送交易
-        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+        const signedTx = await web3.eth.accounts.signTransaction(tx, channelPrivateKey);
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
         // 更新订单状态为完成
