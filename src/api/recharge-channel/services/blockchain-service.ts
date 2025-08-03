@@ -219,11 +219,28 @@ export default ({ strapi }) => {
 
         console.log('🔄 开始监控钱包交易...');
 
-        // 先获取待处理的充值订单
+        // 获取所有活跃的充值通道
+        const activeChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+          filters: {
+            status: 'active',
+            channelType: { $in: ['recharge', 'both'] }
+          }
+        }) as any[];
+
+        if (activeChannels.length === 0) {
+          console.log('⚠️ 没有找到活跃的充值通道');
+          return 0;
+        }
+
+        // 收集所有需要监听的钱包地址
+        const walletAddresses = activeChannels.map(channel => channel.walletAddress);
+        console.log(`📊 需要监听的钱包地址: ${walletAddresses.join(', ')}`);
+
+        // 获取所有待处理的充值订单
         const pendingOrders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
             status: 'pending',
-            receiveAddress: walletAddress
+            receiveAddress: { $in: walletAddresses }
           }
         });
 
@@ -262,16 +279,16 @@ export default ({ strapi }) => {
           return '0x' + address.toLowerCase().slice(2).padStart(64, '0');
         }
 
-        const toTopic = addrTopic(walletAddress); // 充值：to = 我方钱包
+        // 为每个钱包地址创建topic
+        const toTopics = walletAddresses.map(addr => addrTopic(addr));
 
-        console.log(`🎯 使用精确过滤 - 钱包地址: ${walletAddress}`);
-        console.log(`🎯 钱包Topic: ${toTopic}`);
+        console.log(`🎯 使用精确过滤 - 监听钱包数量: ${walletAddresses.length}`);
         console.log(`🎯 Transfer Topic: ${TRANSFER_TOPIC}`);
 
-        // 基础查询参数
+        // 基础查询参数 - 监听所有钱包地址
         const baseParams = {
           address: USDT_CONTRACT_ADDRESS,
-          topics: [TRANSFER_TOPIC, null, toTopic], // topics[2] = to
+          topics: [TRANSFER_TOPIC, null, toTopics], // topics[2] = to (支持多个地址)
         };
 
         // 指数退避扫描循环
@@ -419,12 +436,22 @@ export default ({ strapi }) => {
 
         console.log(`💰 收到转账: ${amount} USDT from ${fromAddress}, tx: ${txHash}`);
 
+        // 获取所有活跃的充值通道钱包地址
+        const activeChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+          filters: {
+            status: 'active',
+            channelType: { $in: ['recharge', 'both'] }
+          }
+        }) as any[];
+        
+        const walletAddresses = activeChannels.map(channel => channel.walletAddress);
+        
         // 查找匹配的充值订单 - 只查找最近24小时内的订单
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
             status: 'pending',
-            receiveAddress: walletAddress,
+            receiveAddress: { $in: walletAddresses },
             createdAt: { $gte: oneDayAgo }
           },
           populate: ['user'], // 包含user关系
