@@ -41,28 +41,28 @@ export class PushNotificationService {
         tokens,
       };
 
-      const response = await firebaseApp.messaging().sendMulticast(message);
-      
-      console.log(`✅ 推送通知发送成功:`, {
-        userId,
-        successCount: response.successCount,
-        failureCount: response.failureCount,
-      });
+             const response = await firebaseApp.messaging().sendEachForMulticast(message);
+       
+       console.log(`✅ 推送通知发送成功:`, {
+         userId,
+         successCount: response.successCount,
+         failureCount: response.failureCount,
+       });
 
-      // 处理失败的token
-      if (response.failureCount > 0) {
-        const failedTokens = response.responses
-          .map((resp, idx) => resp.success ? null : tokens[idx])
-          .filter(Boolean);
-        
-        await this.removeInvalidTokens(failedTokens);
-      }
+       // 处理失败的token
+       if (response.failureCount > 0) {
+         const failedTokens = response.responses
+           .map((resp, idx) => resp.success ? null : tokens[idx])
+           .filter(Boolean);
+         
+         await this.removeInvalidTokens(failedTokens);
+       }
 
-      return {
-        success: true,
-        successCount: response.successCount,
-        failureCount: response.failureCount,
-      };
+       return {
+         success: true,
+         successCount: response.successCount,
+         failureCount: response.failureCount,
+       };
     } catch (error) {
       console.error('❌ 发送推送通知失败:', error);
       return { success: false, error: error.message };
@@ -89,18 +89,18 @@ export class PushNotificationService {
         tokens,
       };
 
-      const response = await firebaseApp.messaging().sendMulticast(message);
-      
-      console.log(`✅ 群发推送通知成功:`, {
-        successCount: response.successCount,
-        failureCount: response.failureCount,
-      });
+             const response = await firebaseApp.messaging().sendEachForMulticast(message);
+       
+       console.log(`✅ 群发推送通知成功:`, {
+         successCount: response.successCount,
+         failureCount: response.failureCount,
+       });
 
-      return {
-        success: true,
-        successCount: response.successCount,
-        failureCount: response.failureCount,
-      };
+       return {
+         success: true,
+         successCount: response.successCount,
+         failureCount: response.failureCount,
+       };
     } catch (error) {
       console.error('❌ 群发推送通知失败:', error);
       return { success: false, error: error.message };
@@ -115,7 +115,7 @@ export class PushNotificationService {
       const tokens = await strapi.entityService.findMany('api::user-fcm-token.user-fcm-token' as any, {
         filters: { userId },
         fields: ['fcmToken'],
-      });
+      }) as any[];
       
       return tokens.map((token: any) => token.fcmToken);
     } catch (error) {
@@ -131,7 +131,7 @@ export class PushNotificationService {
     try {
       const tokens = await strapi.entityService.findMany('api::user-fcm-token.user-fcm-token' as any, {
         fields: ['fcmToken'],
-      });
+      }) as any[];
       
       return tokens.map((token: any) => token.fcmToken);
     } catch (error) {
@@ -147,7 +147,7 @@ export class PushNotificationService {
     try {
       for (const token of invalidTokens) {
         await strapi.entityService.deleteMany('api::user-fcm-token.user-fcm-token' as any, {
-          filters: { fcmToken: token },
+          filters: { fcmToken: token } as any,
         });
       }
       console.log(`🗑️ 移除了 ${invalidTokens.length} 个无效的FCM token`);
@@ -162,9 +162,9 @@ export class PushNotificationService {
   async registerUserToken(userId: number, fcmToken: string, deviceType: 'android' | 'ios' = 'android') {
     try {
       // 检查是否已存在
-      const existingToken = await strapi.entityService.findMany('api::user-fcm-token.user-fcm-token' as any, {
-        filters: { userId, fcmToken },
-      });
+             const existingToken = await strapi.entityService.findMany('api::user-fcm-token.user-fcm-token' as any, {
+         filters: { userId, fcmToken } as any,
+       });
 
       if (existingToken && existingToken.length > 0) {
         console.log(`用户 ${userId} 的FCM token已存在`);
@@ -193,9 +193,9 @@ export class PushNotificationService {
    */
   async unregisterUserToken(userId: number, fcmToken: string) {
     try {
-      await strapi.entityService.deleteMany('api::user-fcm-token.user-fcm-token' as any, {
-        filters: { userId, fcmToken },
-      });
+             await strapi.entityService.deleteMany('api::user-fcm-token.user-fcm-token' as any, {
+         filters: { userId, fcmToken } as any,
+       });
 
       console.log(`✅ 用户 ${userId} 的FCM token注销成功`);
       return { success: true, message: 'Token注销成功' };

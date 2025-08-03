@@ -64,16 +64,16 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       let totalSuccess = 0;
       let totalFailure = 0;
 
-      // 给每个开启了推送的用户发送通知
-      for (const setting of usersWithPushEnabled) {
-        if (setting.user) {
-          const result = await pushNotificationService.sendToUser(setting.user.id, title, body, data);
-          if (result.success) {
-            totalSuccess += result.successCount || 0;
-            totalFailure += result.failureCount || 0;
-          }
-        }
-      }
+             // 给每个开启了推送的用户发送通知
+       for (const setting of usersWithPushEnabled as any[]) {
+         if (setting.user) {
+           const result = await pushNotificationService.sendToUser(setting.user.id, title, body, data);
+           if (result.success) {
+             totalSuccess += result.successCount || 0;
+             totalFailure += result.failureCount || 0;
+           }
+         }
+       }
 
       return ctx.send({
         success: true,

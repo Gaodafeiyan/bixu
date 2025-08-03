@@ -263,9 +263,9 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
             filters: { userId },
           });
           
-          for (const token of userTokens) {
-            await pushNotificationService.unregisterUserToken(userId, token.fcmToken);
-          }
+                     for (const token of userTokens as any[]) {
+             await pushNotificationService.unregisterUserToken(userId, token.fcmToken);
+           }
         } catch (error) {
           console.error('注销FCM token失败:', error);
         }
