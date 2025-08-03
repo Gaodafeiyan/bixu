@@ -3,7 +3,7 @@
   "collectionName": "user_notification_settings",
   "info": {
     "singularName": "user-notification-settings",
-    "pluralName": "user-notification-settings",
+    "pluralName": "user-notification-settings-list",
     "displayName": "User Notification Settings",
     "description": "用户通知设置"
   },

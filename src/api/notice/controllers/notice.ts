@@ -191,13 +191,13 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
       const userId = ctx.state.user.id;
 
       // 获取用户通知设置
-      let settings = await strapi.entityService.findMany('api::user-notification-settings.user-notification-settings' as any, {
+      let settings = await strapi.entityService.findMany('api::user-notification-settings.user-notification-settings-list' as any, {
         filters: { user: userId }
       }) as any[];
 
       if (settings.length === 0) {
         // 如果没有设置，创建默认设置
-        settings = [await strapi.entityService.create('api::user-notification-settings.user-notification-settings' as any, {
+        settings = [await strapi.entityService.create('api::user-notification-settings.user-notification-settings-list' as any, {
           data: {
             user: userId,
             systemNotifications: true,
@@ -228,13 +228,13 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
       const { systemNotifications, emailNotifications, pushNotifications, marketingNotifications } = ctx.request.body;
 
       // 查找现有设置
-      let settings = await strapi.entityService.findMany('api::user-notification-settings.user-notification-settings' as any, {
+      let settings = await strapi.entityService.findMany('api::user-notification-settings.user-notification-settings-list' as any, {
         filters: { user: userId }
       }) as any[];
 
       if (settings.length === 0) {
         // 创建新设置
-        await strapi.entityService.create('api::user-notification-settings.user-notification-settings' as any, {
+        await strapi.entityService.create('api::user-notification-settings.user-notification-settings-list' as any, {
           data: {
             user: userId,
             systemNotifications: systemNotifications ?? true,
@@ -245,7 +245,7 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
         });
       } else {
         // 更新现有设置
-        await strapi.entityService.update('api::user-notification-settings.user-notification-settings' as any, settings[0].id, {
+        await strapi.entityService.update('api::user-notification-settings.user-notification-settings-list' as any, settings[0].id, {
           data: {
             systemNotifications: systemNotifications ?? settings[0].systemNotifications,
             emailNotifications: emailNotifications ?? settings[0].emailNotifications,
