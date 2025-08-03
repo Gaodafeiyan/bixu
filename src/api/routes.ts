@@ -16,6 +16,8 @@ export default {
   'choujiang-ji-lu': () => import('./choujiang-ji-lu/routes/choujiang-ji-lu'),
   // 认证路由
   'auth': () => import('./auth/routes/auth'),
+  // 通知路由
+  'notice': () => import('./notice/routes/notice'),
   // 充值通道路由
   'recharge-channel': () => import('./recharge-channel/routes/recharge-channel'),
   // 充值订单路由
@@ -32,4 +34,8 @@ export default {
   'shop-cart': () => import('./shop-cart/routes/shop-cart'),
   // 商城订单路由
   'shop-order': () => import('./shop-order/routes/shop-order'),
+  // 物流订单路由
+  'shipping-order': () => import('./shipping-order/routes/shipping-order'),
+  // 抽奖组路由
+  'lottery-group': () => import('./lottery-group/routes/lottery-group'),
 }; 
