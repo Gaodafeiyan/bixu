@@ -75,6 +75,16 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    // 修改密码
+    {
+      method: 'PUT',
+      path: '/auth/change-password',
+      handler: 'auth.changePassword',
+      config: {
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
     // 获取我的团队
     {
       method: 'GET',

@@ -211,6 +211,53 @@ export default factories.createCoreController(
       }
     },
 
+    // 修改密码
+    async changePassword(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { currentPassword, newPassword } = ctx.request.body;
+
+        if (!currentPassword || !newPassword) {
+          return ctx.badRequest('当前密码和新密码不能为空');
+        }
+
+        // 获取用户信息
+        const user = await strapi.entityService.findOne('plugin::users-permissions.user', userId);
+        
+        if (!user) {
+          return ctx.notFound('用户不存在');
+        }
+
+        // 验证当前密码
+        const userService = strapi.plugin('users-permissions').service('user');
+        const validPassword = await userService.validatePassword(currentPassword, user.password);
+        
+        if (!validPassword) {
+          return ctx.badRequest('当前密码错误');
+        }
+
+        // 验证新密码长度
+        if (newPassword.length < 6) {
+          return ctx.badRequest('新密码长度至少6位');
+        }
+
+        // 更新密码
+        await strapi.entityService.update('plugin::users-permissions.user', userId, {
+          data: {
+            password: newPassword
+          }
+        });
+
+        ctx.body = {
+          success: true,
+          message: '密码修改成功'
+        };
+      } catch (error) {
+        console.error('修改密码失败:', error);
+        ctx.throw(500, `修改密码失败: ${error.message}`);
+      }
+    },
+
     // 获取我的邀请码
     async getMyInviteCode(ctx) {
       try {
