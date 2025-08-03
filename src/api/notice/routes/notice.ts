@@ -3,7 +3,7 @@ export default {
   routes: [
     {
       method: 'GET',
-      path: '/api/notices',
+      path: '/notices',
       handler: 'notice.findActive',
       config: {
         type: 'content-api',
@@ -14,7 +14,7 @@ export default {
     },
     {
       method: 'GET',
-      path: '/api/notices/:id',
+      path: '/notices/:id',
       handler: 'notice.findOne',
       config: {
         type: 'content-api',
@@ -26,7 +26,7 @@ export default {
     // 用户通知相关路由
     {
       method: 'GET',
-      path: '/api/notifications/user',
+      path: '/notifications/user',
       handler: 'notice.getUserNotifications',
       config: {
         type: 'content-api',
@@ -37,7 +37,7 @@ export default {
     },
     {
       method: 'POST',
-      path: '/api/notifications/mark-read',
+      path: '/notifications/mark-read',
       handler: 'notice.markAsRead',
       config: {
         type: 'content-api',
@@ -48,7 +48,7 @@ export default {
     },
     {
       method: 'GET',
-      path: '/api/notifications/unread-count',
+      path: '/notifications/unread-count',
       handler: 'notice.getUnreadCount',
       config: {
         type: 'content-api',
@@ -59,7 +59,7 @@ export default {
     },
     {
       method: 'GET',
-      path: '/api/notifications/settings',
+      path: '/notifications/settings',
       handler: 'notice.getNotificationSettings',
       config: {
         type: 'content-api',
@@ -70,7 +70,7 @@ export default {
     },
     {
       method: 'PUT',
-      path: '/api/notifications/settings',
+      path: '/notifications/settings',
       handler: 'notice.updateNotificationSettings',
       config: {
         type: 'content-api',
