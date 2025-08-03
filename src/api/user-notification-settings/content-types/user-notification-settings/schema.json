@@ -2,7 +2,7 @@
   "kind": "collectionType",
   "collectionName": "user_notification_settings",
   "info": {
-    "singularName": "user-notification-setting",
+    "singularName": "user-notification-settings",
     "pluralName": "user-notification-settings",
     "displayName": "User Notification Settings",
     "description": "用户通知设置"
