@@ -210,4 +210,50 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
       ctx.throw(500, `创建订单失败: ${error.message}`);
     }
   },
+
+  // 调试：获取用户所有订单详情
+  async debugUserOrders(ctx) {
+    try {
+      const userId = ctx.state.user.id;
+      
+      // 获取用户所有订单（不限制状态）
+      const allOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+        filters: { user: { id: userId } },
+        populate: ['jihua']
+      }) as any[];
+
+      console.log(`用户 ${userId} 的所有订单:`);
+      allOrders.forEach((order, index) => {
+        console.log(`订单 ${index + 1}:`);
+        console.log(`  - ID: ${order.id}`);
+        console.log(`  - 状态: ${order.status}`);
+        console.log(`  - 金额: ${order.principal || order.amount}`);
+        console.log(`  - 计划ID: ${order.jihua?.id}`);
+        console.log(`  - 计划名称: ${order.jihua?.name}`);
+        console.log(`  - 创建时间: ${order.createdAt}`);
+        console.log(`  - 更新时间: ${order.updatedAt}`);
+      });
+
+      ctx.body = {
+        success: true,
+        data: {
+          userId,
+          totalOrders: allOrders.length,
+          orders: allOrders.map(order => ({
+            id: order.id,
+            status: order.status,
+            principal: order.principal,
+            amount: order.amount,
+            jihuaId: order.jihua?.id,
+            jihuaName: order.jihua?.name,
+            createdAt: order.createdAt,
+            updatedAt: order.updatedAt
+          }))
+        }
+      };
+    } catch (error) {
+      console.error('调试用户订单失败:', error);
+      ctx.throw(500, `调试用户订单失败: ${error.message}`);
+    }
+  },
 })); 

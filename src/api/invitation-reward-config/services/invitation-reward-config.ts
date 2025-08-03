@@ -46,6 +46,8 @@ export default ({ strapi }: { strapi: Strapi }) => ({
   // 获取用户当前最高有效档位（修复版：包含所有有效状态）
   async getUserCurrentTier(userId: number): Promise<RewardTier | null> {
     try {
+      console.log(`🔍 开始获取用户 ${userId} 的当前档位...`);
+      
       // 获取用户所有有效的订单（包括running、redeemable、finished状态）
       const activeOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { 
@@ -56,6 +58,10 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       }) as any[];
 
       console.log(`用户 ${userId} 的有效订单数量: ${activeOrders.length}`);
+      console.log('有效订单详情:');
+      activeOrders.forEach((order, index) => {
+        console.log(`  订单 ${index + 1}: ID=${order.id}, 状态=${order.status}, 金额=${order.principal || order.amount}, 计划=${order.jihua?.name}`);
+      });
 
       if (!activeOrders || activeOrders.length === 0) {
         console.log(`用户 ${userId} 没有有效的订单`);
@@ -80,6 +86,8 @@ export default ({ strapi }: { strapi: Strapi }) => ({
           maxTier = tier;
           maxPrincipal = principalValue;
           console.log(`找到档位: ${tier.name}, 金额: ${principalValue}`);
+        } else if (!tier) {
+          console.log(`⚠️ 订单金额 ${principalValue} 没有对应的档位配置`);
         }
       }
 

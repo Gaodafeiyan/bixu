@@ -289,9 +289,16 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
 
       // 获取用户当前档位
       const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+      console.log(`开始获取用户 ${userId} 的当前档位...`);
       const currentTier = await rewardConfigService.getUserCurrentTier(userId);
 
       console.log('API返回的currentTier:', currentTier); // 调试日志
+      console.log('currentTier详情:', {
+        name: currentTier?.name,
+        staticRate: currentTier?.staticRate,
+        referralRate: currentTier?.referralRate,
+        maxCommission: currentTier?.maxCommission
+      });
 
       ctx.body = {
         success: true,

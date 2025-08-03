@@ -1,6 +1,16 @@
 export default {
   type: 'content-api',
   routes: [
+    // 调试路由
+    {
+      method: 'GET',
+      path: '/dinggou-dingdans/debug-user-orders',
+      handler: 'dinggou-dingdan.debugUserOrders',
+      config: { 
+        type: 'content-api',
+        auth: {},  // 空对象表示需要登录
+      },
+    },
     // 自定义路由
     {
       method: 'GET',
