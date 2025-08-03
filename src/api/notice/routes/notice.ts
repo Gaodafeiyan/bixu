@@ -1,10 +1,12 @@
 export default {
+  type: 'content-api',
   routes: [
     {
       method: 'GET',
       path: '/api/notices',
       handler: 'notice.findActive',
       config: {
+        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -15,6 +17,7 @@ export default {
       path: '/api/notices/:id',
       handler: 'notice.findOne',
       config: {
+        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -26,6 +29,7 @@ export default {
       path: '/api/notifications/user',
       handler: 'notice.getUserNotifications',
       config: {
+        type: 'content-api',
         auth: {},
         policies: [],
         middlewares: [],
@@ -36,6 +40,7 @@ export default {
       path: '/api/notifications/mark-read',
       handler: 'notice.markAsRead',
       config: {
+        type: 'content-api',
         auth: {},
         policies: [],
         middlewares: [],
@@ -46,6 +51,7 @@ export default {
       path: '/api/notifications/unread-count',
       handler: 'notice.getUnreadCount',
       config: {
+        type: 'content-api',
         auth: {},
         policies: [],
         middlewares: [],
@@ -56,6 +62,7 @@ export default {
       path: '/api/notifications/settings',
       handler: 'notice.getNotificationSettings',
       config: {
+        type: 'content-api',
         auth: {},
         policies: [],
         middlewares: [],
@@ -66,6 +73,7 @@ export default {
       path: '/api/notifications/settings',
       handler: 'notice.updateNotificationSettings',
       config: {
+        type: 'content-api',
         auth: {},
         policies: [],
         middlewares: [],
