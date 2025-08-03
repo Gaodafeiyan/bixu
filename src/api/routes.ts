@@ -38,4 +38,8 @@ export default {
   'shipping-order': () => import('./shipping-order/routes/shipping-order'),
   // 抽奖组路由
   'lottery-group': () => import('./lottery-group/routes/lottery-group'),
+  // 推送通知路由
+  'push-notification': () => import('./push-notification/routes/push-notification'),
+  // FCM Token路由
+  'user-fcm-token': () => import('./user-fcm-token/routes/user-fcm-token'),
 }; 

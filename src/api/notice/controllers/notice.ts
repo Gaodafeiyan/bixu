@@ -57,8 +57,8 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
 
       const notifications = await strapi.entityService.findMany('api::notice.notice' as any, {
         filters: {
-          isActive: true,
-          publishedAt: { $notNull: true }
+          isActive: true
+          // 移除 publishedAt 条件，允许显示草稿通知
         },
         pagination: {
           page: parseInt(String(page)),
@@ -253,6 +253,22 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
             marketingNotifications: marketingNotifications ?? settings[0].marketingNotifications
           }
         });
+      }
+
+      // 如果用户关闭了推送通知，注销其FCM token
+      if (pushNotifications === false) {
+        try {
+          const pushNotificationService = strapi.service('api::push-notification.push-notification');
+          const userTokens = await strapi.entityService.findMany('api::user-fcm-token.user-fcm-token' as any, {
+            filters: { userId },
+          });
+          
+          for (const token of userTokens) {
+            await pushNotificationService.unregisterUserToken(userId, token.fcmToken);
+          }
+        } catch (error) {
+          console.error('注销FCM token失败:', error);
+        }
       }
 
       ctx.body = {

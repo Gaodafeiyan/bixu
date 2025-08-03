@@ -1,0 +1,40 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_fcm_tokens",
+  "info": {
+    "singularName": "user-fcm-token",
+    "pluralName": "user-fcm-tokens",
+    "displayName": "User FCM Token",
+    "description": "存储用户的Firebase Cloud Messaging token"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "userId": {
+      "type": "integer",
+      "required": true,
+      "description": "用户ID"
+    },
+    "fcmToken": {
+      "type": "text",
+      "required": true,
+      "description": "Firebase Cloud Messaging token"
+    },
+    "deviceType": {
+      "type": "enumeration",
+      "enum": [
+        "android",
+        "ios"
+      ],
+      "default": "android",
+      "description": "设备类型"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "token是否有效"
+    }
+  }
+} 
