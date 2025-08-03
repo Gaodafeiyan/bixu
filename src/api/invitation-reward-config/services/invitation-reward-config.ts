@@ -43,16 +43,16 @@ const REWARD_TIERS: RewardTier[] = [
 ];
 
 export default ({ strapi }: { strapi: Strapi }) => ({
-  // 获取用户当前最高有效档位（修复版：包含所有有效状态）
+  // 获取用户当前最高有效档位（修复版：只考虑当前有效订单）
   async getUserCurrentTier(userId: number): Promise<RewardTier | null> {
     try {
       console.log(`🔍 开始获取用户 ${userId} 的当前档位...`);
       
-      // 获取用户所有有效的订单（包括running、redeemable、finished状态）
+      // 只获取当前有效的订单（running状态），不包括finished状态
       const activeOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { 
           user: { id: userId },
-          status: { $in: ['running', 'redeemable', 'finished'] }  // 修复：包含所有有效状态
+          status: 'running'  // 只考虑running状态的订单
         },
         populate: ['jihua']
       }) as any[];
