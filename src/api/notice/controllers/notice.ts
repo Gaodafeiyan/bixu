@@ -1,6 +1,68 @@
 import { factories } from '@strapi/strapi';
 
 export default factories.createCoreController('api::notice.notice' as any, ({ strapi }) => ({
+  // 重写create方法，在创建公告时发送推送
+  async create(ctx) {
+    try {
+      const { data } = ctx.request.body;
+      
+      // 创建公告
+      const notice = await strapi.entityService.create('api::notice.notice' as any, {
+        data
+      });
+
+      // 如果公告是活跃的且已发布，发送推送通知
+      if (notice.isActive && notice.publishedAt) {
+        try {
+          const pushNotificationService = strapi.service('api::push-notification.push-notification');
+          await pushNotificationService.sendSystemAnnouncement(
+            notice.title,
+            notice.content
+          );
+          console.log(`📱 系统公告推送已发送: ${notice.title}`);
+        } catch (error) {
+          console.error('❌ 发送系统公告推送失败:', error);
+        }
+      }
+
+      return notice;
+    } catch (error) {
+      console.error('创建公告失败:', error);
+      ctx.throw(500, `创建公告失败: ${error.message}`);
+    }
+  },
+
+  // 重写update方法，在更新公告时发送推送
+  async update(ctx) {
+    try {
+      const { id } = ctx.params;
+      const { data } = ctx.request.body;
+      
+      // 更新公告
+      const notice = await strapi.entityService.update('api::notice.notice' as any, id, {
+        data
+      });
+
+      // 如果公告是活跃的且已发布，发送推送通知
+      if (notice.isActive && notice.publishedAt) {
+        try {
+          const pushNotificationService = strapi.service('api::push-notification.push-notification');
+          await pushNotificationService.sendSystemAnnouncement(
+            notice.title,
+            notice.content
+          );
+          console.log(`📱 系统公告推送已发送: ${notice.title}`);
+        } catch (error) {
+          console.error('❌ 发送系统公告推送失败:', error);
+        }
+      }
+
+      return notice;
+    } catch (error) {
+      console.error('更新公告失败:', error);
+      ctx.throw(500, `更新公告失败: ${error.message}`);
+    }
+  },
   // 获取活跃的公告列表
   async findActive(ctx) {
     try {

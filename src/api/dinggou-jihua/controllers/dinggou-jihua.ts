@@ -473,6 +473,18 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
               id: rewardResult.inviterId,
               username: rewardResult.inviterUsername
             };
+            
+            // 发送邀请奖励推送通知
+            try {
+              const pushNotificationService = strapi.service('api::push-notification.push-notification');
+              await pushNotificationService.sendToUser(rewardResult.inviterId,
+                '邀请奖励到账',
+                `恭喜！您邀请的好友赎回成功，奖励${rewardResult.rewardAmount}USDT已到账`
+              );
+              console.log(`📱 邀请奖励推送已发送给用户 ${rewardResult.inviterId}`);
+            } catch (error) {
+              console.error('❌ 发送邀请奖励推送失败:', error);
+            }
           } else {
             console.log(`❌ 邀请奖励生成失败: ${rewardResult.message}`);
           }

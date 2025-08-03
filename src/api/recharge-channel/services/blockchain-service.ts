@@ -492,6 +492,18 @@ export default ({ strapi }) => {
           });
 
           console.log(`✅ 用户 ${order.user.id} 余额更新: ${currentBalance} → ${newBalance} USDT`);
+          
+          // 发送充值成功推送通知
+          try {
+            const pushNotificationService = strapi.service('api::push-notification.push-notification');
+            await pushNotificationService.sendToUser(order.user.id, 
+              '充值成功', 
+              `您的账户已成功充值${amount}USDT，当前余额${newBalance}USDT`
+            );
+            console.log(`📱 充值成功推送已发送给用户 ${order.user.id}`);
+          } catch (error) {
+            console.error('❌ 发送充值成功推送失败:', error);
+          }
         } else {
           console.warn(`⚠️ 未找到用户 ${order.user.id} 的钱包记录`);
         }
@@ -572,6 +584,19 @@ export default ({ strapi }) => {
         });
 
         console.log(`✅ 提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        
+        // 发送提现成功推送通知
+        try {
+          const pushNotificationService = strapi.service('api::push-notification.push-notification');
+          await pushNotificationService.sendToUser(order.user.id,
+            '提现成功',
+            `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+          );
+          console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+        } catch (error) {
+          console.error('❌ 发送提现成功推送失败:', error);
+        }
+        
         return receipt.transactionHash;
       } catch (error) {
         console.error('❌ 执行提现转账失败:', error);
@@ -711,6 +736,19 @@ export default ({ strapi }) => {
         });
 
         console.log(`✅ ADA提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        
+        // 发送提现成功推送通知
+        try {
+          const pushNotificationService = strapi.service('api::push-notification.push-notification');
+          await pushNotificationService.sendToUser(order.user.id,
+            '提现成功',
+            `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+          );
+          console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+        } catch (error) {
+          console.error('❌ 发送提现成功推送失败:', error);
+        }
+        
         return receipt.transactionHash;
       } catch (error) {
         console.error('❌ 执行ADA提现转账失败:', error);
@@ -817,6 +855,19 @@ export default ({ strapi }) => {
         });
 
         console.log(`✅ LINK提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        
+        // 发送提现成功推送通知
+        try {
+          const pushNotificationService = strapi.service('api::push-notification.push-notification');
+          await pushNotificationService.sendToUser(order.user.id,
+            '提现成功',
+            `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+          );
+          console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+        } catch (error) {
+          console.error('❌ 发送提现成功推送失败:', error);
+        }
+        
         return receipt.transactionHash;
       } catch (error) {
         console.error('❌ 执行LINK提现转账失败:', error);
@@ -921,6 +972,19 @@ export default ({ strapi }) => {
         });
 
         console.log(`✅ SHIB提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        
+        // 发送提现成功推送通知
+        try {
+          const pushNotificationService = strapi.service('api::push-notification.push-notification');
+          await pushNotificationService.sendToUser(order.user.id,
+            '提现成功',
+            `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+          );
+          console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+        } catch (error) {
+          console.error('❌ 发送提现成功推送失败:', error);
+        }
+        
         return receipt.transactionHash;
       } catch (error) {
         console.error('❌ 执行SHIB提现转账失败:', error);
