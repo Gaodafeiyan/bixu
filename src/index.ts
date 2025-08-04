@@ -96,11 +96,13 @@ export default {
         const lotteryEngine = strapi.service('lottery-engine' as any);
         if (lotteryEngine) {
           console.log('✅ 抽奖引擎初始化完成');
+          
+          // 检查库存预警
+          await lotteryEngine.checkStockWarning();
+          console.log('✅ 库存预警检查完成');
+        } else {
+          console.log('⚠️ 抽奖引擎服务未找到');
         }
-
-        // 检查库存预警
-        await lotteryEngine.checkStockWarning();
-        console.log('✅ 库存预警检查完成');
         
       } catch (error) {
         console.error('❌ 抽奖系统服务初始化失败:', error);
