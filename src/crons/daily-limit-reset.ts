@@ -15,7 +15,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       const allPlans = await strapi.entityService.findMany('api::dinggou-jihua.dinggou-jihua');
       
       let resetCount = 0;
-      for (const plan of allPlans) {
+      for (const plan of Array.isArray(allPlans) ? allPlans : [allPlans]) {
         const planData = plan as any;
         
         // 检查是否需要重置
