@@ -136,6 +136,12 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
     // 获取用户抽奖机会
     async getUserChances(ctx) {
       try {
+        // 检查用户是否已登录
+        if (!ctx.state.user || !ctx.state.user.id) {
+          console.log('用户未登录，返回401');
+          return ctx.unauthorized('用户未登录');
+        }
+        
         const userId = ctx.state.user.id;
         console.log('获取用户抽奖机会，用户ID:', userId);
 
