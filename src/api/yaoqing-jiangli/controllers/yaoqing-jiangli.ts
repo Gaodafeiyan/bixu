@@ -208,7 +208,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
         const currentBalance = new Decimal(wallet.usdtYue || 0);
         
         await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
-          data: { usdtYue: currentBalance.plus(rewardAmount).toString() }
+          data: { usdtYue: currentBalance.plus(rewardAmount).toString() } as any
         });
       }
 

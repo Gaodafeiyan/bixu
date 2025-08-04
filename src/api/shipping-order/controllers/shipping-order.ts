@@ -201,7 +201,7 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
       };
 
       const result = await strapi.entityService.update('api::shipping-order.shipping-order' as any, id, {
-        data: updateData
+        data: updateData as any
       });
 
       ctx.body = {
