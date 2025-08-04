@@ -200,7 +200,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 扣除钱包余额
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-        data: { usdtYue: walletBalance.minus(investmentAmount).toString() }
+        data: { usdtYue: walletBalance.minus(investmentAmount).toString() } as any
       });
 
       // 更新每日限购计数
@@ -297,7 +297,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         const currentBalance = new Decimal(userWallet.usdtYue || 0);
         
         await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-          data: { usdtYue: currentBalance.plus(totalPayout).toString() }
+          data: { usdtYue: currentBalance.plus(totalPayout).toString() } as any
         });
 
         console.log(`钱包余额更新: ${currentBalance.toString()} -> ${currentBalance.plus(totalPayout).toString()}`);
@@ -316,7 +316,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
             data: { 
               aiYue: currentAiYue.plus(aiTokenReward).toString()
               // 注意：不更新aiTokenBalances，因为前端将根据aiYue和实时价格动态计算代币数量
-            }
+            } as any
           });
 
           console.log(`🎁 AI代币奖励: ${aiTokenReward.toString()} USDT 累加到aiYue，余额更新: ${currentAiYue.toString()} -> ${currentAiYue.plus(aiTokenReward).toString()}`);
@@ -424,7 +424,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           status: 'finished', // 改为finished状态
           redeemed_at: new Date(),
           payout_amount: totalPayout.toString()
-        }
+        } as any
       });
 
       // 检查并触发邀请奖励生成

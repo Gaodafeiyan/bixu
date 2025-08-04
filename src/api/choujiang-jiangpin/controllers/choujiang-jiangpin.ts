@@ -159,7 +159,7 @@ export default factories.createCoreController('api::choujiang-jiangpin.choujiang
       const newQuantity = Math.max(0, ((prize as any).currentQuantity || 0) + quantity);
       
       await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin' as any, id, {
-        data: { currentQuantity: newQuantity }
+        data: { currentQuantity: newQuantity } as any
       });
 
       ctx.body = {

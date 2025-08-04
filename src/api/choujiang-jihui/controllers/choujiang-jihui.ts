@@ -147,7 +147,7 @@ export default factories.createCoreController('api::choujiang-jihui.choujiang-ji
             $or: [
               { validUntil: null },
               { validUntil: { $gt: beijingNow } }
-            ]
+            ] as any
           },
           populate: ['user', 'jiangpin'],
           sort: { createdAt: 'desc' }

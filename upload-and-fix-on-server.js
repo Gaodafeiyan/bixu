@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
-// 修复函数
+// 修复TypeScript错误的函数
 function fixTypeScriptErrors() {
-  console.log('开始修复TypeScript错误...');
+  console.log('🔧 开始修复TypeScript错误...');
   
   // 1. 修复 auth.ts 中的 password 字段错误
   const authFile = path.join(__dirname, 'src/api/auth/controllers/auth.ts');
@@ -196,5 +197,181 @@ function fixTypeScriptErrors() {
   console.log('🎉 所有TypeScript错误修复完成！');
 }
 
-// 运行修复
-fixTypeScriptErrors(); 
+// Git操作函数
+function gitOperations() {
+  console.log('\n📦 开始Git操作...');
+  
+  try {
+    // 检查Git状态
+    console.log('📋 检查Git状态...');
+    const status = execSync('git status --porcelain', { encoding: 'utf8' });
+    
+    if (!status.trim()) {
+      console.log('✅ 没有需要提交的更改');
+      return;
+    }
+    
+    console.log('📝 当前更改:');
+    console.log(status);
+    
+    // 添加所有文件
+    console.log('➕ 添加所有文件到暂存区...');
+    execSync('git add .', { stdio: 'inherit' });
+    
+    // 提交更改
+    const commitMessage = `fix: 修复TypeScript编译错误 - ${new Date().toISOString()}`;
+    console.log(`💾 提交更改: ${commitMessage}`);
+    execSync(`git commit -m "${commitMessage}"`, { stdio: 'inherit' });
+    
+    // 推送到远程仓库
+    console.log('🚀 推送到远程仓库...');
+    execSync('git push', { stdio: 'inherit' });
+    
+    console.log('✅ Git操作完成！');
+    
+  } catch (error) {
+    console.error('❌ Git操作失败:', error.message);
+    throw error;
+  }
+}
+
+// 创建远程服务器修复脚本
+function createServerFixScript() {
+  console.log('\n🖥️ 创建远程服务器修复脚本...');
+  
+  const serverScript = `#!/bin/bash
+
+echo "🚀 开始在远程服务器上修复TypeScript错误..."
+
+# 进入项目目录
+cd /root/strapi-v5-ts
+
+# 拉取最新代码
+echo "📥 拉取最新代码..."
+git pull origin main
+
+# 安装依赖（如果需要）
+echo "📦 检查依赖..."
+npm install
+
+# 运行TypeScript编译检查
+echo "🔍 检查TypeScript编译..."
+npx tsc --noEmit
+
+# 如果编译成功，启动开发服务器
+if [ $? -eq 0 ]; then
+    echo "✅ TypeScript编译成功！"
+    echo "🚀 启动Strapi开发服务器..."
+    npx strapi develop
+else
+    echo "❌ TypeScript编译失败，请检查错误信息"
+    exit 1
+fi
+`;
+
+  fs.writeFileSync(path.join(__dirname, 'server-fix.sh'), serverScript);
+  console.log('✅ 创建了 server-fix.sh 脚本');
+  
+  // 创建PowerShell版本的脚本
+  const psScript = `# PowerShell脚本 - 在远程服务器上运行
+
+Write-Host "🚀 开始在远程服务器上修复TypeScript错误..." -ForegroundColor Green
+
+# 进入项目目录
+Set-Location /root/strapi-v5-ts
+
+# 拉取最新代码
+Write-Host "📥 拉取最新代码..." -ForegroundColor Yellow
+git pull origin main
+
+# 安装依赖（如果需要）
+Write-Host "📦 检查依赖..." -ForegroundColor Yellow
+npm install
+
+# 运行TypeScript编译检查
+Write-Host "🔍 检查TypeScript编译..." -ForegroundColor Yellow
+npx tsc --noEmit
+
+# 如果编译成功，启动开发服务器
+if ($LASTEXITCODE -eq 0) {
+    Write-Host "✅ TypeScript编译成功！" -ForegroundColor Green
+    Write-Host "🚀 启动Strapi开发服务器..." -ForegroundColor Green
+    npx strapi develop
+} else {
+    Write-Host "❌ TypeScript编译失败，请检查错误信息" -ForegroundColor Red
+    exit 1
+}
+`;
+
+  fs.writeFileSync(path.join(__dirname, 'server-fix.ps1'), psScript);
+  console.log('✅ 创建了 server-fix.ps1 脚本');
+}
+
+// 创建SSH连接脚本
+function createSSHScript() {
+  console.log('\n🔗 创建SSH连接脚本...');
+  
+  const sshScript = `#!/bin/bash
+
+# SSH连接并运行修复脚本
+echo "🔗 连接到远程服务器..."
+
+# 替换为您的服务器信息
+SERVER_IP="your-server-ip"
+USERNAME="root"
+SSH_KEY_PATH="~/.ssh/id_rsa"
+
+# 上传修复脚本到服务器
+echo "📤 上传修复脚本到服务器..."
+scp -i $SSH_KEY_PATH server-fix.sh $USERNAME@$SERVER_IP:/root/
+
+# 连接到服务器并运行修复脚本
+echo "🚀 在服务器上运行修复脚本..."
+ssh -i $SSH_KEY_PATH $USERNAME@$SERVER_IP << 'EOF'
+    chmod +x /root/server-fix.sh
+    /root/server-fix.sh
+EOF
+
+echo "✅ 远程服务器修复完成！"
+`;
+
+  fs.writeFileSync(path.join(__dirname, 'connect-and-fix.sh'), sshScript);
+  console.log('✅ 创建了 connect-and-fix.sh 脚本');
+}
+
+// 主函数
+function main() {
+  console.log('🚀 开始完整的修复和部署流程...\n');
+  
+  try {
+    // 1. 修复TypeScript错误
+    fixTypeScriptErrors();
+    
+    // 2. 执行Git操作
+    gitOperations();
+    
+    // 3. 创建远程服务器脚本
+    createServerFixScript();
+    
+    // 4. 创建SSH连接脚本
+    createSSHScript();
+    
+    console.log('\n🎉 所有脚本创建完成！');
+    console.log('\n📋 接下来的步骤：');
+    console.log('1. 修改 connect-and-fix.sh 中的服务器信息');
+    console.log('2. 运行: chmod +x connect-and-fix.sh');
+    console.log('3. 运行: ./connect-and-fix.sh');
+    console.log('\n或者手动在服务器上运行:');
+    console.log('1. SSH到服务器');
+    console.log('2. cd /root/strapi-v5-ts');
+    console.log('3. git pull origin main');
+    console.log('4. npx strapi develop');
+    
+  } catch (error) {
+    console.error('\n❌ 操作失败:', error.message);
+    process.exit(1);
+  }
+}
+
+// 运行主函数
+main(); 

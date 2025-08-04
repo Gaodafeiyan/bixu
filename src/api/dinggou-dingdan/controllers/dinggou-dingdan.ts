@@ -113,7 +113,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
 
       // 更新订单状态
       const updatedOrder = await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
-        data: { status }
+        data: { status } as any
       });
 
       ctx.body = {

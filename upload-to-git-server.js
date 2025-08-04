@@ -1,9 +1,10 @@
 const fs = require('fs');
 const path = require('path');
+const { execSync } = require('child_process');
 
-// 修复函数
+// 修复TypeScript错误的函数
 function fixTypeScriptErrors() {
-  console.log('开始修复TypeScript错误...');
+  console.log('🔧 开始修复TypeScript错误...');
   
   // 1. 修复 auth.ts 中的 password 字段错误
   const authFile = path.join(__dirname, 'src/api/auth/controllers/auth.ts');
@@ -196,5 +197,62 @@ function fixTypeScriptErrors() {
   console.log('🎉 所有TypeScript错误修复完成！');
 }
 
-// 运行修复
-fixTypeScriptErrors(); 
+// Git操作函数
+function gitOperations() {
+  console.log('\n📦 开始Git操作...');
+  
+  try {
+    // 检查Git状态
+    console.log('📋 检查Git状态...');
+    const status = execSync('git status --porcelain', { encoding: 'utf8' });
+    
+    if (!status.trim()) {
+      console.log('✅ 没有需要提交的更改');
+      return;
+    }
+    
+    console.log('📝 当前更改:');
+    console.log(status);
+    
+    // 添加所有文件
+    console.log('➕ 添加所有文件到暂存区...');
+    execSync('git add .', { stdio: 'inherit' });
+    
+    // 提交更改
+    const commitMessage = `fix: 修复TypeScript编译错误 - ${new Date().toISOString()}`;
+    console.log(`💾 提交更改: ${commitMessage}`);
+    execSync(`git commit -m "${commitMessage}"`, { stdio: 'inherit' });
+    
+    // 推送到远程仓库
+    console.log('🚀 推送到远程仓库...');
+    execSync('git push', { stdio: 'inherit' });
+    
+    console.log('✅ Git操作完成！');
+    
+  } catch (error) {
+    console.error('❌ Git操作失败:', error.message);
+    throw error;
+  }
+}
+
+// 主函数
+function main() {
+  console.log('🚀 开始上传到Git服务器...\n');
+  
+  try {
+    // 1. 修复TypeScript错误
+    fixTypeScriptErrors();
+    
+    // 2. 执行Git操作
+    gitOperations();
+    
+    console.log('\n🎉 所有操作完成！代码已成功上传到Git服务器。');
+    
+  } catch (error) {
+    console.error('\n❌ 操作失败:', error.message);
+    process.exit(1);
+  }
+}
+
+// 运行主函数
+main(); 

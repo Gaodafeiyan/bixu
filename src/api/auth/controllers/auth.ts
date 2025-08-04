@@ -245,7 +245,7 @@ export default factories.createCoreController(
         await strapi.entityService.update('plugin::users-permissions.user', userId, {
           data: {
             password: newPassword
-          }
+          } as any
         });
 
         ctx.body = {
