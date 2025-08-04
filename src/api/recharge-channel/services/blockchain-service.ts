@@ -46,6 +46,7 @@ export default ({ strapi }) => {
   let shibContract: any = null;
   let walletAddress: string = '';
   let privateKey: string = '';
+  let strapiInstance = strapi; // 保存strapi实例
 
   return {
     // 初始化Web3连接
@@ -225,7 +226,7 @@ export default ({ strapi }) => {
         console.log('🔄 开始监控钱包交易...');
 
         // 获取所有活跃的充值通道
-        const activeChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        const activeChannels = await strapiInstance.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
           filters: {
             status: 'active',
             channelType: { $in: ['recharge', 'both'] }
