@@ -126,7 +126,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           receiveAddress: rechargeOrder.receiveAddress,
           expectedTime: rechargeOrder.expectedTime,
           status: rechargeOrder.status
-        },
+        } as any as any,
         message: '充值订单创建成功'
       };
     } catch (error) {
@@ -168,7 +168,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           fee: withdrawalOrder.fee,
           status: withdrawalOrder.status,
           requestTime: withdrawalOrder.requestTime
-        },
+        } as any as any,
         message: '提现订单创建成功'
       };
     } catch (error) {
@@ -327,7 +327,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       }
 
       await strapi.entityService.update('api::recharge-order.recharge-order' as any, id, {
-        data: { status: 'cancelled' }
+        data: { status: 'cancelled' } as any as any as any as any as any
       });
 
       ctx.body = {
@@ -481,7 +481,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           fee: 0,
           actualAmount: amount,
           channel: selectedChannel.id,
-        }
+        } as any as any
       });
 
       ctx.body = {
@@ -495,7 +495,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           channelName: selectedChannel.name,
           network: selectedChannel.network,
           message: "请向以下地址转账USDT，到账后自动放行"
-        },
+        } as any as any,
         message: '充值订单创建成功'
       };
     } catch (error) {
@@ -553,7 +553,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
         data: {
           usdtYue: newBalance.toString()
-        }
+        } as any
       });
 
       // 创建提现订单
@@ -569,7 +569,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           fee: fee.toString(),
           actualAmount: actualAmount.toString(),
           requestTime: new Date()
-        }
+        } as any as any
       });
 
       ctx.body = {
@@ -582,7 +582,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           status: withdrawalOrder.status,
           requestTime: withdrawalOrder.requestTime,
           message: "提现申请已提交，将在24小时内处理"
-        },
+        } as any as any,
         message: '提现订单创建成功'
       };
     } catch (error) {
@@ -633,7 +633,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           status: withdrawalOrder.status,
           requestTime: withdrawalOrder.requestTime,
           tokenSymbol: tokenSymbol
-        },
+        } as any as any,
         message: 'AI代币提现订单创建成功'
       };
     } catch (error) {

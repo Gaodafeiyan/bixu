@@ -113,7 +113,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
 
       // 更新订单状态
       const updatedOrder = await strapi.entityService.update('api::dinggou-dingdan.dinggou-dingdan', orderId, {
-        data: { status } as any
+        data: { status } as any as any as any
       });
 
       ctx.body = {
@@ -197,7 +197,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
           start_at: data.start_at || new Date(),
           end_at: data.end_at || new Date(Date.now() + (data.cycle_days || 30) * 24 * 60 * 60 * 1000),
           status: data.status || 'pending'
-        }
+        } as any as any
       });
       
       ctx.body = {
@@ -277,7 +277,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
             running: runningOrders.length,
             pending: pendingOrders.length,
             finished: finishedOrders.length
-          },
+          } as any as any,
           orders: allOrders.map(order => ({
             id: order.id,
             status: order.status,

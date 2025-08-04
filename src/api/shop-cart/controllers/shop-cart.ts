@@ -83,7 +83,7 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
         }
 
         result = await strapi.entityService.update('api::shop-cart.shop-cart' as any, cartItem.id, {
-          data: { quantity: newQuantity }
+          data: { quantity: newQuantity } as any as any as any
         });
       } else {
         // 创建新的购物车商品
@@ -143,7 +143,7 @@ export default factories.createCoreController('api::shop-cart.shop-cart' as any,
       }
 
       const result = await strapi.entityService.update('api::shop-cart.shop-cart' as any, id, {
-        data: { quantity }
+        data: { quantity } as any
       });
 
       ctx.body = {

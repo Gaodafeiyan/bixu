@@ -225,7 +225,7 @@ export default ({ strapi }) => {
         console.log('🔄 开始监控钱包交易...');
 
         // 获取所有活跃的充值通道
-        const activeChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
           filters: {
             status: 'active',
             channelType: { $in: ['recharge', 'both'] }
@@ -242,7 +242,7 @@ export default ({ strapi }) => {
         console.log(`📊 需要监听的钱包地址: ${walletAddresses.join(', ')}`);
 
         // 获取所有待处理的充值订单
-        const pendingOrders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
+        const pendingOrders = await this.strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
             status: 'pending',
             receiveAddress: { $in: walletAddresses }
@@ -264,7 +264,7 @@ export default ({ strapi }) => {
         
         // 尝试从数据库获取上次检查的区块号
         try {
-          const config = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+          const config = await this.strapi.entityService.findMany('api::system-config.system-config' as any, {
             filters: { key: 'last_checked_block' }
           });
           if (config && config.length > 0) {
@@ -364,16 +364,16 @@ export default ({ strapi }) => {
     async updateLastCheckedBlock(blockNumber: number) {
       try {
         // 查找或创建系统配置
-        const configs = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+        const configs = await this.strapi.entityService.findMany('api::system-config.system-config' as any, {
           filters: { key: 'last_checked_block' }
         });
         
         if (configs && configs.length > 0) {
-          await strapi.entityService.update('api::system-config.system-config' as any, configs[0].id, {
+          await this.strapi.entityService.update('api::system-config.system-config' as any, configs[0].id, {
             data: { value: blockNumber.toString() }
           });
         } else {
-          await strapi.entityService.create('api::system-config.system-config' as any, {
+          await this.strapi.entityService.create('api::system-config.system-config' as any, {
             data: {
               key: 'last_checked_block',
               value: blockNumber.toString(),
@@ -389,7 +389,7 @@ export default ({ strapi }) => {
     // 记录跳过的区块
     async recordSkippedBlock(fromBlock: number, toBlock: number, errorMessage: string) {
       try {
-        await strapi.entityService.create('api::system-config.system-config' as any, {
+        await this.strapi.entityService.create('api::system-config.system-config' as any, {
           data: {
             key: `skipped_block_${fromBlock}_${toBlock}`,
             value: JSON.stringify({
@@ -442,7 +442,7 @@ export default ({ strapi }) => {
         console.log(`💰 收到转账: ${amount} USDT from ${fromAddress}, tx: ${txHash}`);
 
         // 获取所有活跃的充值通道钱包地址
-        const activeChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
           filters: {
             status: 'active',
             channelType: { $in: ['recharge', 'both'] }
@@ -453,7 +453,7 @@ export default ({ strapi }) => {
         
         // 查找匹配的充值订单 - 只查找最近24小时内的订单
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
-        const orders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
+        const orders = await this.strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
             status: 'pending',
             receiveAddress: { $in: walletAddresses },
@@ -496,7 +496,7 @@ export default ({ strapi }) => {
         }
 
         // 更新订单状态
-        await strapi.entityService.update('api::recharge-order.recharge-order' as any, order.id, {
+        await this.strapi.entityService.update('api::recharge-order.recharge-order' as any, order.id, {
           data: {
             status: 'completed',
             txHash: txHash,
@@ -508,7 +508,7 @@ export default ({ strapi }) => {
         });
 
         // 增加用户钱包余额
-        const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        const wallets = await this.strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
           filters: { user: { id: order.user.id } }
         });
 
@@ -517,7 +517,7 @@ export default ({ strapi }) => {
           const currentBalance = parseFloat(wallet.usdtYue || '0');
           const newBalance = currentBalance + parseFloat(amount);
 
-          await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+          await this.strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
             data: {
               usdtYue: newBalance.toString()
             }
@@ -552,7 +552,7 @@ export default ({ strapi }) => {
         }
 
         // 获取提现通道配置
-        const withdrawalChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        const withdrawalChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
           filters: {
             status: 'active',
             channelType: { $in: ['withdrawal', 'both'] },
@@ -586,7 +586,7 @@ export default ({ strapi }) => {
           console.error(`❌ ${errorMsg}`);
           
           // 更新订单状态为失败
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               processTime: new Date(),
@@ -598,7 +598,7 @@ export default ({ strapi }) => {
         }
 
         // 更新订单状态为处理中
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'processing',
             processTime: new Date()
@@ -624,7 +624,7 @@ export default ({ strapi }) => {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
         // 更新订单状态为完成
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'completed',
             txHash: receipt.transactionHash,
@@ -653,9 +653,9 @@ export default ({ strapi }) => {
         console.error('❌ 执行提现转账失败:', error);
         
         // 如果订单状态还不是failed，则更新为失败
-        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        const currentOrder = await this.strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
         if (currentOrder && currentOrder.status !== 'failed') {
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               processTime: new Date(),
@@ -673,7 +673,7 @@ export default ({ strapi }) => {
       try {
         console.log('🔄 处理待处理的提现订单...');
 
-        const orders = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
+        const orders = await this.strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
           filters: {
             status: 'pending'
           }
@@ -733,7 +733,7 @@ export default ({ strapi }) => {
           console.error(`❌ ${errorMsg}`);
           
           // 更新订单状态为失败
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               processTime: new Date(),
@@ -745,7 +745,7 @@ export default ({ strapi }) => {
         }
 
         // 更新订单状态为处理中
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'processing',
             processTime: new Date()
@@ -776,7 +776,7 @@ export default ({ strapi }) => {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
         // 更新订单状态为完成
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'completed',
             txHash: receipt.transactionHash,
@@ -833,9 +833,9 @@ export default ({ strapi }) => {
         }
         
         // 如果订单状态还不是failed，则更新为失败
-        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        const currentOrder = await this.strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
         if (currentOrder && currentOrder.status !== 'failed') {
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               processTime: new Date(),
@@ -864,7 +864,7 @@ export default ({ strapi }) => {
         console.log(`🔄 执行LINK提现转账: ${order.orderNo}, 金额: ${order.actualAmount} LINK`);
 
         // 更新订单状态为处理中
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'processing',
             processTime: new Date()
@@ -895,7 +895,7 @@ export default ({ strapi }) => {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
         // 更新订单状态为完成
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'completed',
             txHash: receipt.transactionHash,
@@ -952,9 +952,9 @@ export default ({ strapi }) => {
         }
         
         // 如果订单状态还不是failed，则更新为失败
-        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        const currentOrder = await this.strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
         if (currentOrder && currentOrder.status !== 'failed') {
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               processTime: new Date(),
@@ -981,7 +981,7 @@ export default ({ strapi }) => {
         console.log(`🔄 执行SHIB提现转账: ${order.orderNo}, 金额: ${order.actualAmount} SHIB`);
 
         // 更新订单状态为处理中
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'processing',
             processTime: new Date()
@@ -1012,7 +1012,7 @@ export default ({ strapi }) => {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
         // 更新订单状态为完成
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'completed',
             txHash: receipt.transactionHash,
@@ -1069,9 +1069,9 @@ export default ({ strapi }) => {
         }
         
         // 如果订单状态还不是failed，则更新为失败
-        const currentOrder = await strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
+        const currentOrder = await this.strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
         if (currentOrder && currentOrder.status !== 'failed') {
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               processTime: new Date(),

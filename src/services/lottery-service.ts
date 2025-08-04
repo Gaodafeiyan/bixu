@@ -123,14 +123,14 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         // 更新奖品库存
         if (prize.maxQuantity > 0) {
           await strapi.entityService.update('api::choujiang-jiangpin.choujiang-jiangpin' as any, prize.id, {
-            data: { currentQuantity: (prize.currentQuantity || 0) + 1 }
+            data: { currentQuantity: (prize.currentQuantity || 0) + 1 } as any as any as any
           });
         }
       }
 
       // 更新抽奖机会使用次数
       await strapi.entityService.update('api::choujiang-jihui.choujiang-jihui' as any, chanceId, {
-        data: { usedCount: (chance.usedCount || 0) + 1 }
+        data: { usedCount: (chance.usedCount || 0) + 1 } as any as any as any
       });
 
       // 记录抽奖记录
@@ -165,7 +165,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
           case 'usdt':
             const currentBalance = new Decimal(userWallet.usdtYue || 0);
             await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-              data: { usdtYue: currentBalance.plus(prize.value).toString() }
+              data: { usdtYue: currentBalance.plus(prize.value).toString() } as any as any as any
             });
             console.log(`用户 ${userId} 获得 USDT 奖励: ${prize.value}`);
             break;
@@ -173,7 +173,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
           case 'ai_token':
             const currentAiBalance = new Decimal(userWallet.aiYue || 0);
             await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-              data: { aiYue: currentAiBalance.plus(prize.value).toString() }
+              data: { aiYue: currentAiBalance.plus(prize.value).toString() } as any as any as any
             });
             console.log(`用户 ${userId} 获得 AI代币 奖励: ${prize.value}`);
             break;

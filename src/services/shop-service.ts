@@ -44,7 +44,7 @@ export default {
 
       const newBalance = currentBalance.sub(deductAmount);
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-        data: { usdtYue: newBalance.toString() }
+        data: { usdtYue: newBalance.toString() } as any as any as any
       });
 
       return true;
@@ -71,7 +71,7 @@ export default {
       const newBalance = currentBalance.plus(refundAmount);
 
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-        data: { usdtYue: newBalance.toString() }
+        data: { usdtYue: newBalance.toString() } as any as any as any
       });
 
       return true;
@@ -106,7 +106,7 @@ export default {
 
       const newStock = product.stock - quantity;
       await strapi.entityService.update('api::shop-product.shop-product' as any, productId, {
-        data: { stock: newStock }
+        data: { stock: newStock } as any
       });
 
       return true;
@@ -126,7 +126,7 @@ export default {
 
       const newStock = product.stock + quantity;
       await strapi.entityService.update('api::shop-product.shop-product' as any, productId, {
-        data: { stock: newStock }
+        data: { stock: newStock } as any
       });
 
       return true;

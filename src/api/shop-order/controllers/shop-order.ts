@@ -164,20 +164,20 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
           shippingAddress,
           productPrice: orderItems[0].price,
           productName: orderItems[0].product.name
-        }
+        } as any as any
       });
 
       // 扣除用户USDT余额
       const newBalance = userBalance.sub(totalAmount);
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-        data: { usdtYue: newBalance.toString() }
+        data: { usdtYue: newBalance.toString() } as any as any as any
       });
 
       // 减少商品库存
       for (const item of orderItems) {
         const newStock = item.product.stock - item.quantity;
         await strapi.entityService.update('api::shop-product.shop-product' as any, item.product.id, {
-          data: { stock: newStock }
+          data: { stock: newStock } as any
         });
       }
 
@@ -300,19 +300,19 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
           shippingAddress,
           productPrice: product.price,
           productName: product.name
-        }
+        } as any as any
       });
 
       // 扣除用户USDT余额
       const newBalance = userBalance.sub(totalAmount);
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-        data: { usdtYue: newBalance.toString() }
+        data: { usdtYue: newBalance.toString() } as any as any as any
       });
 
       // 减少商品库存
       const newStock = product.stock - quantity;
       await strapi.entityService.update('api::shop-product.shop-product' as any, productId, {
-        data: { stock: newStock }
+        data: { stock: newStock } as any
       });
 
       // 如果是实物商品，创建发货订单
@@ -391,7 +391,7 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
 
       // 更新订单状态
       await strapi.entityService.update('api::shop-order.shop-order' as any, id, {
-        data: { status: 'cancelled' }
+        data: { status: 'cancelled' } as any as any as any as any as any
       });
 
       // 退还USDT余额
@@ -406,14 +406,14 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
         const newBalance = currentBalance.plus(refundAmount);
 
         await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-          data: { usdtYue: newBalance.toString() }
+          data: { usdtYue: newBalance.toString() } as any as any as any
         });
       }
 
       // 恢复商品库存
       const newStock = order.product?.stock + order.quantity;
       await strapi.entityService.update('api::shop-product.shop-product' as any, order.product?.id, {
-        data: { stock: newStock }
+        data: { stock: newStock } as any
       });
 
       ctx.body = {
@@ -452,7 +452,7 @@ export default factories.createCoreController('api::shop-order.shop-order' as an
 
       // 更新订单状态
       await strapi.entityService.update('api::shop-order.shop-order' as any, id, {
-        data: { status: 'delivered' }
+        data: { status: 'delivered' } as any as any as any as any as any
       });
 
       ctx.body = {
