@@ -22,7 +22,6 @@ export default ({ env }) => [
   {
     name: 'strapi::cors',
     config: {
-      enabled: true,
       origin: ['http://localhost:3000', 'http://localhost:8080', 'http://118.107.4.158', 'http://118.107.4.158:3000', 'http://118.107.4.158:8080', 'https://118.107.4.158'],
       credentials: true,
       methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'HEAD', 'OPTIONS'],
@@ -36,11 +35,4 @@ export default ({ env }) => [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
-  // 添加静态文件服务
-  {
-    name: 'strapi::static',
-    config: {
-      path: './public',
-    },
-  },
 ];
