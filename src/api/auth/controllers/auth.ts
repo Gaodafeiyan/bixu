@@ -572,7 +572,7 @@ export default factories.createCoreController(
           success: true,
           message: 'APK下载功能已启用',
           inviteCode: invite || null,
-          downloadUrl: `${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/app-release.apk`,
+                     downloadUrl: `${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/zenithus-v1.0.0.apk`,
           version: '1.0.0',
           size: '25.6MB',
           description: 'Zenithus - AI大健康草本多肽出口认购平台'
