@@ -42,4 +42,8 @@ export default {
   'push-notification': () => import('./push-notification/routes/push-notification'),
   // FCM Token路由
   'user-fcm-token': () => import('./user-fcm-token/routes/user-fcm-token'),
+  // Banner路由
+  'banner': () => import('./banner/routes/banner'),
+  // 产品介绍路由
+  'product-intro': () => import('./product-intro/routes/product-intro'),
 }; 

@@ -1,0 +1,24 @@
+{
+  "collectionName": "components_product_benefits",
+  "info": {
+    "displayName": "Benefit",
+    "description": "产品功效"
+  },
+  "options": {},
+  "attributes": {
+    "title": {
+      "type": "string",
+      "required": true
+    },
+    "description": {
+      "type": "text"
+    },
+    "icon": {
+      "type": "string"
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+} 

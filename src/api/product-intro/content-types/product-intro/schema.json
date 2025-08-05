@@ -1,0 +1,66 @@
+{
+  "kind": "collectionType",
+  "collectionName": "product_intros",
+  "info": {
+    "singularName": "product-intro",
+    "pluralName": "product-intros",
+    "displayName": "Product Introduction",
+    "description": "产品介绍"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "productName": {
+      "type": "string",
+      "required": true
+    },
+    "productSubtitle": {
+      "type": "string"
+    },
+    "mainImage": {
+      "type": "media",
+      "multiple": false,
+      "allowedTypes": ["images"]
+    },
+    "gallery": {
+      "type": "media",
+      "multiple": true,
+      "allowedTypes": ["images"]
+    },
+    "shortDescription": {
+      "type": "text"
+    },
+    "fullDescription": {
+      "type": "richtext"
+    },
+    "highlights": {
+      "type": "json"
+    },
+    "ingredients": {
+      "type": "component",
+      "component": "product.ingredient",
+      "repeatable": true
+    },
+    "benefits": {
+      "type": "component",
+      "component": "product.benefit",
+      "repeatable": true
+    },
+    "usageInstructions": {
+      "type": "richtext"
+    },
+    "precautions": {
+      "type": "richtext"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true
+    },
+    "order": {
+      "type": "integer",
+      "default": 0
+    }
+  }
+} 
