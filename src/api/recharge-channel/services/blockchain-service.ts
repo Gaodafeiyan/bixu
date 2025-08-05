@@ -553,7 +553,7 @@ export default ({ strapi }) => {
         }
 
         // 获取提现通道配置
-        const withdrawalChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        const withdrawalChannels = await strapiInstance.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
           filters: {
             status: 'active',
             channelType: { $in: ['withdrawal', 'both'] },
@@ -587,7 +587,7 @@ export default ({ strapi }) => {
           console.error(`❌ ${errorMsg}`);
           
           // 更新订单状态为失败
-          await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          await strapiInstance.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               processTime: new Date(),
@@ -625,7 +625,7 @@ export default ({ strapi }) => {
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
         // 更新订单状态为完成
-        await strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+        await strapiInstance.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'completed',
             txHash: receipt.transactionHash,
