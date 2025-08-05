@@ -210,7 +210,7 @@ export default factories.createCoreController('api::shop-product.shop-product' a
       }
 
       const result = await strapi.entityService.update('api::shop-product.shop-product' as any, id, {
-        data: { stock: Number(stock) }
+        data: { stock: Number(stock) } as any as any as any
       });
 
       ctx.body = {

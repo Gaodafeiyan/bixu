@@ -200,7 +200,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 扣除钱包余额
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-        data: { usdtYue: walletBalance.minus(investmentAmount).toString() } as any
+        data: { usdtYue: walletBalance.minus(investmentAmount).toString() } as any as any as any
       });
 
       // 更新每日限购计数
@@ -297,7 +297,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         const currentBalance = new Decimal(userWallet.usdtYue || 0);
         
         await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-          data: { usdtYue: currentBalance.plus(totalPayout).toString() } as any
+          data: { usdtYue: currentBalance.plus(totalPayout).toString() } as any as any as any
         });
 
         console.log(`钱包余额更新: ${currentBalance.toString()} -> ${currentBalance.plus(totalPayout).toString()}`);

@@ -266,7 +266,7 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
             emailNotifications: false,
             pushNotifications: true,
             marketingNotifications: false
-          }
+          } as any as any
         })];
       }
 
@@ -303,7 +303,7 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
             emailNotifications: emailNotifications ?? false,
             pushNotifications: pushNotifications ?? true,
             marketingNotifications: marketingNotifications ?? false
-          }
+          } as any as any
         });
       } else {
         // 更新现有设置
@@ -313,7 +313,7 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
             emailNotifications: emailNotifications ?? settings[0].emailNotifications,
             pushNotifications: pushNotifications ?? settings[0].pushNotifications,
             marketingNotifications: marketingNotifications ?? settings[0].marketingNotifications
-          }
+          } as any as any as any
         });
       }
 

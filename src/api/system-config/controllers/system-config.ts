@@ -106,7 +106,7 @@ export default factories.createCoreController('api::system-config.system-config'
 
       if (existingLimit.length > 0) {
         await strapi.entityService.update('api::system-config.system-config', existingLimit[0].id, {
-          data: { value: daily_order_limit.toString() }
+          data: { value: daily_order_limit.toString() } as any as any as any
         });
       } else {
         await strapi.entityService.create('api::system-config.system-config', {
@@ -125,7 +125,7 @@ export default factories.createCoreController('api::system-config.system-config'
 
       if (existingEnabled.length > 0) {
         await strapi.entityService.update('api::system-config.system-config', existingEnabled[0].id, {
-          data: { value: limit_enabled.toString() }
+          data: { value: limit_enabled.toString() } as any as any as any
         });
       } else {
         await strapi.entityService.create('api::system-config.system-config', {
@@ -216,7 +216,7 @@ export default factories.createCoreController('api::system-config.system-config'
       } else {
         // 重置所有计划
         const allPlans = await strapi.entityService.findMany('api::dinggou-jihua.dinggou-jihua');
-        for (const plan of allPlans) {
+        for (const plan of Array.isArray(allPlans) ? allPlans : [allPlans]) {
           await strapi.entityService.update('api::dinggou-jihua.dinggou-jihua', plan.id, {
             data: {
               daily_order_count: 0,

@@ -1,200 +1,35 @@
-const fs = require('fs');
-const path = require('path');
+    // 3. 测试注册接口
+    console.log('\n3. 测试注册接口...');
+    const testUsername = 'testuser' + Date.now();
+    const testEmail = 'test' + Date.now() + '@example.com';
+    
+    try {
+      const registerResponse = await axios.post(`${BASE_URL}/api/auth/local/register`, {
+        username: testUsername,
+        email: testEmail,
+        password: 'testpassword123'
+      });
 
-// 修复函数
-function fixTypeScriptErrors() {
-  console.log('开始修复TypeScript错误...');
-  
-  // 1. 修复 auth.ts 中的 password 字段错误
-  const authFile = path.join(__dirname, 'src/api/auth/controllers/auth.ts');
-  if (fs.existsSync(authFile)) {
-    let content = fs.readFileSync(authFile, 'utf8');
-    content = content.replace(
-      /await strapi\.entityService\.update\('plugin::users-permissions\.user', userId, \{\s*data: \{\s*password: newPassword\s*\}\s*\}\);/g,
-      `await strapi.entityService.update('plugin::users-permissions.user', userId, {
-          data: {
-            password: newPassword
-          } as any
-        });`
-    );
-    fs.writeFileSync(authFile, content);
-    console.log('✅ 修复了 auth.ts 中的 password 字段错误');
-  }
+->
 
-  // 2. 修复钱包余额相关的错误
-  const filesToFix = [
-    'src/api/dinggou-jihua/controllers/dinggou-jihua.ts',
-    'src/api/recharge-channel/controllers/recharge-channel.ts',
-    'src/api/shop-order/controllers/shop-order.ts',
-    'src/api/yaoqing-jiangli/controllers/yaoqing-jiangli.ts',
-    'src/services/investment-service.ts',
-    'src/services/lottery-service.ts',
-    'src/services/shop-service.ts'
-  ];
-
-  filesToFix.forEach(filePath => {
-    const fullPath = path.join(__dirname, filePath);
-    if (fs.existsSync(fullPath)) {
-      let content = fs.readFileSync(fullPath, 'utf8');
-      
-      // 修复 usdtYue 字段错误
-      content = content.replace(
-        /data: \{ usdtYue: ([^}]+) \}/g,
-        'data: { usdtYue: $1 } as any'
-      );
-      
-      // 修复 aiYue 字段错误
-      content = content.replace(
-        /data: \{ aiYue: ([^}]+) \}/g,
-        'data: { aiYue: $1 } as any'
-      );
-      
-      fs.writeFileSync(fullPath, content);
-      console.log(`✅ 修复了 ${filePath} 中的钱包余额字段错误`);
+    // 3. 测试注册接口（需要邀请码）
+    console.log('\n3. 测试注册接口（需要邀请码）...');
+    const testUsername = 'testuser' + Date.now();
+    const testEmail = 'test' + Date.now() + '@example.com';
+    
+    // 首先获取一个有效的邀请码
+    console.log('获取邀请码...');
+    try {
+      const inviteCodeResponse = await axios.get(`${BASE_URL}/api/auth/validate-invite-code/TEST123`);
+      console.log('邀请码验证结果:', inviteCodeResponse.status);
+    } catch (error) {
+      console.log('邀请码验证失败:', error.response?.status);
     }
-  });
-
-  // 3. 修复订单状态相关的错误
-  const orderFiles = [
-    'src/api/dinggou-dingdan/controllers/dinggou-dingdan.ts',
-    'src/api/recharge-channel/controllers/recharge-channel.ts',
-    'src/api/shop-order/controllers/shop-order.ts',
-    'src/services/investment-service.ts'
-  ];
-
-  orderFiles.forEach(filePath => {
-    const fullPath = path.join(__dirname, filePath);
-    if (fs.existsSync(fullPath)) {
-      let content = fs.readFileSync(fullPath, 'utf8');
-      
-      // 修复 status 字段错误
-      content = content.replace(
-        /data: \{ status: ([^}]+) \}/g,
-        'data: { status: $1 } as any'
-      );
-      
-      // 修复包含多个字段的更新
-      content = content.replace(
-        /data: \{([^}]+status[^}]+)\}/g,
-        'data: {$1} as any'
-      );
-      
-      fs.writeFileSync(fullPath, content);
-      console.log(`✅ 修复了 ${filePath} 中的订单状态字段错误`);
-    }
-  });
-
-  // 4. 修复其他字段错误
-  const otherFiles = [
-    'src/api/choujiang-jiangpin/controllers/choujiang-jiangpin.ts',
-    'src/api/shop-cart/controllers/shop-cart.ts',
-    'src/api/shop-product/controllers/shop-product.ts',
-    'src/api/system-config/controllers/system-config.ts',
-    'src/services/lottery-service.ts'
-  ];
-
-  otherFiles.forEach(filePath => {
-    const fullPath = path.join(__dirname, filePath);
-    if (fs.existsSync(fullPath)) {
-      let content = fs.readFileSync(fullPath, 'utf8');
-      
-      // 修复 currentQuantity 字段错误
-      content = content.replace(
-        /data: \{ currentQuantity: ([^}]+) \}/g,
-        'data: { currentQuantity: $1 } as any'
-      );
-      
-      // 修复 quantity 字段错误
-      content = content.replace(
-        /data: \{ quantity: ([^}]+) \}/g,
-        'data: { quantity: $1 } as any'
-      );
-      
-      // 修复 stock 字段错误
-      content = content.replace(
-        /data: \{ stock: ([^}]+) \}/g,
-        'data: { stock: $1 } as any'
-      );
-      
-      // 修复 value 字段错误
-      content = content.replace(
-        /data: \{ value: ([^}]+) \}/g,
-        'data: { value: $1 } as any'
-      );
-      
-      // 修复 usedCount 字段错误
-      content = content.replace(
-        /data: \{ usedCount: ([^}]+) \}/g,
-        'data: { usedCount: $1 } as any'
-      );
-      
-      fs.writeFileSync(fullPath, content);
-      console.log(`✅ 修复了 ${filePath} 中的字段错误`);
-    }
-  });
-
-  // 5. 修复复杂的查询条件错误
-  const choujiangFile = path.join(__dirname, 'src/api/choujiang-jihui/controllers/choujiang-jihui.ts');
-  if (fs.existsSync(choujiangFile)) {
-    let content = fs.readFileSync(choujiangFile, 'utf8');
     
-    // 修复 $or 查询条件
-    content = content.replace(
-      /\$or: \[\s*\{ validUntil: null \},\s*\{ validUntil: \{ \$gt: beijingNow \} \}\s*\]/g,
-      '$or: [{ validUntil: null }, { validUntil: { $gt: beijingNow } }] as any'
-    );
-    
-    fs.writeFileSync(choujiangFile, content);
-    console.log('✅ 修复了 choujiang-jihui.ts 中的查询条件错误');
-  }
-
-  // 6. 修复 shipping-order 中的复杂更新
-  const shippingFile = path.join(__dirname, 'src/api/shipping-order/controllers/shipping-order.ts');
-  if (fs.existsSync(shippingFile)) {
-    let content = fs.readFileSync(shippingFile, 'utf8');
-    
-    // 修复包含多个字段的更新
-    content = content.replace(
-      /data: updateData/g,
-      'data: updateData as any'
-    );
-    
-    fs.writeFileSync(shippingFile, content);
-    console.log('✅ 修复了 shipping-order.ts 中的更新错误');
-  }
-
-  // 7. 修复 system-config 中的 for 循环错误
-  const systemConfigFile = path.join(__dirname, 'src/api/system-config/controllers/system-config.ts');
-  if (fs.existsSync(systemConfigFile)) {
-    let content = fs.readFileSync(systemConfigFile, 'utf8');
-    
-    // 修复 for 循环类型错误
-    content = content.replace(
-      /for \(const plan of allPlans\)/g,
-      'for (const plan of allPlans as any[])'
-    );
-    
-    fs.writeFileSync(systemConfigFile, content);
-    console.log('✅ 修复了 system-config.ts 中的循环错误');
-  }
-
-  // 8. 修复 notice 中的通知设置错误
-  const noticeFile = path.join(__dirname, 'src/api/notice/controllers/notice.ts');
-  if (fs.existsSync(noticeFile)) {
-    let content = fs.readFileSync(noticeFile, 'utf8');
-    
-    // 修复通知设置字段
-    content = content.replace(
-      /data: \{([^}]+systemNotifications[^}]+)\}/g,
-      'data: {$1} as any'
-    );
-    
-    fs.writeFileSync(noticeFile, content);
-    console.log('✅ 修复了 notice.ts 中的通知设置错误');
-  }
-
-  console.log('🎉 所有TypeScript错误修复完成！');
-}
-
-// 运行修复
-fixTypeScriptErrors(); 
+    try {
+      const registerResponse = await axios.post(`${BASE_URL}/api/auth/invite-register`, {
+        username: testUsername,
+        email: testEmail,
+        password: 'testpassword123',
+        inviteCode: 'TEST123' // 使用测试邀请码
+      });
