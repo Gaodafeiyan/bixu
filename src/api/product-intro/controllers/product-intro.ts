@@ -59,13 +59,13 @@ export default factories.createCoreController('api::product-intro.product-intro'
         limit: 1
       });
 
-      if (!products || products.length === 0) {
+      if (!products || (Array.isArray(products) && products.length === 0)) {
         return ctx.notFound('产品介绍不存在');
       }
 
       ctx.body = {
         success: true,
-        data: products[0]
+        data: Array.isArray(products) ? products[0] : products
       };
     } catch (error) {
       console.error('根据名称获取产品介绍失败:', error);
