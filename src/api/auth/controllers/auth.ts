@@ -378,10 +378,10 @@ export default factories.createCoreController(
         }
 
         // 生成包含邀请码的深度链接
-        const deepLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158'}/api/auth/download?invite=${user.inviteCode}`;
+        const deepLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/api/auth/download?invite=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
-        const inviteLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158'}/register?invite=${user.inviteCode}`;
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?invite=${user.inviteCode}`;
         
         // 生成包含邀请码的二维码（指向深度链接）
         const qrCodeData = await QRCode.toDataURL(deepLink, {
@@ -424,7 +424,7 @@ export default factories.createCoreController(
           return ctx.notFound('用户不存在');
         }
 
-        const inviteLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158'}/register?invite=${user.inviteCode}`;
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?invite=${user.inviteCode}`;
 
         ctx.body = {
           success: true,
@@ -451,10 +451,10 @@ export default factories.createCoreController(
         }
 
         // 生成包含邀请码的APP下载链接
-        const appDownloadLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158'}/api/auth/download?invite=${user.inviteCode}`;
+        const appDownloadLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/api/auth/download?invite=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
-        const inviteLink = `${process.env.FRONTEND_URL || 'http://118.107.4.158'}/register?invite=${user.inviteCode}`;
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?invite=${user.inviteCode}`;
         
         // 生成包含邀请码的二维码（指向APP下载链接）
         const qrCodeData = await QRCode.toDataURL(appDownloadLink, {
@@ -572,7 +572,7 @@ export default factories.createCoreController(
           success: true,
           message: 'APK下载功能已启用',
           inviteCode: invite || null,
-          downloadUrl: `${process.env.FRONTEND_URL || 'http://118.107.4.158'}/downloads/app-release.apk`
+          downloadUrl: `${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/app-release.apk`
         };
         
         // 在实际部署时，这里应该返回真实的APK文件
@@ -786,7 +786,7 @@ export default factories.createCoreController(
     <script>
         function downloadApp() {
             // 下载APK文件
-            const downloadUrl = '${process.env.FRONTEND_URL || 'http://118.107.4.158'}/api/auth/download-apk${inviterInfo ? `?invite=${inviterInfo.inviteCode}` : ''}';
+            const downloadUrl = '${process.env.FRONTEND_URL || 'https://zenithus.app'}/api/auth/download-apk${inviterInfo ? `?invite=${inviterInfo.inviteCode}` : ''}';
             window.location.href = downloadUrl;
         }
     </script>
