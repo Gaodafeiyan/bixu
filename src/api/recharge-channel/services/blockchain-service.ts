@@ -674,7 +674,7 @@ export default ({ strapi }) => {
       try {
         console.log('🔄 处理待处理的提现订单...');
 
-        const orders = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
+        const orders = await strapiInstance.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
           filters: {
             status: 'pending'
           }
