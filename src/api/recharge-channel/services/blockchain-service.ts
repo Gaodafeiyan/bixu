@@ -243,7 +243,7 @@ export default ({ strapi }) => {
         console.log(`📊 需要监听的钱包地址: ${walletAddresses.join(', ')}`);
 
         // 获取所有待处理的充值订单
-        const pendingOrders = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
+        const pendingOrders = await strapiInstance.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
             status: 'pending',
             receiveAddress: { $in: walletAddresses }
@@ -265,7 +265,7 @@ export default ({ strapi }) => {
         
         // 尝试从数据库获取上次检查的区块号
         try {
-          const config = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+          const config = await strapiInstance.entityService.findMany('api::system-config.system-config' as any, {
             filters: { key: 'last_checked_block' }
           });
           if (config && config.length > 0) {
@@ -365,16 +365,16 @@ export default ({ strapi }) => {
     async updateLastCheckedBlock(blockNumber: number) {
       try {
         // 查找或创建系统配置
-        const configs = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+        const configs = await strapiInstance.entityService.findMany('api::system-config.system-config' as any, {
           filters: { key: 'last_checked_block' }
         });
         
         if (configs && configs.length > 0) {
-          await strapi.entityService.update('api::system-config.system-config' as any, configs[0].id, {
+          await strapiInstance.entityService.update('api::system-config.system-config' as any, configs[0].id, {
             data: { value: blockNumber.toString() }
           });
         } else {
-          await strapi.entityService.create('api::system-config.system-config' as any, {
+          await strapiInstance.entityService.create('api::system-config.system-config' as any, {
             data: {
               key: 'last_checked_block',
               value: blockNumber.toString(),
