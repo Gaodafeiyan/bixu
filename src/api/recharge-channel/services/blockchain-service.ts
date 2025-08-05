@@ -639,12 +639,16 @@ export default ({ strapi }) => {
         
         // 发送提现成功推送通知
         try {
-          const pushNotificationService = strapi.service('api::push-notification.push-notification');
-          await pushNotificationService.sendToUser(order.user.id,
-            '提现成功',
-            `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
-          );
-          console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          if (order.user && order.user.id) {
+            const pushNotificationService = strapi.service('api::push-notification.push-notification');
+            await pushNotificationService.sendToUser(order.user.id,
+              '提现成功',
+              `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+            );
+            console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          } else {
+            console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
+          }
         } catch (error) {
           console.error('❌ 发送提现成功推送失败:', error);
         }
@@ -677,6 +681,9 @@ export default ({ strapi }) => {
         const orders = await strapiInstance.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
           filters: {
             status: 'pending'
+          },
+          populate: {
+            user: true
           }
         });
 
@@ -791,12 +798,16 @@ export default ({ strapi }) => {
         
         // 发送提现成功推送通知
         try {
-          const pushNotificationService = strapi.service('api::push-notification.push-notification');
-          await pushNotificationService.sendToUser(order.user.id,
-            '提现成功',
-            `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
-          );
-          console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          if (order.user && order.user.id) {
+            const pushNotificationService = strapi.service('api::push-notification.push-notification');
+            await pushNotificationService.sendToUser(order.user.id,
+              '提现成功',
+              `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+            );
+            console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          } else {
+            console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
+          }
         } catch (error) {
           console.error('❌ 发送提现成功推送失败:', error);
         }
@@ -910,12 +921,16 @@ export default ({ strapi }) => {
         
         // 发送提现成功推送通知
         try {
-          const pushNotificationService = strapi.service('api::push-notification.push-notification');
-          await pushNotificationService.sendToUser(order.user.id,
-            '提现成功',
-            `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
-          );
-          console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          if (order.user && order.user.id) {
+            const pushNotificationService = strapi.service('api::push-notification.push-notification');
+            await pushNotificationService.sendToUser(order.user.id,
+              '提现成功',
+              `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+            );
+            console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          } else {
+            console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
+          }
         } catch (error) {
           console.error('❌ 发送提现成功推送失败:', error);
         }
@@ -1027,12 +1042,16 @@ export default ({ strapi }) => {
         
         // 发送提现成功推送通知
         try {
-          const pushNotificationService = strapi.service('api::push-notification.push-notification');
-          await pushNotificationService.sendToUser(order.user.id,
-            '提现成功',
-            `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
-          );
-          console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          if (order.user && order.user.id) {
+            const pushNotificationService = strapi.service('api::push-notification.push-notification');
+            await pushNotificationService.sendToUser(order.user.id,
+              '提现成功',
+              `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+            );
+            console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          } else {
+            console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
+          }
         } catch (error) {
           console.error('❌ 发送提现成功推送失败:', error);
         }
