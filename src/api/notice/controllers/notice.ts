@@ -250,6 +250,11 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
   // 获取通知设置
   async getNotificationSettings(ctx) {
     try {
+      // 检查用户是否已登录
+      if (!ctx.state.user || !ctx.state.user.id) {
+        return ctx.unauthorized('用户未登录');
+      }
+      
       const userId = ctx.state.user.id;
 
       // 获取用户通知设置
