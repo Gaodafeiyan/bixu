@@ -1,6 +1,10 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreController('api::notice.notice' as any, ({ strapi }) => ({
+export default factories.createCoreController('api::notice.notice' as any, ({ strapi }) => {
+  // 获取默认的控制器方法
+  const defaultController = factories.createCoreController('api::notice.notice' as any, ({ strapi }) => ({}));
+  
+  return {
   // 重写create方法，在创建公告时发送推送
   async create(ctx) {
     try {
@@ -342,6 +346,36 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
         success: false,
         error: error.message
       };
+          }
+    },
+    
+    // 覆盖默认的update方法，确保后台更新也能触发推送
+    async update(ctx) {
+      try {
+        const { id } = ctx.params;
+        const { data } = ctx.request.body;
+        
+        // 更新公告
+        const notice = await strapi.entityService.update('api::notice.notice' as any, id, {
+          data
+        });
+
+        // 如果公告是活跃的且已发布，发送推送通知
+        if (notice.isActive && notice.publishedAt) {
+          try {
+            const pushNotificationService = strapi.service('api::push-notification.push-notification');
+            await pushNotificationService.sendToAllUsers(notice.title, notice.content, { type: 'system' });
+            console.log(`📱 系统公告推送已发送: ${notice.title}`);
+          } catch (error) {
+            console.error('❌ 发送系统公告推送失败:', error);
+          }
+        }
+
+        return notice;
+      } catch (error) {
+        console.error('更新公告失败:', error);
+        ctx.throw(500, `更新公告失败: ${error.message}`);
+      }
     }
-  }
-}));
+  };
+});
