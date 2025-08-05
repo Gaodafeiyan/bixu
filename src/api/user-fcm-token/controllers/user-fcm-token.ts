@@ -7,6 +7,12 @@ export default ({ strapi }: { strapi: Strapi }) => ({
   async registerToken(ctx) {
     try {
       const { fcmToken, deviceType = 'android' } = ctx.request.body;
+      
+      // 检查用户是否已登录
+      if (!ctx.state.user || !ctx.state.user.id) {
+        return ctx.unauthorized('用户未登录');
+      }
+      
       const userId = ctx.state.user.id;
 
       if (!fcmToken) {
