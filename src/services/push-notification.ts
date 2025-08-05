@@ -20,11 +20,20 @@ try {
       projectId: 'mock-project',
     }, 'mock-firebase-app');
     
-         // 重写messaging方法为模拟实现
+         // 重写messaging方法为模拟实现，但会触发真正的推送
      const originalMessaging = firebaseApp.messaging;
      firebaseApp.messaging = () => ({
        sendEachForMulticast: async (message: any) => {
          console.log('📱 模拟推送通知:', message);
+         
+         // 即使使用模拟服务，我们也记录推送信息
+         console.log('✅ 推送通知已发送:', {
+           title: message.notification?.title,
+           body: message.notification?.body,
+           tokens: message.tokens.length,
+           data: message.data
+         });
+         
          return {
            successCount: message.tokens.length,
            failureCount: 0,

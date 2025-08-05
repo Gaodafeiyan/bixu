@@ -15,10 +15,7 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
       if (notice.isActive && notice.publishedAt) {
         try {
           const pushNotificationService = strapi.service('api::push-notification.push-notification');
-          await pushNotificationService.sendSystemAnnouncement(
-            notice.title,
-            notice.content
-          );
+          await pushNotificationService.sendToAllUsers(notice.title, notice.content, { type: 'system' });
           console.log(`📱 系统公告推送已发送: ${notice.title}`);
         } catch (error) {
           console.error('❌ 发送系统公告推送失败:', error);
@@ -47,10 +44,7 @@ export default factories.createCoreController('api::notice.notice' as any, ({ st
       if (notice.isActive && notice.publishedAt) {
         try {
           const pushNotificationService = strapi.service('api::push-notification.push-notification');
-          await pushNotificationService.sendSystemAnnouncement(
-            notice.title,
-            notice.content
-          );
+          await pushNotificationService.sendToAllUsers(notice.title, notice.content, { type: 'system' });
           console.log(`📱 系统公告推送已发送: ${notice.title}`);
         } catch (error) {
           console.error('❌ 发送系统公告推送失败:', error);
