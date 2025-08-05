@@ -1,51 +1,58 @@
 const fs = require('fs');
 const path = require('path');
 
-console.log('🔧 开始最终修复区块链服务中的strapi引用...');
-
-const filePath = path.join(__dirname, 'src/api/recharge-channel/services/blockchain-service.ts');
-
-if (!fs.existsSync(filePath)) {
-  console.log('❌ 文件不存在:', filePath);
-  process.exit(1);
+// 修复merge conflict标记的脚本
+function fixMergeConflicts() {
+  console.log('🔧 开始修复merge conflict标记...');
+  
+  const filePath = path.join(__dirname, 'bixu', 'src', 'api', 'recharge-channel', 'services', 'blockchain-service.ts');
+  
+  try {
+    // 读取文件内容
+    let content = fs.readFileSync(filePath, 'utf8');
+    
+    // 检查是否存在merge conflict标记
+    const hasConflictMarkers = content.includes('<<<<<<< HEAD') || 
+                              content.includes('=======') || 
+                              content.includes('>>>>>>>');
+    
+    if (!hasConflictMarkers) {
+      console.log('✅ 文件中没有发现merge conflict标记');
+      return;
+    }
+    
+    console.log('⚠️ 发现merge conflict标记，开始修复...');
+    
+    // 移除所有merge conflict标记
+    // 保留HEAD分支的内容（通常是当前分支）
+    content = content.replace(/<<<<<<< HEAD\n([\s\S]*?)\n=======\n[\s\S]*?\n>>>>>>> [^\n]*\n/g, '$1');
+    
+    // 移除单独的冲突标记
+    content = content.replace(/<<<<<<< HEAD\n/g, '');
+    content = content.replace(/=======\n/g, '');
+    content = content.replace(/>>>>>>> [^\n]*\n/g, '');
+    
+    // 写回文件
+    fs.writeFileSync(filePath, content, 'utf8');
+    
+    console.log('✅ merge conflict标记已修复');
+    
+    // 验证修复结果
+    const newContent = fs.readFileSync(filePath, 'utf8');
+    const stillHasMarkers = newContent.includes('<<<<<<< HEAD') || 
+                           newContent.includes('=======') || 
+                           newContent.includes('>>>>>>>');
+    
+    if (stillHasMarkers) {
+      console.log('⚠️ 仍有残留的冲突标记，请手动检查');
+    } else {
+      console.log('✅ 文件已完全清理');
+    }
+    
+  } catch (error) {
+    console.error('❌ 修复失败:', error.message);
+  }
 }
 
-let content = fs.readFileSync(filePath, 'utf8');
-
-// 修复所有的 this.strapi 为 strapiInstance
-const patterns = [
-  {
-    regex: /this\.strapi\.entityService\.findMany/g,
-    replacement: 'strapiInstance.entityService.findMany'
-  },
-  {
-    regex: /this\.strapi\.entityService\.findOne/g,
-    replacement: 'strapiInstance.entityService.findOne'
-  },
-  {
-    regex: /this\.strapi\.entityService\.update/g,
-    replacement: 'strapiInstance.entityService.update'
-  },
-  {
-    regex: /this\.strapi\.entityService\.create/g,
-    replacement: 'strapiInstance.entityService.create'
-  }
-];
-
-let modified = false;
-patterns.forEach(pattern => {
-  const newContent = content.replace(pattern.regex, pattern.replacement);
-  if (newContent !== content) {
-    content = newContent;
-    modified = true;
-  }
-});
-
-if (modified) {
-  fs.writeFileSync(filePath, content, 'utf8');
-  console.log('✅ 修复完成: blockchain-service.ts');
-} else {
-  console.log('⚠️ 未找到需要修复的模式');
-}
-
-console.log('🎉 区块链服务strapi引用最终修复完成！');
+// 运行修复
+fixMergeConflicts();
