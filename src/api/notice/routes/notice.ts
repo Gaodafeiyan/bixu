@@ -23,6 +23,17 @@ export default {
         middlewares: [],
       },
     },
+    {
+      method: 'PUT',
+      path: '/notices/:id',
+      handler: 'notice.update',
+      config: {
+        type: 'content-api',
+        auth: {},
+        policies: [],
+        middlewares: [],
+      },
+    },
     // 用户通知相关路由
     {
       method: 'GET',
