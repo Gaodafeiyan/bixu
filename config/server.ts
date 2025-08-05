@@ -14,6 +14,6 @@ export default ({ env }) => ({
   static: {
     enabled: true,
     path: '/downloads',
-    directory: '/var/www/html',
+    directory: '../',
   },
 });
