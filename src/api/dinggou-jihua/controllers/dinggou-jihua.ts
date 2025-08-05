@@ -476,12 +476,16 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
             
             // 发送邀请奖励推送通知
             try {
-              const pushNotificationService = strapi.service('api::push-notification.push-notification');
-              await pushNotificationService.sendToUser(rewardResult.inviterId,
-                '邀请奖励到账',
-                `恭喜！您邀请的好友赎回成功，奖励${rewardResult.rewardAmount}USDT已到账`
-              );
-              console.log(`📱 邀请奖励推送已发送给用户 ${rewardResult.inviterId}`);
+              if (rewardResult.inviterId) {
+                const pushNotificationService = strapi.service('api::push-notification.push-notification');
+                await pushNotificationService.sendToUser(rewardResult.inviterId,
+                  '邀请奖励到账',
+                  `恭喜！您邀请的好友赎回成功，奖励${rewardResult.rewardAmount}USDT已到账`
+                );
+                console.log(`📱 邀请奖励推送已发送给用户 ${rewardResult.inviterId}`);
+              } else {
+                console.warn(`⚠️ 邀请奖励结果缺少inviterId，跳过推送通知`);
+              }
             } catch (error) {
               console.error('❌ 发送邀请奖励推送失败:', error);
             }
