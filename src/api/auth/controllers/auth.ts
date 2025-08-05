@@ -788,8 +788,8 @@ export default factories.createCoreController(
     
     <script>
         function downloadApp() {
-            // 下载APK文件
-            const downloadUrl = '${process.env.FRONTEND_URL || 'https://zenithus.app'}/api/auth/download-apk${inviterInfo ? `?invite=${inviterInfo.inviteCode}` : ''}';
+            // 直接下载APK文件
+            const downloadUrl = '${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/app-release.apk';
             window.location.href = downloadUrl;
         }
     </script>
