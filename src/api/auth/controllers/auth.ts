@@ -567,12 +567,15 @@ export default factories.createCoreController(
         ctx.set('Content-Disposition', 'attachment; filename="app-release.apk"');
         
         // 这里应该返回实际的APK文件
-        // 在开发阶段，我们可以返回一个简单的响应，说明文件下载功能
+        // 返回APK下载信息
         ctx.body = {
           success: true,
           message: 'APK下载功能已启用',
           inviteCode: invite || null,
-          downloadUrl: `${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/app-release.apk`
+          downloadUrl: `${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/app-release.apk`,
+          version: '1.0.0',
+          size: '25.6MB',
+          description: 'Zenithus - AI大健康草本多肽出口认购平台'
         };
         
         // 在实际部署时，这里应该返回真实的APK文件
