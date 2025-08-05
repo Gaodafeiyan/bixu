@@ -1,10 +1,10 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreController('api::product-intro.product-intro', ({ strapi }) => ({
+export default factories.createCoreController('api::product-intro.product-intro' as any, ({ strapi }) => ({
   // 获取活跃的产品介绍列表
   async getActiveProducts(ctx) {
     try {
-      const products = await strapi.entityService.findMany('api::product-intro.product-intro', {
+      const products = await strapi.entityService.findMany('api::product-intro.product-intro' as any, {
         filters: {
           isActive: true
         },
@@ -27,7 +27,7 @@ export default factories.createCoreController('api::product-intro.product-intro'
     try {
       const { id } = ctx.params;
       
-      const product = await strapi.entityService.findOne('api::product-intro.product-intro', id, {
+      const product = await strapi.entityService.findOne('api::product-intro.product-intro' as any, id, {
         populate: ['mainImage', 'gallery', 'ingredients', 'benefits']
       });
 
@@ -50,7 +50,7 @@ export default factories.createCoreController('api::product-intro.product-intro'
     try {
       const { name } = ctx.params;
       
-      const product = await strapi.entityService.findMany('api::product-intro.product-intro', {
+      const products = await strapi.entityService.findMany('api::product-intro.product-intro' as any, {
         filters: {
           productName: { $contains: name },
           isActive: true
@@ -59,13 +59,13 @@ export default factories.createCoreController('api::product-intro.product-intro'
         limit: 1
       });
 
-      if (!product || product.length === 0) {
+      if (!products || products.length === 0) {
         return ctx.notFound('产品介绍不存在');
       }
 
       ctx.body = {
         success: true,
-        data: product[0]
+        data: products[0]
       };
     } catch (error) {
       console.error('根据名称获取产品介绍失败:', error);

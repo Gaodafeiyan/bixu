@@ -1,21 +1,27 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreController('api::banner.banner', ({ strapi }) => ({
+export default factories.createCoreController('api::banner.banner' as any, ({ strapi }) => ({
   // 获取活跃的banner列表
   async getActiveBanners(ctx) {
     try {
       const now = new Date();
       
-      const banners = await strapi.entityService.findMany('api::banner.banner', {
+      const banners = await strapi.entityService.findMany('api::banner.banner' as any, {
         filters: {
           isActive: true,
-          $or: [
-            { startDate: { $lte: now } },
-            { startDate: null }
-          ],
-          $or: [
-            { endDate: { $gte: now } },
-            { endDate: null }
+          $and: [
+            {
+              $or: [
+                { startDate: { $lte: now } },
+                { startDate: null }
+              ]
+            },
+            {
+              $or: [
+                { endDate: { $gte: now } },
+                { endDate: null }
+              ]
+            }
           ]
         },
         populate: ['image'],
@@ -37,7 +43,7 @@ export default factories.createCoreController('api::banner.banner', ({ strapi })
     try {
       const { id } = ctx.params;
       
-      const banner = await strapi.entityService.findOne('api::banner.banner', id, {
+      const banner = await strapi.entityService.findOne('api::banner.banner' as any, id, {
         populate: ['image']
       });
 
