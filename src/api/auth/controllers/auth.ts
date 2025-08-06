@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" action="javascript:void(0);" method="post">
+        <form id="registerForm" action="#" method="post" onsubmit="return false;">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1158,70 +1158,39 @@ export default factories.createCoreController(
     </div>
     
     <script>
-        console.log('=== 注册页面JavaScript已加载 ===');
+        console.log('=== 注册页面JavaScript开始加载 ===');
         
-        // 立即执行，不等待DOMContentLoaded
-        (function() {
-            console.log('=== 立即执行JavaScript ===');
+        // 等待DOM完全加载
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('=== DOM加载完成，开始设置事件监听器 ===');
             
             const form = document.getElementById('registerForm');
             if (!form) {
-                console.error('找不到注册表单，等待DOM加载');
-                // 如果表单不存在，等待DOM加载
-                document.addEventListener('DOMContentLoaded', function() {
-                    console.log('DOM已加载完成，重新查找表单');
-                    const form = document.getElementById('registerForm');
-                    if (form) {
-                        setupFormHandler(form);
-                    } else {
-                        console.error('DOM加载后仍找不到注册表单');
-                    }
-                });
+                console.error('找不到注册表单');
                 return;
             }
             
-            console.log('找到注册表单，立即设置事件监听器');
-            setupFormHandler(form);
-        })();
-        
-        function setupFormHandler(form) {
-            console.log('设置表单事件处理器');
+            console.log('找到注册表单，设置事件监听器');
             
-            // 移除可能存在的旧事件监听器
+            // 移除所有可能的事件监听器
             form.removeEventListener('submit', handleSubmit);
             
-            // 添加新的事件监听器
+            // 添加表单提交事件监听器
             form.addEventListener('submit', handleSubmit);
             
-            // 也监听按钮点击事件作为备用
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.removeEventListener('click', handleSubmit);
-                submitBtn.addEventListener('click', handleSubmit);
-                console.log('按钮点击事件监听器已设置');
-            }
-            
-            console.log('表单事件监听器已设置');
-        }
+            console.log('表单事件监听器设置完成');
+        });
         
         async function handleSubmit(e) {
             console.log('=== 表单提交事件触发 ===');
             
-            // 多重阻止机制
+            // 阻止默认行为
             e.preventDefault();
             e.stopPropagation();
-            e.stopImmediatePropagation();
-            e.returnValue = false;
             
             console.log('已阻止默认提交行为');
             
-            // 禁用提交按钮防止重复提交
-            const submitBtn = this.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = '注册中...';
-            }
-            
+            // 获取表单数据
             const formData = new FormData(this);
             const data = {
                 username: formData.get('username'),
@@ -1231,6 +1200,13 @@ export default factories.createCoreController(
             };
             
             console.log('准备发送数据:', data);
+            
+            // 禁用提交按钮
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '注册中...';
+            }
             
             try {
                 console.log('发送请求到 /auth/invite-register');
@@ -1254,7 +1230,6 @@ export default factories.createCoreController(
                     }, 2000);
                 } else {
                     document.getElementById('message').innerHTML = '<div class="error">注册失败：' + (result.message || '未知错误') + '</div>';
-                    // 恢复提交按钮
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.textContent = '立即注册';
@@ -1263,50 +1238,14 @@ export default factories.createCoreController(
             } catch (error) {
                 console.error('注册请求失败:', error);
                 document.getElementById('message').innerHTML = '<div class="error">注册失败：网络错误 - ' + error.message + '</div>';
-                // 恢复提交按钮
                 if (submitBtn) {
                     submitBtn.disabled = false;
                     submitBtn.textContent = '立即注册';
                 }
             }
             
-            // 最后再次确保阻止默认行为
             return false;
         }
-        
-        // 添加全局点击事件监听器作为最后的备用
-        document.addEventListener('click', function(e) {
-            if (e.target && e.target.matches('button[type="submit"]')) {
-                console.log('全局点击事件触发');
-                e.preventDefault();
-                e.stopPropagation();
-                const form = e.target.closest('form');
-                if (form) {
-                    handleSubmit.call(form, e);
-                }
-            }
-        });
-        
-        // 也监听按钮点击事件作为备用
-        document.addEventListener('click', function(e) {
-            if (e.target && e.target.matches('button[type="submit"]')) {
-                console.log('按钮点击事件触发');
-                e.preventDefault();
-                e.stopPropagation();
-                handleSubmit.call(e.target.closest('form'), e);
-            }
-        });
-        
-        // 也监听DOMContentLoaded作为备用
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOMContentLoaded事件触发');
-            const form = document.getElementById('registerForm');
-            if (form && !form.hasAttribute('data-handler-setup')) {
-                console.log('DOM加载后设置表单处理器');
-                form.setAttribute('data-handler-setup', 'true');
-                setupFormHandler(form);
-            }
-        });
     </script>
 </body>
 </html>`;
