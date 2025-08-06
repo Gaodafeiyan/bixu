@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" action="javascript:void(0);" method="post">
+        <form id="registerForm" action="#" method="post" onsubmit="return false;">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1273,6 +1273,16 @@ export default factories.createCoreController(
             // 最后再次确保阻止默认行为
             return false;
         }
+        
+        // 也监听按钮点击事件作为备用
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.matches('button[type="submit"]')) {
+                console.log('按钮点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                handleSubmit.call(e.target.closest('form'), e);
+            }
+        });
         
         // 也监听DOMContentLoaded作为备用
         document.addEventListener('DOMContentLoaded', function() {
