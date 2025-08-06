@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" action="javascript:void(0);" onsubmit="return false;">
+        <form id="registerForm" action="#" method="post" onsubmit="return false;">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1197,12 +1197,15 @@ export default factories.createCoreController(
         }
         
         async function handleSubmit(e) {
-            console.log('表单提交事件触发');
+            console.log('=== 表单提交事件触发 ===');
+            
+            // 多重阻止机制
             e.preventDefault();
             e.stopPropagation();
             e.stopImmediatePropagation();
+            e.returnValue = false;
             
-            console.log('阻止默认提交行为');
+            console.log('已阻止默认提交行为');
             
             // 禁用提交按钮防止重复提交
             const submitBtn = this.querySelector('button[type="submit"]');
@@ -1258,6 +1261,9 @@ export default factories.createCoreController(
                     submitBtn.textContent = '立即注册';
                 }
             }
+            
+            // 最后再次确保阻止默认行为
+            return false;
         }
         
         // 也监听DOMContentLoaded作为备用
