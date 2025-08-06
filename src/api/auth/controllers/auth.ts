@@ -1170,7 +1170,7 @@ export default factories.createCoreController(
             };
             
             try {
-                const response = await fetch('/api/auth/invite-register', {
+                const response = await fetch('/auth/invite-register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
