@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" action="#" method="post" onsubmit="return false;">
+        <form id="registerForm" action="javascript:void(0);" method="post" onsubmit="return false;">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1158,11 +1158,11 @@ export default factories.createCoreController(
     </div>
     
     <script>
-        console.log('注册页面JavaScript已加载');
+        console.log('=== 注册页面JavaScript已加载 ===');
         
         // 立即执行，不等待DOMContentLoaded
         (function() {
-            console.log('立即执行JavaScript');
+            console.log('=== 立即执行JavaScript ===');
             
             const form = document.getElementById('registerForm');
             if (!form) {
@@ -1192,6 +1192,14 @@ export default factories.createCoreController(
             
             // 添加新的事件监听器
             form.addEventListener('submit', handleSubmit);
+            
+            // 也监听按钮点击事件作为备用
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.removeEventListener('click', handleSubmit);
+                submitBtn.addEventListener('click', handleSubmit);
+                console.log('按钮点击事件监听器已设置');
+            }
             
             console.log('表单事件监听器已设置');
         }
