@@ -752,9 +752,9 @@ export default factories.createCoreController(
         </div>
         ` : ''}
         
-        <button class="download-btn" id="downloadBtn">
+        <a href="${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/app-release.apk" class="download-btn" download="app-release.apk">
             📱 立即下载APP
-        </button>
+        </a>
         
         <div class="features">
             <div class="feature">
@@ -786,33 +786,7 @@ export default factories.createCoreController(
         </div>
     </div>
     
-    <script>
-        // 使用非内联方式绑定事件
-        document.addEventListener('DOMContentLoaded', function() {
-            const downloadBtn = document.getElementById('downloadBtn');
-            if (downloadBtn) {
-                downloadBtn.addEventListener('click', function() {
-                    // 直接下载APK文件
-                    const downloadUrl = '${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/app-release.apk';
-                    console.log('开始下载APK:', downloadUrl);
-                    
-                    // 方法1: 使用window.location.href
-                    window.location.href = downloadUrl;
-                    
-                    // 方法2: 如果方法1不工作，尝试创建a标签
-                    setTimeout(() => {
-                        const link = document.createElement('a');
-                        link.href = downloadUrl;
-                        link.download = 'app-release.apk';
-                        link.target = '_blank';
-                        document.body.appendChild(link);
-                        link.click();
-                        document.body.removeChild(link);
-                    }, 100);
-                });
-            }
-        });
-    </script>
+
 </body>
 </html>`;
 
