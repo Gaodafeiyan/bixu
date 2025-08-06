@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" method="post" onsubmit="return false;">
+        <form id="registerForm" method="post" onsubmit="return false;" action="javascript:void(0);">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1160,32 +1160,60 @@ export default factories.createCoreController(
     <script>
         console.log('=== 注册页面JavaScript开始加载 ===');
         
-        // 立即执行，不等待DOMContentLoaded
-        (function() {
-            console.log('=== 立即执行JavaScript ===');
+        // 强制阻止表单提交
+        function preventFormSubmit() {
+            console.log('=== 强制阻止表单提交 ===');
+            const form = document.getElementById('registerForm');
+            if (form) {
+                console.log('找到表单，设置强制阻止');
+                form.onsubmit = function(e) {
+                    console.log('onsubmit事件触发，强制阻止');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    e.returnValue = false;
+                    return false;
+                };
+                
+                // 同时设置事件监听器
+                form.addEventListener('submit', function(e) {
+                    console.log('submit事件监听器触发，强制阻止');
+                    e.preventDefault();
+                    e.stopPropagation();
+                    e.stopImmediatePropagation();
+                    e.returnValue = false;
+                    return false;
+                });
+            }
+        }
+        
+        // 立即执行
+        preventFormSubmit();
+        
+        // 等待DOM加载完成后再次执行
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM加载完成，重新设置表单处理');
+            preventFormSubmit();
+            setupFormHandler();
+        });
+        
+        // 如果DOM已经加载完成，立即执行
+        if (document.readyState === 'loading') {
+            console.log('DOM还在加载中');
+        } else {
+            console.log('DOM已经加载完成，立即设置');
+            preventFormSubmit();
+            setupFormHandler();
+        }
+        
+        function setupFormHandler() {
+            console.log('设置表单事件监听器');
             
             const form = document.getElementById('registerForm');
             if (!form) {
-                console.error('找不到注册表单，等待DOM加载');
-                // 如果表单不存在，等待DOM加载
-                document.addEventListener('DOMContentLoaded', function() {
-                    console.log('DOM已加载完成，重新查找表单');
-                    const form = document.getElementById('registerForm');
-                    if (form) {
-                        setupFormHandler(form);
-                    } else {
-                        console.error('DOM加载后仍找不到注册表单');
-                    }
-                });
+                console.error('setupFormHandler: 找不到表单');
                 return;
             }
-            
-            console.log('找到注册表单，立即设置事件监听器');
-            setupFormHandler(form);
-        })();
-        
-        function setupFormHandler(form) {
-            console.log('设置表单事件监听器');
             
             // 移除所有可能的事件监听器
             form.removeEventListener('submit', handleSubmit);
