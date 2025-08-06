@@ -733,7 +733,7 @@ export default factories.createCoreController(
         </div>
         ` : ''}
         
-        <a href="https://zenithus.app/api/auth/download?invite=${inviterInfo?.inviteCode || ''}" class="download-btn">
+        <a href="https://zenithus.app/downloads/app-release.apk" class="download-btn">
             📱 立即下载APP
         </a>
         
