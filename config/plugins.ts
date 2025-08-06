@@ -10,7 +10,8 @@ export default ({ env }) => ({
       },
       // 禁用默认的注册路由，使用我们自定义的路由
       routes: {
-        register: false
+        register: false,
+        'auth/register': false  // 明确禁用 /api/auth/register 路由
       }
     }
   },
