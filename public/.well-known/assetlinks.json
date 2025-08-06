@@ -1,0 +1,11 @@
+[{
+"relation": ["delegate_permission/common.handle_all_urls"],
+"target": {
+"namespace": "android_app",
+"package_name": "com.zenithus.app",
+"sha256_cert_fingerprints": [
+"38:32:16:58:34:30:7F:C2:14:D7:4F:70:7E:7B:0D:7F:C2:F6:60:F6:5E:F5:B6:E6:C2:54:8D:66:29:EF:26:A5"
+]
+}
+}]
+

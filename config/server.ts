@@ -13,7 +13,8 @@ export default ({ env }) => ({
   // 添加静态文件服务配置
   static: {
     enabled: true,
-    path: '/downloads',
-    directory: '../',
-  },
+path: '/',
+directory: './public',
+},
 });
+
