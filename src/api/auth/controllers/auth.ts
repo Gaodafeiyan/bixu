@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm">
+        <form id="registerForm" action="javascript:void(0);" onsubmit="return false;">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1175,8 +1175,16 @@ export default factories.createCoreController(
                 console.log('表单提交事件触发');
                 e.preventDefault();
                 e.stopPropagation();
+                e.stopImmediatePropagation();
                 
                 console.log('阻止默认提交行为');
+                
+                // 禁用提交按钮防止重复提交
+                const submitBtn = this.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '注册中...';
+                }
                 
                 const formData = new FormData(this);
                 const data = {
@@ -1210,10 +1218,20 @@ export default factories.createCoreController(
                         }, 2000);
                     } else {
                         document.getElementById('message').innerHTML = '<div class="error">注册失败：' + result.message + '</div>';
+                        // 恢复提交按钮
+                        if (submitBtn) {
+                            submitBtn.disabled = false;
+                            submitBtn.textContent = '立即注册';
+                        }
                     }
                 } catch (error) {
                     console.error('注册请求失败:', error);
                     document.getElementById('message').innerHTML = '<div class="error">注册失败：网络错误 - ' + error.message + '</div>';
+                    // 恢复提交按钮
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '立即注册';
+                    }
                 }
             });
             
