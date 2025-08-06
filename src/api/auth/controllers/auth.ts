@@ -933,7 +933,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <a href="https://zenithus.app/invite/${inviterInfo?.inviteCode || ''}" class="open-app-btn">
+        <a href="intent://invite/${inviterInfo?.inviteCode || ''}#Intent;scheme=https;package=com.zenithus.app;end" class="open-app-btn">
             📱 立即打开APP
         </a>
         
@@ -946,7 +946,8 @@ export default factories.createCoreController(
     <script>
         // 自动触发 AppLink
         setTimeout(function() {
-            window.location.href = 'https://zenithus.app/invite/${inviterInfo?.inviteCode || ''}';
+            // 尝试使用intent://格式
+            window.location.href = 'intent://invite/${inviterInfo?.inviteCode || ''}#Intent;scheme=https;package=com.zenithus.app;end';
         }, 1000);
     </script>
 </body>
