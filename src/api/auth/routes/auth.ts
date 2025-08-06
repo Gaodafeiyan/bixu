@@ -1,4 +1,5 @@
 export default {
+  type: 'content-api',
   routes: [
     // 邀请注册
     {
