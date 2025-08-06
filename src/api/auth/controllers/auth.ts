@@ -1138,7 +1138,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" method="post" onsubmit="return false;" action="/api/auth/invite-register">
+        <form id="registerForm" method="post" action="/api/auth/invite-register">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1168,40 +1168,9 @@ export default factories.createCoreController(
     <script>
         console.log('=== 注册页面JavaScript开始加载 ===');
         
-        // 强制阻止表单提交
-        function preventFormSubmit() {
-            console.log('=== 强制阻止表单提交 ===');
-            const form = document.getElementById('registerForm');
-            if (form) {
-                console.log('找到表单，设置强制阻止');
-                form.onsubmit = function(e) {
-                    console.log('onsubmit事件触发，强制阻止');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    e.returnValue = false;
-                    return false;
-                };
-                
-                // 同时设置事件监听器
-                form.addEventListener('submit', function(e) {
-                    console.log('submit事件监听器触发，强制阻止');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    e.stopImmediatePropagation();
-                    e.returnValue = false;
-                    return false;
-                });
-            }
-        }
-        
-        // 立即执行
-        preventFormSubmit();
-        
-        // 等待DOM加载完成后再次执行
+        // 等待DOM加载完成后设置表单处理
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM加载完成，重新设置表单处理');
-            preventFormSubmit();
+            console.log('DOM加载完成，设置表单处理');
             setupFormHandler();
         });
         
@@ -1210,7 +1179,6 @@ export default factories.createCoreController(
             console.log('DOM还在加载中');
         } else {
             console.log('DOM已经加载完成，立即设置');
-            preventFormSubmit();
             setupFormHandler();
         }
         
@@ -1222,9 +1190,6 @@ export default factories.createCoreController(
                 console.error('setupFormHandler: 找不到表单');
                 return;
             }
-            
-            // 移除所有可能的事件监听器
-            form.removeEventListener('submit', handleSubmit);
             
             // 添加表单提交事件监听器
             form.addEventListener('submit', async (e) => {
