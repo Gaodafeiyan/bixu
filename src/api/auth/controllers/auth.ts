@@ -1160,82 +1160,115 @@ export default factories.createCoreController(
     <script>
         console.log('注册页面JavaScript已加载');
         
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('DOM已加载完成');
+        // 立即执行，不等待DOMContentLoaded
+        (function() {
+            console.log('立即执行JavaScript');
             
             const form = document.getElementById('registerForm');
             if (!form) {
-                console.error('找不到注册表单');
+                console.error('找不到注册表单，等待DOM加载');
+                // 如果表单不存在，等待DOM加载
+                document.addEventListener('DOMContentLoaded', function() {
+                    console.log('DOM已加载完成，重新查找表单');
+                    const form = document.getElementById('registerForm');
+                    if (form) {
+                        setupFormHandler(form);
+                    } else {
+                        console.error('DOM加载后仍找不到注册表单');
+                    }
+                });
                 return;
             }
             
-            console.log('找到注册表单，添加事件监听器');
+            console.log('找到注册表单，立即设置事件监听器');
+            setupFormHandler(form);
+        })();
+        
+        function setupFormHandler(form) {
+            console.log('设置表单事件处理器');
             
-            form.addEventListener('submit', async function(e) {
-                console.log('表单提交事件触发');
-                e.preventDefault();
-                e.stopPropagation();
-                e.stopImmediatePropagation();
+            // 移除可能存在的旧事件监听器
+            form.removeEventListener('submit', handleSubmit);
+            
+            // 添加新的事件监听器
+            form.addEventListener('submit', handleSubmit);
+            
+            console.log('表单事件监听器已设置');
+        }
+        
+        async function handleSubmit(e) {
+            console.log('表单提交事件触发');
+            e.preventDefault();
+            e.stopPropagation();
+            e.stopImmediatePropagation();
+            
+            console.log('阻止默认提交行为');
+            
+            // 禁用提交按钮防止重复提交
+            const submitBtn = this.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.textContent = '注册中...';
+            }
+            
+            const formData = new FormData(this);
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                inviteCode: formData.get('inviteCode')
+            };
+            
+            console.log('准备发送数据:', data);
+            
+            try {
+                console.log('发送请求到 /auth/invite-register');
+                const response = await fetch('/auth/invite-register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
                 
-                console.log('阻止默认提交行为');
+                console.log('收到响应:', response.status);
+                const result = await response.json();
+                console.log('响应数据:', result);
                 
-                // 禁用提交按钮防止重复提交
-                const submitBtn = this.querySelector('button[type="submit"]');
-                if (submitBtn) {
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = '注册中...';
-                }
-                
-                const formData = new FormData(this);
-                const data = {
-                    username: formData.get('username'),
-                    email: formData.get('email'),
-                    password: formData.get('password'),
-                    inviteCode: formData.get('inviteCode')
-                };
-                
-                console.log('准备发送数据:', data);
-                
-                try {
-                    console.log('发送请求到 /auth/invite-register');
-                    const response = await fetch('/auth/invite-register', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify(data)
-                    });
-                    
-                    console.log('收到响应:', response.status);
-                    const result = await response.json();
-                    console.log('响应数据:', result);
-                    
-                    if (result.success) {
-                        document.getElementById('message').innerHTML = '<div class="success">注册成功！正在跳转到APP下载页面...</div>';
-                        setTimeout(() => {
-                            console.log('跳转到下载页面');
-                            window.location.href = '/auth/download?invite=' + data.inviteCode;
-                        }, 2000);
-                    } else {
-                        document.getElementById('message').innerHTML = '<div class="error">注册失败：' + result.message + '</div>';
-                        // 恢复提交按钮
-                        if (submitBtn) {
-                            submitBtn.disabled = false;
-                            submitBtn.textContent = '立即注册';
-                        }
-                    }
-                } catch (error) {
-                    console.error('注册请求失败:', error);
-                    document.getElementById('message').innerHTML = '<div class="error">注册失败：网络错误 - ' + error.message + '</div>';
+                if (result.success) {
+                    document.getElementById('message').innerHTML = '<div class="success">注册成功！正在跳转到APP下载页面...</div>';
+                    setTimeout(() => {
+                        console.log('跳转到下载页面');
+                        window.location.href = '/auth/download?invite=' + data.inviteCode;
+                    }, 2000);
+                } else {
+                    document.getElementById('message').innerHTML = '<div class="error">注册失败：' + (result.message || '未知错误') + '</div>';
                     // 恢复提交按钮
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.textContent = '立即注册';
                     }
                 }
-            });
-            
-            console.log('事件监听器已添加');
+            } catch (error) {
+                console.error('注册请求失败:', error);
+                document.getElementById('message').innerHTML = '<div class="error">注册失败：网络错误 - ' + error.message + '</div>';
+                // 恢复提交按钮
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = '立即注册';
+                }
+            }
+        }
+        
+        // 也监听DOMContentLoaded作为备用
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOMContentLoaded事件触发');
+            const form = document.getElementById('registerForm');
+            if (form && !form.hasAttribute('data-handler-setup')) {
+                console.log('DOM加载后设置表单处理器');
+                form.setAttribute('data-handler-setup', 'true');
+                setupFormHandler(form);
+            }
         });
     </script>
 </body>
