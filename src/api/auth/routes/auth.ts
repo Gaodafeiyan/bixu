@@ -1,5 +1,4 @@
 export default {
-  type: 'content-api',
   routes: [
     // 邀请注册
     {
@@ -7,7 +6,6 @@ export default {
       path: '/auth/invite-register',
       handler: 'auth.inviteRegister',
       config: {
-        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -19,7 +17,6 @@ export default {
       path: '/auth/local',
       handler: 'auth.local',
       config: {
-        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -31,7 +28,6 @@ export default {
       path: '/auth/my-invite-code',
       handler: 'auth.getMyInviteCode',
       config: {
-        type: 'content-api',
         auth: {},  // 空对象表示需要登录
       },
     },
@@ -41,7 +37,6 @@ export default {
       path: '/auth/invite-info',
       handler: 'auth.getInviteInfo',
       config: {
-        type: 'content-api',
         auth: {},  // 空对象表示需要登录
       },
     },
@@ -51,7 +46,6 @@ export default {
       path: '/auth/generate-invite-link',
       handler: 'auth.generateInviteLink',
       config: {
-        type: 'content-api',
         auth: {},  // 空对象表示需要登录
       },
     },
@@ -61,7 +55,6 @@ export default {
       path: '/auth/invite-qr-code',
       handler: 'auth.getInviteQRCode',
       config: {
-        type: 'content-api',
         auth: {},  // 空对象表示需要登录
       },
     },
@@ -71,7 +64,6 @@ export default {
       path: '/auth/track-invite-share',
       handler: 'auth.trackInviteShare',
       config: {
-        type: 'content-api',
         auth: {},  // 空对象表示需要登录
       },
     },
@@ -81,7 +73,6 @@ export default {
       path: '/auth/change-password',
       handler: 'auth.changePassword',
       config: {
-        type: 'content-api',
         auth: {},  // 空对象表示需要登录
       },
     },
@@ -91,7 +82,6 @@ export default {
       path: '/auth/my-team',
       handler: 'auth.getMyTeam',
       config: {
-        type: 'content-api',
         auth: {},  // 空对象表示需要登录
       },
     },
@@ -101,7 +91,6 @@ export default {
       path: '/auth/validate-invite-code/:inviteCode',
       handler: 'auth.validateInviteCode',
       config: {
-        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -113,7 +102,6 @@ export default {
       path: '/auth/download-apk',
       handler: 'auth.downloadApk',
       config: {
-        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -125,7 +113,6 @@ export default {
       path: '/auth/download',
       handler: 'auth.downloadPage',
       config: {
-        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -137,7 +124,6 @@ export default {
       path: '/api/invite/:inviteCode',
       handler: 'auth.invitePage',
       config: {
-        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -149,7 +135,6 @@ export default {
       path: '/invite/:inviteCode',
       handler: 'auth.invitePage',
       config: {
-        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
@@ -161,7 +146,6 @@ export default {
       path: '/register',
       handler: 'auth.registerPage',
       config: {
-        type: 'content-api',
         auth: false,
         policies: [],
         middlewares: [],
