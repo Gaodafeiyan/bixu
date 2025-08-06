@@ -20,9 +20,9 @@ async function testInviteCodeValidation() {
 
     // 2. 测试下载页面API
     console.log('2. 测试下载页面API...');
-    console.log(`URL: ${BASE_URL}/api/auth/download?invite=${TEST_INVITE_CODE}`);
+    console.log(`URL: ${BASE_URL}/auth/download?invite=${TEST_INVITE_CODE}`);
     
-    const downloadResponse = await axios.get(`${BASE_URL}/api/auth/download?invite=${TEST_INVITE_CODE}`);
+    const downloadResponse = await axios.get(`${BASE_URL}/auth/download?invite=${TEST_INVITE_CODE}`);
     
     console.log('✅ 下载页面API响应状态:', downloadResponse.status);
     console.log('✅ 下载页面是否包含邀请码:', downloadResponse.data.includes(TEST_INVITE_CODE));
@@ -30,7 +30,7 @@ async function testInviteCodeValidation() {
 
     // 3. 测试邀请链接格式
     console.log('3. 测试邀请链接格式...');
-    const inviteLink = `${BASE_URL}/api/auth/download?invite=${TEST_INVITE_CODE}`;
+    const inviteLink = `${BASE_URL}/auth/download?invite=${TEST_INVITE_CODE}`;
     console.log('邀请链接:', inviteLink);
     console.log('');
 

@@ -378,7 +378,7 @@ export default factories.createCoreController(
         }
 
         // 生成包含邀请码的深度链接
-        const deepLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/api/auth/download?invite=${user.inviteCode}`;
+        const deepLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/auth/download?invite=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
         const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
@@ -451,7 +451,7 @@ export default factories.createCoreController(
         }
 
         // 生成包含邀请码的APP下载链接
-        const appDownloadLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/api/auth/download?invite=${user.inviteCode}`;
+        const appDownloadLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/auth/download?invite=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
         const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
@@ -938,7 +938,7 @@ export default factories.createCoreController(
         </a>
         
         <br>
-        <a href="https://zenithus.app/api/auth/download?invite=${inviterInfo?.inviteCode || ''}" class="fallback-btn">
+        <a href="https://zenithus.app/auth/download?invite=${inviterInfo?.inviteCode || ''}" class="fallback-btn">
             📥 下载APP
         </a>
     </div>
@@ -1183,7 +1183,7 @@ export default factories.createCoreController(
                 if (result.success) {
                     document.getElementById('message').innerHTML = '<div class="success">注册成功！正在跳转到APP下载页面...</div>';
                     setTimeout(() => {
-                        window.location.href = '/api/auth/download?invite=' + data.inviteCode;
+                        window.location.href = '/auth/download?invite=' + data.inviteCode;
                     }, 2000);
                 } else {
                     document.getElementById('message').innerHTML = '<div class="error">注册失败：' + result.message + '</div>';
