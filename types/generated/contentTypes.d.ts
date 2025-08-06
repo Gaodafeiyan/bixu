@@ -435,6 +435,45 @@ export interface ApiAiTokenAiToken extends Schema.CollectionType {
   };
 }
 
+export interface ApiBannerBanner extends Schema.CollectionType {
+  collectionName: 'banners';
+  info: {
+    description: '\u9996\u9875\u8F6E\u64AD\u56FE';
+    displayName: 'Banner';
+    pluralName: 'banners';
+    singularName: 'banner';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    createdAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::banner.banner',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    description: Attribute.Text;
+    endDate: Attribute.DateTime;
+    image: Attribute.Media<'images'>;
+    isActive: Attribute.Boolean & Attribute.DefaultTo<true>;
+    link: Attribute.String;
+    order: Attribute.Integer & Attribute.DefaultTo<0>;
+    publishedAt: Attribute.DateTime;
+    startDate: Attribute.DateTime;
+    subtitle: Attribute.String;
+    title: Attribute.String & Attribute.Required;
+    updatedAt: Attribute.DateTime;
+    updatedBy: Attribute.Relation<
+      'api::banner.banner',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+  };
+}
+
 export interface ApiChoujiangJiLuChoujiangJiLu extends Schema.CollectionType {
   collectionName: 'choujiang_ji_lus';
   info: {
@@ -938,6 +977,49 @@ export interface ApiNoticeNotice extends Schema.CollectionType {
       'admin::user'
     > &
       Attribute.Private;
+  };
+}
+
+export interface ApiProductIntroProductIntro extends Schema.CollectionType {
+  collectionName: 'product_intros';
+  info: {
+    description: '\u4EA7\u54C1\u4ECB\u7ECD';
+    displayName: 'Product Introduction';
+    pluralName: 'product-intros';
+    singularName: 'product-intro';
+  };
+  options: {
+    draftAndPublish: true;
+  };
+  attributes: {
+    benefits: Attribute.Component<'product.benefit', true>;
+    createdAt: Attribute.DateTime;
+    createdBy: Attribute.Relation<
+      'api::product-intro.product-intro',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    fullDescription: Attribute.RichText;
+    gallery: Attribute.Media<'images', true>;
+    highlights: Attribute.JSON;
+    ingredients: Attribute.Component<'product.ingredient', true>;
+    isActive: Attribute.Boolean & Attribute.DefaultTo<true>;
+    mainImage: Attribute.Media<'images'>;
+    order: Attribute.Integer & Attribute.DefaultTo<0>;
+    precautions: Attribute.RichText;
+    productName: Attribute.String & Attribute.Required;
+    productSubtitle: Attribute.String;
+    publishedAt: Attribute.DateTime;
+    shortDescription: Attribute.Text;
+    updatedAt: Attribute.DateTime;
+    updatedBy: Attribute.Relation<
+      'api::product-intro.product-intro',
+      'oneToOne',
+      'admin::user'
+    > &
+      Attribute.Private;
+    usageInstructions: Attribute.RichText;
   };
 }
 
@@ -2204,6 +2286,7 @@ declare module '@strapi/types' {
       'admin::transfer-token-permission': AdminTransferTokenPermission;
       'admin::user': AdminUser;
       'api::ai-token.ai-token': ApiAiTokenAiToken;
+      'api::banner.banner': ApiBannerBanner;
       'api::choujiang-ji-lu.choujiang-ji-lu': ApiChoujiangJiLuChoujiangJiLu;
       'api::choujiang-jiangpin.choujiang-jiangpin': ApiChoujiangJiangpinChoujiangJiangpin;
       'api::choujiang-jihui.choujiang-jihui': ApiChoujiangJihuiChoujiangJihui;
@@ -2211,6 +2294,7 @@ declare module '@strapi/types' {
       'api::dinggou-jihua.dinggou-jihua': ApiDinggouJihuaDinggouJihua;
       'api::lottery-group.lottery-group': ApiLotteryGroupLotteryGroup;
       'api::notice.notice': ApiNoticeNotice;
+      'api::product-intro.product-intro': ApiProductIntroProductIntro;
       'api::qianbao-yue.qianbao-yue': ApiQianbaoYueQianbaoYue;
       'api::recharge-channel.recharge-channel': ApiRechargeChannelRechargeChannel;
       'api::recharge-order.recharge-order': ApiRechargeOrderRechargeOrder;
