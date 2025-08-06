@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" action="#" method="post" onsubmit="return false;">
+        <form id="registerForm" action="javascript:void(0);" method="post">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1273,6 +1273,19 @@ export default factories.createCoreController(
             // 最后再次确保阻止默认行为
             return false;
         }
+        
+        // 添加全局点击事件监听器作为最后的备用
+        document.addEventListener('click', function(e) {
+            if (e.target && e.target.matches('button[type="submit"]')) {
+                console.log('全局点击事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                const form = e.target.closest('form');
+                if (form) {
+                    handleSubmit.call(form, e);
+                }
+            }
+        });
         
         // 也监听按钮点击事件作为备用
         document.addEventListener('click', function(e) {
