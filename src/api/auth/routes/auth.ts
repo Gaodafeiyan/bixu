@@ -152,6 +152,17 @@ export default {
         middlewares: [],
       },
     },
+    // 重定向旧路径到新路径
+    {
+      method: 'GET',
+      path: '/api/auth/register',
+      handler: 'auth.redirectToRegister',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
 
   ],
 }; 
