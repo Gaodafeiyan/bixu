@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" action="javascript:void(0);" method="post" onsubmit="return false;">
+        <form id="registerForm" action="#" method="post" onsubmit="return false;">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
