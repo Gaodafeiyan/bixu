@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" action="#" method="post" onsubmit="return false;">
+        <form id="registerForm" method="post">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1157,11 +1157,8 @@ export default factories.createCoreController(
         <div id="message"></div>
     </div>
     
-    <script>
-        console.log('=== 注册页面JavaScript开始加载 ===');
-        
-        // 等待DOM完全加载
-        document.addEventListener('DOMContentLoaded', function() {
+    <script defer>
+        document.addEventListener('DOMContentLoaded', () => {
             console.log('=== DOM加载完成，开始设置事件监听器 ===');
             
             const form = document.getElementById('registerForm');
@@ -1172,11 +1169,14 @@ export default factories.createCoreController(
             
             console.log('找到注册表单，设置事件监听器');
             
-            // 移除所有可能的事件监听器
+            // 移除可能存在的旧事件监听器
             form.removeEventListener('submit', handleSubmit);
             
             // 添加表单提交事件监听器
-            form.addEventListener('submit', handleSubmit);
+            form.addEventListener('submit', async (e) => {
+                e.preventDefault(); // 必须阻止默认提交
+                await handleSubmit(e);
+            });
             
             console.log('表单事件监听器设置完成');
         });
@@ -1184,14 +1184,8 @@ export default factories.createCoreController(
         async function handleSubmit(e) {
             console.log('=== 表单提交事件触发 ===');
             
-            // 阻止默认行为
-            e.preventDefault();
-            e.stopPropagation();
-            
-            console.log('已阻止默认提交行为');
-            
             // 获取表单数据
-            const formData = new FormData(this);
+            const formData = new FormData(e.target);
             const data = {
                 username: formData.get('username'),
                 email: formData.get('email'),
@@ -1202,15 +1196,15 @@ export default factories.createCoreController(
             console.log('准备发送数据:', data);
             
             // 禁用提交按钮
-            const submitBtn = this.querySelector('button[type="submit"]');
+            const submitBtn = e.target.querySelector('button[type="submit"]');
             if (submitBtn) {
                 submitBtn.disabled = true;
                 submitBtn.textContent = '注册中...';
             }
             
             try {
-                console.log('发送请求到 /auth/invite-register');
-                const response = await fetch('/auth/invite-register', {
+                console.log('发送请求到 /api/auth/invite-register');
+                const response = await fetch('/api/auth/invite-register', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -1219,17 +1213,20 @@ export default factories.createCoreController(
                 });
                 
                 console.log('收到响应:', response.status);
-                const result = await response.json();
-                console.log('响应数据:', result);
                 
-                if (result.success) {
+                if (response.ok) {
+                    const result = await response.json();
+                    console.log('响应数据:', result);
+                    
                     document.getElementById('message').innerHTML = '<div class="success">注册成功！正在跳转到APP下载页面...</div>';
                     setTimeout(() => {
                         console.log('跳转到下载页面');
                         window.location.href = '/auth/download?invite=' + data.inviteCode;
                     }, 2000);
                 } else {
-                    document.getElementById('message').innerHTML = '<div class="error">注册失败：' + (result.message || '未知错误') + '</div>';
+                    const errorData = await response.json();
+                    const errorMessage = errorData.message || '注册失败';
+                    document.getElementById('message').innerHTML = '<div class="error">注册失败：' + errorMessage + '</div>';
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.textContent = '立即注册';
@@ -1243,8 +1240,6 @@ export default factories.createCoreController(
                     submitBtn.textContent = '立即注册';
                 }
             }
-            
-            return false;
         }
     </script>
 </body>
