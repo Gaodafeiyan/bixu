@@ -1,4 +1,5 @@
 export default {
+  type: 'content-api',
   routes: [
     // 邀请注册
     {
@@ -145,6 +146,17 @@ export default {
       method: 'GET',
       path: '/register',
       handler: 'auth.registerPage',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    // 重定向旧路径到新路径
+    {
+      method: 'GET',
+      path: '/api/auth/register',
+      handler: 'auth.redirectToRegister',
       config: {
         auth: false,
         policies: [],
