@@ -1205,100 +1205,98 @@ export default factories.createCoreController(
       }
     },
 
-    // H5邀请注册接口
+    // H5邀请注册接口 - 更新现有函数
     async inviteRegister(ctx) {
       try {
         const { username, email, password, inviteCode } = ctx.request.body;
         
-        // 验证必填字段
-        if (!username || !email || !password) {
-          return ctx.badRequest('用户名、邮箱和密码为必填项');
+        if (!username || !email || !password || !inviteCode) {
+          return ctx.badRequest('缺少必要参数');
         }
-        
+
         // 验证邀请码
-        if (!inviteCode) {
-          return ctx.badRequest('邀请码为必填项');
-        }
-        
-        // 查找邀请人
-        const inviter = await strapi.entityService.findMany('plugin::users-permissions.user', {
-          filters: { inviteCode: inviteCode } as any
+        const inviteUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { inviteCode } as any
         });
-        
-        if (inviter.length === 0) {
+
+        if (inviteUser.length === 0) {
           return ctx.badRequest('邀请码无效');
         }
-        
-        const inviterUser = inviter[0];
-        
-        // 检查邮箱是否已存在
-        const existingUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
-          filters: { email: email } as any
-        });
-        
-        if (existingUser.length > 0) {
-          return ctx.badRequest('该邮箱已被注册');
-        }
-        
+
         // 检查用户名是否已存在
-        const existingUsername = await strapi.entityService.findMany('plugin::users-permissions.user', {
-          filters: { username: username } as any
+        const existingUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { username } as any
         });
-        
-        if (existingUsername.length > 0) {
-          return ctx.badRequest('该用户名已被使用');
+
+        if (existingUser.length > 0) {
+          return ctx.badRequest('用户名已存在');
         }
-        
-        // 生成邀请码
-        const newInviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
-        
-        // 创建新用户
+
+        // 检查邮箱是否已存在
+        const existingEmail = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { email }
+        });
+
+        if (existingEmail.length > 0) {
+          return ctx.badRequest('邮箱已存在');
+        }
+
+        // 获取authenticated角色
+        const [authenticatedRole] = await strapi.entityService.findMany('plugin::users-permissions.role', {
+          filters: { type: 'authenticated' },
+          limit: 1
+        }) as any[];
+
+        if (!authenticatedRole) {
+          return ctx.badRequest('系统错误：未找到默认角色');
+        }
+
+        // 使用Strapi实体服务创建用户，确保密码正确加密
         const newUser = await strapi.entityService.create('plugin::users-permissions.user', {
           data: {
             username,
             email,
             password,
-            inviteCode: newInviteCode,
-            confirmed: true,
+            provider: 'local',
+            confirmed: true,  // 自动确认用户
             blocked: false,
-            role: 1, // 普通用户角色
-            inviterId: inviterUser.id, // 设置邀请人ID
-            invitedAt: new Date(),
+            inviteCode: generateInviteCode(),
+            invitedBy: inviteUser[0].id,
+            role: authenticatedRole.id  // 使用正确的角色ID
           }
         });
-        
-        // 更新邀请人的邀请统计
-        await strapi.entityService.update('plugin::users-permissions.user', inviterUser.id, {
+
+        // 确保用户有正确的角色
+        const userWithRole = newUser as any;
+        if (!userWithRole.role) {
+          // 如果没有角色，手动设置默认角色
+          await strapi.plugin('users-permissions').service('user').edit(newUser.id, {
+            role: authenticatedRole.id
+          });
+        }
+
+        // 创建用户钱包
+        await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
           data: {
-            inviteCount: (inviterUser.inviteCount || 0) + 1,
-            lastInviteAt: new Date()
-          }
+            usdtYue: '0',
+            aiYue: '0',
+            aiTokenBalances: '{}',
+            user: newUser.id
+          } as any
         });
-        
-        // 记录邀请关系
-        await strapi.entityService.create('api::invitation-reward-config.invitation-reward-config', {
-          data: {
-            inviterId: inviterUser.id,
-            inviteeId: newUser.id,
-            inviteCode: inviteCode,
-            status: 'active',
-            createdAt: new Date()
-          }
-        });
-        
-        console.log(`H5注册成功: ${username} (${email}) 被 ${inviterUser.username} 邀请`);
-        
+
+        console.log(`H5注册成功: ${username} (${email}) 被 ${inviteUser[0].username} 邀请`);
+
         ctx.body = {
           success: true,
-          message: '注册成功！',
           data: {
-            userId: newUser.id,
+            id: newUser.id,
             username: newUser.username,
             email: newUser.email,
             inviteCode: newUser.inviteCode
-          }
+          },
+          message: '注册成功'
         };
-        
       } catch (error) {
         console.error('H5注册失败:', error);
         ctx.throw(500, `注册失败: ${error.message}`);
