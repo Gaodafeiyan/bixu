@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" method="post">
+        <form id="registerForm" method="post" onsubmit="return false;">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1157,29 +1157,54 @@ export default factories.createCoreController(
         <div id="message"></div>
     </div>
     
-    <script defer>
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('=== DOM加载完成，开始设置事件监听器 ===');
+    <script>
+        console.log('=== 注册页面JavaScript开始加载 ===');
+        
+        // 立即执行，不等待DOMContentLoaded
+        (function() {
+            console.log('=== 立即执行JavaScript ===');
             
             const form = document.getElementById('registerForm');
             if (!form) {
-                console.error('找不到注册表单');
+                console.error('找不到注册表单，等待DOM加载');
+                // 如果表单不存在，等待DOM加载
+                document.addEventListener('DOMContentLoaded', function() {
+                    console.log('DOM已加载完成，重新查找表单');
+                    const form = document.getElementById('registerForm');
+                    if (form) {
+                        setupFormHandler(form);
+                    } else {
+                        console.error('DOM加载后仍找不到注册表单');
+                    }
+                });
                 return;
             }
             
-            console.log('找到注册表单，设置事件监听器');
+            console.log('找到注册表单，立即设置事件监听器');
+            setupFormHandler(form);
+        })();
+        
+        function setupFormHandler(form) {
+            console.log('设置表单事件监听器');
             
-            // 移除可能存在的旧事件监听器
+            // 移除所有可能的事件监听器
             form.removeEventListener('submit', handleSubmit);
             
             // 添加表单提交事件监听器
             form.addEventListener('submit', async (e) => {
+                console.log('=== 表单提交事件触发 ===');
                 e.preventDefault(); // 必须阻止默认提交
+                e.stopPropagation();
+                e.stopImmediatePropagation();
+                e.returnValue = false;
+                
+                console.log('已阻止默认提交行为');
                 await handleSubmit(e);
+                return false;
             });
             
             console.log('表单事件监听器设置完成');
-        });
+        }
         
         async function handleSubmit(e) {
             console.log('=== 表单提交事件触发 ===');
