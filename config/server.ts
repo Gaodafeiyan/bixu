@@ -10,10 +10,10 @@ export default ({ env }) => ({
   jwt: {
     secret: env('JWT_SECRET', 'your-jwt-secret-key-here'),
   },
-  // 添加静态文件服务配置
+  // 修改静态文件服务配置
   static: {
     enabled: true,
-    path: '/downloads',
-    directory: '../',
+    path: '/public',
+    directory: './public',
   },
 });

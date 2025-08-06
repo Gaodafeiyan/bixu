@@ -752,7 +752,7 @@ export default factories.createCoreController(
         </div>
         ` : ''}
         
-        <a href="${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/app-release.apk" class="download-btn" download="app-release.apk">
+        <a href="https://zenithus.app/api/auth/download?invite=${inviterInfo?.inviteCode || ''}" class="download-btn">
             📱 立即下载APP
         </a>
         
@@ -796,6 +796,177 @@ export default factories.createCoreController(
       } catch (error) {
         console.error('下载页面生成失败:', error);
         ctx.throw(500, `下载页面生成失败: ${error.message}`);
+      }
+    },
+
+    // 纯 HTTPS 邀请链接处理
+    async invitePage(ctx) {
+      try {
+        const { inviteCode } = ctx.params;
+        
+        // 验证邀请码有效性
+        let inviterInfo = null;
+        if (inviteCode) {
+          const inviteUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
+            filters: { inviteCode: inviteCode } as any
+          });
+          
+          if (inviteUser.length > 0) {
+            inviterInfo = {
+              username: inviteUser[0].username,
+              inviteCode: inviteCode
+            };
+          }
+        }
+
+        // 返回简单的邀请页面，直接触发 AppLink
+        const html = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenithus 邀请链接</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #0A0F1A 0%, #1C263B 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #0A0F1A, #1C263B);
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .diamond {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        h1 {
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .invite-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #D4AF37;
+        }
+        .invite-code {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 10px 0;
+        }
+        .open-app-btn {
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 10px;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+            text-decoration: none;
+            display: inline-block;
+        }
+        .open-app-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(212, 175, 55, 0.4);
+        }
+        .fallback-btn {
+            background: #666;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 15px;
+            font-size: 14px;
+            cursor: pointer;
+            margin: 10px;
+            text-decoration: none;
+            display: inline-block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="diamond"></div>
+        </div>
+        <h1>Zenithus AI大健康出海平台</h1>
+        
+        ${inviterInfo ? `
+        <div class="invite-info">
+            <p>🎉 您被 <strong>${inviterInfo.username}</strong> 邀请加入</p>
+            <p>邀请码：<span class="invite-code">${inviterInfo.inviteCode}</span></p>
+            <p style="font-size: 14px; color: #666;">点击下方按钮直接打开APP</p>
+        </div>
+        ` : `
+        <div class="invite-info">
+            <p>🎉 欢迎加入 Zenithus</p>
+            <p style="font-size: 14px; color: #666;">点击下方按钮直接打开APP</p>
+        </div>
+        `}
+        
+        <a href="https://zenithus.app/invite/${inviterInfo?.inviteCode || ''}" class="open-app-btn">
+            📱 立即打开APP
+        </a>
+        
+        <br>
+        <a href="https://zenithus.app/api/auth/download?invite=${inviterInfo?.inviteCode || ''}" class="fallback-btn">
+            📥 下载APP
+        </a>
+    </div>
+    
+    <script>
+        // 自动触发 AppLink
+        setTimeout(function() {
+            window.location.href = 'https://zenithus.app/invite/${inviterInfo?.inviteCode || ''}';
+        }, 1000);
+    </script>
+</body>
+</html>`;
+
+        ctx.set('Content-Type', 'text/html');
+        ctx.body = html;
+        
+      } catch (error) {
+        console.error('邀请页面生成失败:', error);
+        ctx.throw(500, `邀请页面生成失败: ${error.message}`);
       }
     },
   })

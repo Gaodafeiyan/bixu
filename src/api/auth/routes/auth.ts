@@ -131,5 +131,17 @@ export default {
         middlewares: [],
       },
     },
+    // 纯 HTTPS 邀请链接路由
+    {
+      method: 'GET',
+      path: '/invite/:inviteCode',
+      handler: 'auth.invitePage',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 }; 
