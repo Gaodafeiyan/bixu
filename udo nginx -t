@@ -1,0 +1,24 @@
+[0;1;32m●[0m nginx.service - A high performance web server and a reverse proxy server
+     Loaded: loaded (/lib/systemd/system/nginx.service; enabled; vendor preset: enabled)
+     Active: [0;1;32mactive (running)[0m since Wed 2025-08-06 02:28:35 UTC; 6h ago
+       Docs: man:nginx(8)
+    Process: 2481477 ExecStartPre=/usr/sbin/nginx -t -q -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+    Process: 2481478 ExecStart=/usr/sbin/nginx -g daemon on; master_process on; (code=exited, status=0/SUCCESS)
+    Process: 2902674 ExecReload=/usr/sbin/nginx -g daemon on; master_process on; -s reload (code=exited, status=0/SUCCESS)
+   Main PID: 2481481 (nginx)
+      Tasks: 5 (limit: 4646)
+     Memory: 6.7M
+        CPU: 7.439s
+     CGroup: /system.slice/nginx.service
+             ├─2481481 "nginx: master process /usr/sbin/nginx -g daemon on; master_process on;"
+             ├─2902675 "nginx: worker process" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
+             ├─2902676 "nginx: worker process" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
+             ├─2902677 "nginx: worker process" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
+             └─2902678 "nginx: worker process" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" "" ""
+
+Aug 06 02:28:35 C202507121948224 systemd[1]: Starting A high performance web server and a reverse proxy server...
+Aug 06 02:28:35 C202507121948224 systemd[1]: Started A high performance web server and a reverse proxy server.
+Aug 06 07:42:35 C202507121948224 systemd[1]: Reloading A high performance web server and a reverse proxy server...
+Aug 06 07:42:35 C202507121948224 systemd[1]: Reloaded A high performance web server and a reverse proxy server.
+Aug 06 08:27:55 C202507121948224 systemd[1]: Reloading A high performance web server and a reverse proxy server...
+Aug 06 08:27:55 C202507121948224 systemd[1]: Reloaded A high performance web server and a reverse proxy server.
