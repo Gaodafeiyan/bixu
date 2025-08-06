@@ -551,39 +551,20 @@ export default factories.createCoreController(
       try {
         const { invite } = ctx.query;
         
-        // 如果有邀请码，验证其有效性
-        if (invite) {
-          const inviteUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
-            filters: { inviteCode: invite } as any
-          });
-          
-          if (inviteUser.length === 0) {
-            return ctx.badRequest('邀请码无效');
-          }
-        }
-
-        // 设置响应头，告诉浏览器这是一个文件下载
-        ctx.set('Content-Type', 'application/vnd.android.package-archive');
-        ctx.set('Content-Disposition', 'attachment; filename="app-release.apk"');
-        
-        // 这里应该返回实际的APK文件
-        // 返回APK下载信息
+        // 返回下载信息
         ctx.body = {
           success: true,
           message: 'APK下载功能已启用',
           inviteCode: invite || null,
-                     downloadUrl: `${process.env.FRONTEND_URL || 'https://zenithus.app'}/downloads/zenithus-v1.0.0.apk`,
+          downloadUrl: 'https://zenithus.app/app-release.apk',
           version: '1.0.0',
-          size: '25.6MB',
+          size: '76.3MB',
           description: 'Zenithus - AI大健康草本多肽出口认购平台'
         };
         
-        // 在实际部署时，这里应该返回真实的APK文件
-        // ctx.body = fs.createReadStream('/path/to/your/app-release.apk');
-        
       } catch (error) {
-        console.error('APK下载失败:', error);
-        ctx.throw(500, `APK下载失败: ${error.message}`);
+        console.error('APK下载信息获取失败:', error);
+        ctx.throw(500, `APK下载信息获取失败: ${error.message}`);
       }
     },
 
