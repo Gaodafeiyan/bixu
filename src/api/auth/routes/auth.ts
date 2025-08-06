@@ -134,7 +134,7 @@ export default {
     // 纯 HTTPS 邀请链接路由
     {
       method: 'GET',
-      path: '/invite/:inviteCode',
+      path: '/api/invite/:inviteCode',
       handler: 'auth.invitePage',
       config: {
         type: 'content-api',
