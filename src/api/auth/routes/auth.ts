@@ -158,7 +158,7 @@ export default {
     // H5注册页面路由
     {
       method: 'GET',
-      path: '/register',
+      path: '/auth/register',
       handler: 'auth.registerPage',
       config: {
         type: 'content-api',
@@ -170,7 +170,7 @@ export default {
     // H5注册接口
     {
       method: 'POST',
-      path: '/invite-register',
+      path: '/auth/invite-register',
       handler: 'auth.inviteRegister',
       config: {
         type: 'content-api',
