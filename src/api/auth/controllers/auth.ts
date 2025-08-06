@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" method="post" onsubmit="return false;" action="/api/auth/invite-register">
+        <form id="registerForm" method="post" onsubmit="return false;" action="javascript:void(0);">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
