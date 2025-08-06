@@ -158,7 +158,7 @@ export default {
     // H5注册页面路由
     {
       method: 'GET',
-      path: '/auth/register',
+      path: '/register',
       handler: 'auth.registerPage',
       config: {
         type: 'content-api',
