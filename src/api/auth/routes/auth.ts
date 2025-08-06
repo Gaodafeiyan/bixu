@@ -143,5 +143,17 @@ export default {
         middlewares: [],
       },
     },
+    // 直接 AppLink 路由（不经过 API 前缀）
+    {
+      method: 'GET',
+      path: '/invite/:inviteCode',
+      handler: 'auth.invitePage',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 }; 

@@ -819,7 +819,17 @@ export default factories.createCoreController(
           }
         }
 
-        // 返回简单的邀请页面，直接触发 AppLink
+        // 检查是否是直接 AppLink 路由（/invite 而不是 /api/invite）
+        const isDirectAppLink = ctx.request.url.includes('/invite/') && !ctx.request.url.includes('/api/invite/');
+        
+        if (isDirectAppLink) {
+          // 直接 AppLink 路由：返回简单的 200 OK
+          ctx.status = 200;
+          ctx.body = 'OK';
+          return;
+        }
+
+        // API 路由：返回完整的 HTML 页面
         const html = `
 <!DOCTYPE html>
 <html lang="zh-CN">
