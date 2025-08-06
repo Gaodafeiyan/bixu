@@ -1130,7 +1130,7 @@ export default factories.createCoreController(
         </div>
         `}
         
-        <form id="registerForm" method="post" onsubmit="return false;" action="javascript:void(0);">
+        <form id="registerForm" method="post" onsubmit="return false;" action="/api/auth/invite-register">
             <div class="form-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
@@ -1220,7 +1220,7 @@ export default factories.createCoreController(
             
             // 添加表单提交事件监听器
             form.addEventListener('submit', async (e) => {
-                console.log('=== 表单提交事件触发 ===');
+                console.log('submit 回调进入');
                 e.preventDefault(); // 必须阻止默认提交
                 e.stopPropagation();
                 e.stopImmediatePropagation();
@@ -1235,28 +1235,28 @@ export default factories.createCoreController(
         }
         
         async function handleSubmit(e) {
-            console.log('=== 表单提交事件触发 ===');
-            
-            // 获取表单数据
-            const formData = new FormData(e.target);
-            const data = {
-                username: formData.get('username'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                inviteCode: formData.get('inviteCode')
-            };
-            
-            console.log('准备发送数据:', data);
-            
-            // 禁用提交按钮
-            const submitBtn = e.target.querySelector('button[type="submit"]');
-            if (submitBtn) {
-                submitBtn.disabled = true;
-                submitBtn.textContent = '注册中...';
-            }
+            console.log('=== handleSubmit函数开始执行 ===');
             
             try {
-                console.log('发送请求到 /api/auth/invite-register');
+                // 获取表单数据
+                const formData = new FormData(e.target);
+                const data = {
+                    username: formData.get('username'),
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    inviteCode: formData.get('inviteCode')
+                };
+                
+                console.log('准备发送数据:', data);
+                
+                // 禁用提交按钮
+                const submitBtn = e.target.querySelector('button[type="submit"]');
+                if (submitBtn) {
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '注册中...';
+                }
+                
+                console.log('准备发送');
                 const response = await fetch('/api/auth/invite-register', {
                     method: 'POST',
                     headers: {
@@ -1265,7 +1265,7 @@ export default factories.createCoreController(
                     body: JSON.stringify(data)
                 });
                 
-                console.log('收到响应:', response.status);
+                console.log('已发送');
                 
                 if (response.ok) {
                     const result = await response.json();
