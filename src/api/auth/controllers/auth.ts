@@ -381,7 +381,7 @@ export default factories.createCoreController(
         const deepLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/api/auth/download?invite=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
-        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?invite=${user.inviteCode}`;
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
         
         // 生成包含邀请码的二维码（指向深度链接）
         const qrCodeData = await QRCode.toDataURL(deepLink, {
@@ -424,7 +424,7 @@ export default factories.createCoreController(
           return ctx.notFound('用户不存在');
         }
 
-        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?invite=${user.inviteCode}`;
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
 
         ctx.body = {
           success: true,
@@ -454,7 +454,7 @@ export default factories.createCoreController(
         const appDownloadLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/api/auth/download?invite=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
-        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?invite=${user.inviteCode}`;
+        const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
         
         // 生成包含邀请码的二维码（指向APP下载链接）
         const qrCodeData = await QRCode.toDataURL(appDownloadLink, {
@@ -959,6 +959,349 @@ export default factories.createCoreController(
       } catch (error) {
         console.error('邀请页面生成失败:', error);
         ctx.throw(500, `邀请页面生成失败: ${error.message}`);
+      }
+    },
+
+    // H5注册页面
+    async registerPage(ctx) {
+      try {
+        const { ref } = ctx.query;
+        
+        // 验证邀请码
+        let inviterInfo = null;
+        if (ref) {
+          const inviteUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
+            filters: { inviteCode: ref } as any
+          });
+          
+          if (inviteUser.length > 0) {
+            inviterInfo = {
+              username: inviteUser[0].username,
+              inviteCode: ref
+            };
+          }
+        }
+
+        // 返回H5注册页面
+        const html = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenithus AI大健康出海平台 - 注册</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #0A0F1A 0%, #1C263B 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            backdrop-filter: blur(10px);
+        }
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #0A0F1A, #1C263B);
+            border-radius: 16px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+        .diamond {
+            width: 48px;
+            height: 48px;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+        }
+        h1 {
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .invite-info {
+            background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #D4AF37;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+        .invite-code {
+            font-size: 18px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin: 10px 0;
+        }
+        .form-group {
+            margin: 20px 0;
+            text-align: left;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.3s ease;
+            box-sizing: border-box;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #D4AF37;
+        }
+        .form-group input[readonly] {
+            background-color: #f8f9fa;
+            color: #666;
+        }
+        .register-btn {
+            background: linear-gradient(45deg, #D4AF37, #8A2BE2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin: 20px 0;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 8px rgba(212, 175, 55, 0.3);
+            width: 100%;
+        }
+        .register-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(212, 175, 55, 0.4);
+        }
+        .error {
+            color: #dc3545;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        .success {
+            color: #28a745;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <div class="diamond"></div>
+        </div>
+        <h1>Zenithus AI大健康出海平台</h1>
+        
+        ${inviterInfo ? `
+        <div class="invite-info">
+            <p>🎉 您被 <strong>${inviterInfo.username}</strong> 邀请加入</p>
+            <p>邀请码：<span class="invite-code">${inviterInfo.inviteCode}</span></p>
+        </div>
+        ` : `
+        <div class="invite-info">
+            <p>🎉 欢迎加入 Zenithus</p>
+        </div>
+        `}
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">邮箱</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="inviteCode">邀请码</label>
+                <input type="text" id="inviteCode" name="inviteCode" value="${inviterInfo?.inviteCode || ''}" readonly>
+            </div>
+            
+            <button type="submit" class="register-btn">立即注册</button>
+        </form>
+        
+        <div id="message"></div>
+    </div>
+    
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                inviteCode: formData.get('inviteCode')
+            };
+            
+            try {
+                const response = await fetch('/api/auth/invite-register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    document.getElementById('message').innerHTML = '<div class="success">注册成功！正在跳转到APP下载页面...</div>';
+                    setTimeout(() => {
+                        window.location.href = '/api/auth/download?invite=' + data.inviteCode;
+                    }, 2000);
+                } else {
+                    document.getElementById('message').innerHTML = '<div class="error">注册失败：' + result.message + '</div>';
+                }
+            } catch (error) {
+                document.getElementById('message').innerHTML = '<div class="error">注册失败：网络错误</div>';
+            }
+        });
+    </script>
+</body>
+</html>`;
+
+        ctx.set('Content-Type', 'text/html');
+        ctx.body = html;
+        
+      } catch (error) {
+        console.error('H5注册页面生成失败:', error);
+        ctx.throw(500, `H5注册页面生成失败: ${error.message}`);
+      }
+    },
+
+    // H5邀请注册接口
+    async inviteRegister(ctx) {
+      try {
+        const { username, email, password, inviteCode } = ctx.request.body;
+        
+        // 验证必填字段
+        if (!username || !email || !password) {
+          return ctx.badRequest('用户名、邮箱和密码为必填项');
+        }
+        
+        // 验证邀请码
+        if (!inviteCode) {
+          return ctx.badRequest('邀请码为必填项');
+        }
+        
+        // 查找邀请人
+        const inviter = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { inviteCode: inviteCode } as any
+        });
+        
+        if (inviter.length === 0) {
+          return ctx.badRequest('邀请码无效');
+        }
+        
+        const inviterUser = inviter[0];
+        
+        // 检查邮箱是否已存在
+        const existingUser = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { email: email } as any
+        });
+        
+        if (existingUser.length > 0) {
+          return ctx.badRequest('该邮箱已被注册');
+        }
+        
+        // 检查用户名是否已存在
+        const existingUsername = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { username: username } as any
+        });
+        
+        if (existingUsername.length > 0) {
+          return ctx.badRequest('该用户名已被使用');
+        }
+        
+        // 生成邀请码
+        const newInviteCode = Math.random().toString(36).substring(2, 8).toUpperCase();
+        
+        // 创建新用户
+        const newUser = await strapi.entityService.create('plugin::users-permissions.user', {
+          data: {
+            username,
+            email,
+            password,
+            inviteCode: newInviteCode,
+            confirmed: true,
+            blocked: false,
+            role: 1, // 普通用户角色
+            inviterId: inviterUser.id, // 设置邀请人ID
+            invitedAt: new Date(),
+          }
+        });
+        
+        // 更新邀请人的邀请统计
+        await strapi.entityService.update('plugin::users-permissions.user', inviterUser.id, {
+          data: {
+            inviteCount: (inviterUser.inviteCount || 0) + 1,
+            lastInviteAt: new Date()
+          }
+        });
+        
+        // 记录邀请关系
+        await strapi.entityService.create('api::invitation-reward-config.invitation-reward-config', {
+          data: {
+            inviterId: inviterUser.id,
+            inviteeId: newUser.id,
+            inviteCode: inviteCode,
+            status: 'active',
+            createdAt: new Date()
+          }
+        });
+        
+        console.log(`H5注册成功: ${username} (${email}) 被 ${inviterUser.username} 邀请`);
+        
+        ctx.body = {
+          success: true,
+          message: '注册成功！',
+          data: {
+            userId: newUser.id,
+            username: newUser.username,
+            email: newUser.email,
+            inviteCode: newUser.inviteCode
+          }
+        };
+        
+      } catch (error) {
+        console.error('H5注册失败:', error);
+        ctx.throw(500, `注册失败: ${error.message}`);
       }
     },
   })

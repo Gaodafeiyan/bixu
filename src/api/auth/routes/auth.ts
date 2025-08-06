@@ -155,5 +155,29 @@ export default {
         middlewares: [],
       },
     },
+    // H5注册页面路由
+    {
+      method: 'GET',
+      path: '/register',
+      handler: 'auth.registerPage',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    // H5注册接口
+    {
+      method: 'POST',
+      path: '/invite-register',
+      handler: 'auth.inviteRegister',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 }; 
