@@ -167,17 +167,6 @@ export default {
         middlewares: [],
       },
     },
-    // H5注册接口
-    {
-      method: 'POST',
-      path: '/auth/invite-register',
-      handler: 'auth.inviteRegister',
-      config: {
-        type: 'content-api',
-        auth: false,
-        policies: [],
-        middlewares: [],
-      },
-    },
+
   ],
 }; 

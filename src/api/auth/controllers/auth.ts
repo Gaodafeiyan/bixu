@@ -1158,39 +1158,66 @@ export default factories.createCoreController(
     </div>
     
     <script>
-        document.getElementById('registerForm').addEventListener('submit', async function(e) {
-            e.preventDefault();
+        console.log('注册页面JavaScript已加载');
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('DOM已加载完成');
             
-            const formData = new FormData(this);
-            const data = {
-                username: formData.get('username'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                inviteCode: formData.get('inviteCode')
-            };
-            
-            try {
-                const response = await fetch('/auth/invite-register', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(data)
-                });
-                
-                const result = await response.json();
-                
-                if (result.success) {
-                    document.getElementById('message').innerHTML = '<div class="success">注册成功！正在跳转到APP下载页面...</div>';
-                    setTimeout(() => {
-                        window.location.href = '/auth/download?invite=' + data.inviteCode;
-                    }, 2000);
-                } else {
-                    document.getElementById('message').innerHTML = '<div class="error">注册失败：' + result.message + '</div>';
-                }
-            } catch (error) {
-                document.getElementById('message').innerHTML = '<div class="error">注册失败：网络错误</div>';
+            const form = document.getElementById('registerForm');
+            if (!form) {
+                console.error('找不到注册表单');
+                return;
             }
+            
+            console.log('找到注册表单，添加事件监听器');
+            
+            form.addEventListener('submit', async function(e) {
+                console.log('表单提交事件触发');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                console.log('阻止默认提交行为');
+                
+                const formData = new FormData(this);
+                const data = {
+                    username: formData.get('username'),
+                    email: formData.get('email'),
+                    password: formData.get('password'),
+                    inviteCode: formData.get('inviteCode')
+                };
+                
+                console.log('准备发送数据:', data);
+                
+                try {
+                    console.log('发送请求到 /auth/invite-register');
+                    const response = await fetch('/auth/invite-register', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify(data)
+                    });
+                    
+                    console.log('收到响应:', response.status);
+                    const result = await response.json();
+                    console.log('响应数据:', result);
+                    
+                    if (result.success) {
+                        document.getElementById('message').innerHTML = '<div class="success">注册成功！正在跳转到APP下载页面...</div>';
+                        setTimeout(() => {
+                            console.log('跳转到下载页面');
+                            window.location.href = '/auth/download?invite=' + data.inviteCode;
+                        }, 2000);
+                    } else {
+                        document.getElementById('message').innerHTML = '<div class="error">注册失败：' + result.message + '</div>';
+                    }
+                } catch (error) {
+                    console.error('注册请求失败:', error);
+                    document.getElementById('message').innerHTML = '<div class="error">注册失败：网络错误 - ' + error.message + '</div>';
+                }
+            });
+            
+            console.log('事件监听器已添加');
         });
     </script>
 </body>
