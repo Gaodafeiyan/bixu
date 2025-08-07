@@ -1253,6 +1253,9 @@ export default factories.createCoreController(
                     const errorData = await response.json();
                     const errorMessage = errorData.message || '注册失败';
                     
+                    console.log('后端返回的错误信息:', errorMessage);
+                    console.log('完整的错误数据:', errorData);
+                    
                     // 根据错误类型显示具体提示
                     let displayMessage = '注册失败';
                     if (errorMessage.includes('用户名已存在')) {
