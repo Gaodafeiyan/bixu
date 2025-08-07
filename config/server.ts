@@ -7,9 +7,6 @@ export default ({ env }) => ({
   webhooks: {
     populateRelations: env.bool('WEBHOOKS_POPULATE_RELATIONS', false),
   },
-  jwt: {
-    secret: env('JWT_SECRET', 'your-jwt-secret-key-here'),
-  },
   // 修改静态文件服务配置
   static: {
     enabled: true,
