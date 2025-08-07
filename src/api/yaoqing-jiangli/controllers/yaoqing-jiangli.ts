@@ -230,6 +230,14 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
   // 获取用户邀请奖励记录
   async getUserRewards(ctx) {
     try {
+      // 检查用户认证状态
+      if (!ctx.state.user) {
+        console.log('>>> ctx.state.user undefined');
+        console.log('>>> ctx.request.headers.authorization', ctx.request.headers.authorization);
+        console.log('>>> 用户未认证，返回401');
+        return ctx.unauthorized('用户未认证');
+      }
+
       const userId = ctx.state.user.id;
       const { page = 1, pageSize = 10 } = ctx.query;
 
@@ -263,6 +271,14 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
   // 获取用户团队统计（兼容性方法，复制V2版本逻辑）
   async getTeamStats(ctx) {
     try {
+      // 检查用户认证状态
+      if (!ctx.state.user) {
+        console.log('>>> ctx.state.user undefined');
+        console.log('>>> ctx.request.headers.authorization', ctx.request.headers.authorization);
+        console.log('>>> 用户未认证，返回401');
+        return ctx.unauthorized('用户未认证');
+      }
+
       const userId = ctx.state.user.id;
 
       // 获取直接推荐人数
