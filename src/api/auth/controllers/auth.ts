@@ -4,6 +4,19 @@ import QRCode from 'qrcode';
 export default factories.createCoreController(
   'plugin::users-permissions.user',
   ({ strapi }) => ({
+    // 健康检查端点
+    async health(ctx) {
+      try {
+        ctx.body = {
+          status: 'ok',
+          timestamp: new Date().toISOString(),
+          message: 'Zenithus API is running'
+        };
+      } catch (error) {
+        ctx.throw(500, 'Health check failed');
+      }
+    },
+
     // 邀请注册
     async inviteRegister(ctx) {
       try {
