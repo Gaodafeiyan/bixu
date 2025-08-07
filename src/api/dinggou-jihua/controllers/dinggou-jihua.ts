@@ -213,6 +213,18 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       // 记录操作日志
       console.log(`用户 ${userId} 投资计划 ${planId}，金额: ${investmentAmount.toString()} USDT，订单ID: ${order.id}`);
 
+      // 发送投资成功推送通知
+      try {
+        const pushNotificationService = strapi.service('api::push-notification.push-notification');
+        await pushNotificationService.sendToUser(userId,
+          '🎉 投资成功',
+          `您已成功投资 ${investmentAmount.toString()} USDT，投资订单已创建！计划：${plan.name}`
+        );
+        console.log(`📱 投资成功推送已发送给用户 ${userId}`);
+      } catch (error) {
+        console.error('❌ 发送投资成功推送失败:', error);
+      }
+
       ctx.body = {
         success: true,
         data: {
@@ -499,6 +511,18 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 记录操作日志
       console.log(`用户 ${userId} 赎回订单 ${orderId}，总收益: ${totalPayout.toString()} USDT，邀请奖励: ${invitationReward} USDT`);
+
+      // 发送赎回成功推送通知
+      try {
+        const pushNotificationService = strapi.service('api::push-notification.push-notification');
+        await pushNotificationService.sendToUser(userId,
+          '🎉 赎回成功',
+          `您的投资已成功赎回！总收益：${totalPayout.toString()} USDT，其中本金：${investmentAmount.toString()} USDT，收益：${staticYield.toString()} USDT`
+        );
+        console.log(`📱 赎回成功推送已发送给用户 ${userId}`);
+      } catch (error) {
+        console.error('❌ 发送赎回成功推送失败:', error);
+      }
 
       console.log(`🔍 🔍 🔍 === 后端响应调试 === 🔍 🔍 🔍`);
       console.log(`🔍 准备返回的lotteryChances:`, lotteryChances);
