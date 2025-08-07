@@ -737,7 +737,6 @@ export default factories.createCoreController(
         <div class="invite-info">
             <p>🎉 您被 <strong>${inviterInfo.username}</strong> 邀请加入</p>
             <p>邀请码：<span class="invite-code">${inviterInfo.inviteCode}</span></p>
-            <p style="font-size: 14px; color: #666;">注册时邀请码将自动填入</p>
         </div>
         ` : ''}
         
