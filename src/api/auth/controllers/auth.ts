@@ -96,7 +96,7 @@ export default factories.createCoreController(
         };
       } catch (error) {
         console.error('邀请注册失败:', error);
-        ctx.throw(500, `注册失败: ${error.message}`);
+        ctx.throw(500, `注册失败：${error.message}`);
       }
     },
 
