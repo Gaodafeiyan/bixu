@@ -4,7 +4,7 @@ export default {
     // 健康检查路由
     {
       method: 'GET',
-      path: '/api/health',
+      path: '/health',
       handler: 'auth.health',
       config: {
         auth: false,
@@ -15,7 +15,7 @@ export default {
     // 邀请注册
     {
       method: 'POST',
-      path: '/api/auth/invite-register',
+      path: '/auth/invite-register',
       handler: 'auth.inviteRegister',
       config: {
         auth: false,
@@ -26,7 +26,7 @@ export default {
     // 用户登录 - 添加缺失的登录路由
     {
       method: 'POST',
-      path: '/api/auth/local',
+      path: '/auth/local',
       handler: 'auth.local',
       config: {
         auth: false,
@@ -37,7 +37,7 @@ export default {
     // 获取我的邀请码
     {
       method: 'GET',
-      path: '/api/auth/my-invite-code',
+      path: '/auth/my-invite-code',
       handler: 'auth.getMyInviteCode',
       config: {
         auth: {},  // 空对象表示需要登录
@@ -46,7 +46,7 @@ export default {
     // 获取完整邀请信息
     {
       method: 'GET',
-      path: '/api/auth/invite-info',
+      path: '/auth/invite-info',
       handler: 'auth.getInviteInfo',
       config: {
         auth: {},  // 空对象表示需要登录
@@ -55,7 +55,7 @@ export default {
     // 生成邀请链接
     {
       method: 'GET',
-      path: '/api/auth/generate-invite-link',
+      path: '/auth/generate-invite-link',
       handler: 'auth.generateInviteLink',
       config: {
         auth: {},  // 空对象表示需要登录
@@ -64,7 +64,7 @@ export default {
     // 生成邀请二维码
     {
       method: 'GET',
-      path: '/api/auth/invite-qr-code',
+      path: '/auth/invite-qr-code',
       handler: 'auth.getInviteQRCode',
       config: {
         auth: {},  // 空对象表示需要登录
@@ -73,7 +73,7 @@ export default {
     // 记录分享行为
     {
       method: 'POST',
-      path: '/api/auth/track-invite-share',
+      path: '/auth/track-invite-share',
       handler: 'auth.trackInviteShare',
       config: {
         auth: {},  // 空对象表示需要登录
@@ -82,7 +82,7 @@ export default {
     // 修改密码
     {
       method: 'PUT',
-      path: '/api/auth/change-password',
+      path: '/auth/change-password',
       handler: 'auth.changePassword',
       config: {
         auth: {},  // 空对象表示需要登录
@@ -91,7 +91,7 @@ export default {
     // 获取我的团队
     {
       method: 'GET',
-      path: '/api/auth/my-team',
+      path: '/auth/my-team',
       handler: 'auth.getMyTeam',
       config: {
         auth: {},  // 空对象表示需要登录
@@ -100,7 +100,7 @@ export default {
     // 验证邀请码
     {
       method: 'GET',
-      path: '/api/auth/validate-invite-code/:inviteCode',
+      path: '/auth/validate-invite-code/:inviteCode',
       handler: 'auth.validateInviteCode',
       config: {
         auth: false,
@@ -111,7 +111,7 @@ export default {
     // APK下载路由
     {
       method: 'GET',
-      path: '/api/auth/download-apk',
+      path: '/auth/download-apk',
       handler: 'auth.downloadApk',
       config: {
         auth: false,
@@ -122,7 +122,7 @@ export default {
     // 下载页面路由
     {
       method: 'GET',
-      path: '/api/auth/download',
+      path: '/auth/download',
       handler: 'auth.downloadPage',
       config: {
         auth: false,
@@ -133,7 +133,7 @@ export default {
     // 纯 HTTPS 邀请链接路由
     {
       method: 'GET',
-      path: '/api/invite/:inviteCode',
+      path: '/invite/:inviteCode',
       handler: 'auth.invitePage',
       config: {
         auth: false,
@@ -155,7 +155,7 @@ export default {
     // H5注册页面路由 - 修复路径
     {
       method: 'GET',
-      path: '/api/auth/register',
+      path: '/auth/register',
       handler: 'auth.registerPage',
       config: {
         auth: false,
