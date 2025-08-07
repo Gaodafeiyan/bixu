@@ -1252,7 +1252,22 @@ export default factories.createCoreController(
                 } else {
                     const errorData = await response.json();
                     const errorMessage = errorData.message || '注册失败';
-                    document.getElementById('message').innerHTML = '<div class="error">注册失败：' + errorMessage + '</div>';
+                    
+                    // 根据错误类型显示具体提示
+                    let displayMessage = '注册失败';
+                    if (errorMessage.includes('用户名已存在')) {
+                        displayMessage = '注册失败：用户名重复';
+                    } else if (errorMessage.includes('邮箱已存在')) {
+                        displayMessage = '注册失败：邮箱重复';
+                    } else if (errorMessage.includes('邀请码无效')) {
+                        displayMessage = '注册失败：邀请码无效';
+                    } else if (errorMessage.includes('缺少必要参数')) {
+                        displayMessage = '注册失败：请填写完整信息';
+                    } else {
+                        displayMessage = '注册失败：' + errorMessage;
+                    }
+                    
+                    document.getElementById('message').innerHTML = '<div class="error">' + displayMessage + '</div>';
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.textContent = '立即注册';
