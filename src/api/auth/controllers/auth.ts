@@ -1329,6 +1329,217 @@ export default factories.createCoreController(
       }
     },
 
+    // 更新用户资料
+    async updateProfile(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { username, email, phone, avatar } = ctx.request.body;
+
+        const updateData: any = {};
+        if (username) updateData.username = username;
+        if (email) updateData.email = email;
+        if (phone) updateData.phone = phone;
+        if (avatar) updateData.avatar = avatar;
+
+        const updatedUser = await strapi.entityService.update('plugin::users-permissions.user', userId, {
+          data: updateData
+        });
+
+        ctx.body = {
+          success: true,
+          data: updatedUser
+        };
+      } catch (error) {
+        ctx.throw(500, `更新用户资料失败: ${error.message}`);
+      }
+    },
+
+    // 获取安全设置
+    async getSecuritySettings(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        // 这里可以根据需要从数据库获取用户的安全设置
+        const securitySettings = {
+          twoFactorEnabled: false,
+          loginNotifications: true,
+          deviceManagement: true,
+          passwordLastChanged: new Date().toISOString()
+        };
+
+        ctx.body = {
+          success: true,
+          data: securitySettings
+        };
+      } catch (error) {
+        ctx.throw(500, `获取安全设置失败: ${error.message}`);
+      }
+    },
+
+    // 更新安全设置
+    async updateSecuritySettings(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { twoFactorEnabled, loginNotifications, deviceManagement } = ctx.request.body;
+
+        // 这里可以根据需要更新用户的安全设置
+        const updatedSettings = {
+          twoFactorEnabled: twoFactorEnabled || false,
+          loginNotifications: loginNotifications !== undefined ? loginNotifications : true,
+          deviceManagement: deviceManagement !== undefined ? deviceManagement : true
+        };
+
+        ctx.body = {
+          success: true,
+          data: updatedSettings
+        };
+      } catch (error) {
+        ctx.throw(500, `更新安全设置失败: ${error.message}`);
+      }
+    },
+
+    // 绑定手机
+    async bindPhone(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { phone, verificationCode } = ctx.request.body;
+
+        if (!phone || !verificationCode) {
+          return ctx.badRequest('手机号和验证码不能为空');
+        }
+
+        // 这里应该验证验证码
+        // 验证成功后更新用户手机号
+        await strapi.entityService.update('plugin::users-permissions.user', userId, {
+          data: { phone }
+        });
+
+        ctx.body = {
+          success: true,
+          message: '手机绑定成功'
+        };
+      } catch (error) {
+        ctx.throw(500, `绑定手机失败: ${error.message}`);
+      }
+    },
+
+    // 发送验证码
+    async sendVerificationCode(ctx) {
+      try {
+        const { phone, type = 'sms' } = ctx.request.body;
+
+        if (!phone) {
+          return ctx.badRequest('手机号不能为空');
+        }
+
+        // 生成验证码
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+        // 这里应该调用短信服务发送验证码
+        // 暂时模拟发送成功
+        console.log(`向 ${phone} 发送验证码: ${verificationCode}`);
+
+        ctx.body = {
+          success: true,
+          message: '验证码发送成功',
+          data: {
+            phone,
+            type,
+            expiresIn: 300 // 5分钟过期
+          }
+        };
+      } catch (error) {
+        ctx.throw(500, `发送验证码失败: ${error.message}`);
+      }
+    },
+
+    // 获取应用设置
+    async getAppSettings(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        // 这里可以根据需要从数据库获取用户的应用设置
+        const appSettings = {
+          language: 'zh-CN',
+          theme: 'light',
+          autoLogin: true,
+          notifications: true,
+          soundEnabled: true
+        };
+
+        ctx.body = {
+          success: true,
+          data: appSettings
+        };
+      } catch (error) {
+        ctx.throw(500, `获取应用设置失败: ${error.message}`);
+      }
+    },
+
+    // 更新应用设置
+    async updateAppSettings(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { language, theme, autoLogin, notifications, soundEnabled } = ctx.request.body;
+
+        // 这里可以根据需要更新用户的应用设置
+        const updatedSettings = {
+          language: language || 'zh-CN',
+          theme: theme || 'light',
+          autoLogin: autoLogin !== undefined ? autoLogin : true,
+          notifications: notifications !== undefined ? notifications : true,
+          soundEnabled: soundEnabled !== undefined ? soundEnabled : true
+        };
+
+        ctx.body = {
+          success: true,
+          data: updatedSettings
+        };
+      } catch (error) {
+        ctx.throw(500, `更新应用设置失败: ${error.message}`);
+      }
+    },
+
+    // 手机登录
+    async phoneLogin(ctx) {
+      try {
+        const { phone, verificationCode } = ctx.request.body;
+
+        if (!phone || !verificationCode) {
+          return ctx.badRequest('手机号和验证码不能为空');
+        }
+
+        // 这里应该验证验证码
+        // 验证成功后查找用户
+        const users = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { phone } as any
+        });
+
+        if (users.length === 0) {
+          return ctx.badRequest('用户不存在');
+        }
+
+        const user = users[0];
+        
+        // 生成JWT token
+        const jwt = strapi.plugin('users-permissions').service('jwt').issue({
+          id: user.id
+        });
+
+        ctx.body = {
+          jwt,
+          user: {
+            id: user.id,
+            username: user.username,
+            email: user.email,
+            phone: user.phone
+          }
+        };
+      } catch (error) {
+        ctx.throw(500, `手机登录失败: ${error.message}`);
+      }
+    },
+
 
   })
 );

@@ -174,6 +174,76 @@ export default {
         middlewares: [],
       },
     },
+    // 更新用户资料
+    {
+      method: 'PUT',
+      path: '/auth/update-profile',
+      handler: 'auth.updateProfile',
+      config: {
+        auth: {},
+      },
+    },
+    // 安全设置
+    {
+      method: 'GET',
+      path: '/auth/security-settings',
+      handler: 'auth.getSecuritySettings',
+      config: {
+        auth: {},
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/auth/security-settings',
+      handler: 'auth.updateSecuritySettings',
+      config: {
+        auth: {},
+      },
+    },
+    // 绑定手机
+    {
+      method: 'POST',
+      path: '/auth/bind-phone',
+      handler: 'auth.bindPhone',
+      config: {
+        auth: {},
+      },
+    },
+    // 发送验证码
+    {
+      method: 'POST',
+      path: '/auth/send-verification-code',
+      handler: 'auth.sendVerificationCode',
+      config: {
+        auth: false,
+      },
+    },
+    // 应用设置
+    {
+      method: 'GET',
+      path: '/auth/app-settings',
+      handler: 'auth.getAppSettings',
+      config: {
+        auth: {},
+      },
+    },
+    {
+      method: 'PUT',
+      path: '/auth/app-settings',
+      handler: 'auth.updateAppSettings',
+      config: {
+        auth: {},
+      },
+    },
+    // 手机登录
+    {
+      method: 'POST',
+      path: '/auth/phone-login',
+      handler: 'auth.phoneLogin',
+      config: {
+        auth: false,
+      },
+    },
 
   ],
 }; 
