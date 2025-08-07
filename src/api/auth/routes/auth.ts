@@ -4,7 +4,7 @@ export default {
     // 健康检查路由
     {
       method: 'GET',
-      path: '/api/health',
+      path: '/health',
       handler: 'auth.health',
       config: {
         auth: false,
