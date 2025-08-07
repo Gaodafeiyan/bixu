@@ -144,7 +144,7 @@ export default {
     // H5注册页面路由 - 修复路径
     {
       method: 'GET',
-      path: '/auth/register',
+      path: '/api/auth/register',
       handler: 'auth.registerPage',
       config: {
         auth: false,
