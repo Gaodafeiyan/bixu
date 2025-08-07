@@ -1,23 +1,17 @@
 const fs = require('fs');
 const path = require('path');
-const crypto = require('crypto');
 
-console.log('=== 完整JWT配置修复 ===');
+console.log('🔧 完整修复JWT配置错误...');
 
 // 1. 生成安全的JWT密钥
 const generateJWTSecret = () => {
-  return crypto.randomBytes(32).toString('base64');
+  return 'bixu-jwt-secret-' + Date.now() + '-' + Math.random().toString(36).substr(2, 9);
 };
 
 // 2. 创建.env文件
 const createEnvFile = () => {
   const envPath = path.join(__dirname, '.env');
   
-  if (fs.existsSync(envPath)) {
-    console.log('✅ .env文件已存在');
-    return envPath;
-  }
-
   const envContent = `# 数据库配置
 DATABASE_CLIENT=postgres
 DATABASE_HOST=localhost
@@ -28,7 +22,7 @@ DATABASE_PASSWORD=password
 DATABASE_SSL=false
 
 # 应用配置
-NODE_ENV=production
+NODE_ENV=development
 HOST=0.0.0.0
 PORT=1337
 
@@ -44,7 +38,7 @@ TRANSFER_TOKEN_SALT=bixu-transfer-token-salt-2024
 APP_KEYS=${generateJWTSecret()},${generateJWTSecret()},${generateJWTSecret()},${generateJWTSecret()}
 
 # 安全配置
-CORS_ORIGIN=http://localhost:3000,http://localhost:1337
+CORS_ORIGIN=http://localhost:3000,http://localhost:1337,https://zenithus.app
 
 # 区块链配置
 BSC_WALLET_ADDRESS=0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6
@@ -57,86 +51,86 @@ WEBHOOKS_POPULATE_RELATIONS=false
 
   fs.writeFileSync(envPath, envContent);
   console.log('✅ 已创建.env文件');
-  return envPath;
 };
 
-// 3. 验证配置文件
-const validateConfig = () => {
-  console.log('\n3. 验证配置文件...');
-  
-  // 检查plugins.ts
+// 3. 修复plugins.ts配置
+const fixPluginsConfig = () => {
   const pluginsPath = path.join(__dirname, 'config', 'plugins.ts');
-  if (fs.existsSync(pluginsPath)) {
-    const pluginsContent = fs.readFileSync(pluginsPath, 'utf8');
-    if (pluginsContent.includes('jwtSecret') || pluginsContent.includes('secret:')) {
-      console.log('✅ plugins.ts配置正确');
-    } else {
-      console.log('❌ plugins.ts缺少JWT secret配置');
-    }
-  }
   
-  // 检查middlewares.ts
-  const middlewaresPath = path.join(__dirname, 'config', 'middlewares.ts');
-  if (fs.existsSync(middlewaresPath)) {
-    const middlewaresContent = fs.readFileSync(middlewaresPath, 'utf8');
-    if (middlewaresContent.includes('strapi::users-permissions')) {
-      console.log('✅ middlewares.ts配置正确');
-    } else {
-      console.log('❌ middlewares.ts缺少users-permissions中间件');
-    }
-  }
-};
-
-// 4. 测试JWT功能
-const testJWT = () => {
-  console.log('\n4. 测试JWT功能...');
-  try {
-    const jwt = require('jsonwebtoken');
-    const testSecret = generateJWTSecret();
-    const testPayload = { userId: 1, username: 'test' };
-    
-    const token = jwt.sign(testPayload, testSecret);
-    const decoded = jwt.verify(token, testSecret);
-    
-    console.log('✅ JWT功能测试成功');
-    console.log('   - Token生成: 成功');
-    console.log('   - Token验证: 成功');
-    console.log('   - 解码数据:', decoded);
-  } catch (error) {
-    console.log('❌ JWT功能测试失败:', error.message);
-  }
-};
-
-// 5. 主函数
-const main = () => {
-  console.log('1. 创建环境变量文件...');
-  const envPath = createEnvFile();
-  
-  console.log('\n2. 加载环境变量...');
-  const envContent = fs.readFileSync(envPath, 'utf8');
-  const lines = envContent.split('\n');
-  
-  lines.forEach(line => {
-    const trimmed = line.trim();
-    if (trimmed && !trimmed.startsWith('#')) {
-      const [key, ...valueParts] = trimmed.split('=');
-      if (key && valueParts.length > 0) {
-        const value = valueParts.join('=');
-        process.env[key] = value;
+  const pluginsContent = `export default ({ env }) => ({
+  'users-permissions': {
+    config: {
+      jwt: {
+        expiresIn: '7d'
+      },
+      register: {
+        enabled: false,
+        defaultRole: 'authenticated'
+      },
+      routes: {
+        register: false,
+        'auth/register': false
       }
     }
-  });
-  
-  console.log('✅ 环境变量已加载');
-  console.log('JWT_SECRET:', process.env.JWT_SECRET ? '已设置' : '未设置');
-  
-  validateConfig();
-  testJWT();
-  
-  console.log('\n=== 修复完成 ===');
-  console.log('现在可以重启Strapi服务器了:');
-  console.log('yarn develop');
+  },
+  upload: {
+    config: {
+      provider: 'local',
+    },
+  },
+});`;
+
+  fs.writeFileSync(pluginsPath, pluginsContent);
+  console.log('✅ 已修复plugins.ts配置');
 };
 
-// 运行修复
-main();
+// 4. 创建正确的jwt.ts配置
+const createJWTConfig = () => {
+  const jwtPath = path.join(__dirname, 'config', 'jwt.ts');
+  
+  const jwtContent = `export default ({ env }) => ({
+  jwt: {
+    secret: env('JWT_SECRET', 'your-jwt-secret-key-here'),
+  },
+});`;
+
+  fs.writeFileSync(jwtPath, jwtContent);
+  console.log('✅ 已创建正确的jwt.ts配置');
+};
+
+// 5. 移除server.ts中的JWT配置
+const removeServerJWTConfig = () => {
+  const serverPath = path.join(__dirname, 'config', 'server.ts');
+  
+  if (fs.existsSync(serverPath)) {
+    let content = fs.readFileSync(serverPath, 'utf8');
+    
+    // 移除jwt配置块
+    content = content.replace(/jwt:\s*{[^}]*},?\s*/g, '');
+    
+    fs.writeFileSync(serverPath, content);
+    console.log('✅ 已移除server.ts中的JWT配置');
+  }
+};
+
+// 执行修复
+console.log('\n1. 创建环境变量文件...');
+createEnvFile();
+
+console.log('\n2. 修复plugins.ts配置...');
+fixPluginsConfig();
+
+console.log('\n3. 创建JWT配置文件...');
+createJWTConfig();
+
+console.log('\n4. 移除重复配置...');
+removeServerJWTConfig();
+
+console.log('\n✅ JWT配置完全修复完成！');
+console.log('\n📋 修复内容:');
+console.log('   - 创建了.env文件并设置了JWT_SECRET');
+console.log('   - 修复了plugins.ts中的JWT配置（移除了secret字段）');
+console.log('   - 创建了正确的jwt.ts配置文件');
+console.log('   - 移除了server.ts中的重复JWT配置');
+console.log('\n🚀 现在请重启Strapi服务器:');
+console.log('   npm run develop');

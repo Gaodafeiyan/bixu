@@ -2,8 +2,7 @@ export default ({ env }) => ({
   'users-permissions': {
     config: {
       jwt: {
-        expiresIn: '7d',
-        secret: env('JWT_SECRET', 'your-jwt-secret-key-here')
+        expiresIn: '7d'
       },
       register: {
         enabled: false,
