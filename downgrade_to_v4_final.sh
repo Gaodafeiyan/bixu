@@ -1,3 +1,21 @@
+#!/bin/bash
+# 降级到Strapi v4脚本
+
+echo "🔄 降级到Strapi v4..."
+
+cd /root/strapi-v5-ts
+
+# 停止服务
+pkill -f "strapi develop" || true
+
+# 清理缓存
+rm -rf .strapi dist node_modules/.cache
+
+# 降级到v4
+npm install @strapi/strapi@4.25.23 @strapi/plugin-users-permissions@4.25.23 @strapi/plugin-i18n@4.25.23 @strapi/plugin-cloud@4.25.23
+
+# 恢复v4的中间件配置
+cat > config/middlewares.ts << 'EOF'
 export default ({ env }) => [
   'strapi::logger',
   'strapi::errors',
@@ -36,6 +54,14 @@ export default ({ env }) => [
   'strapi::session',
   'strapi::favicon',
   'strapi::public',
-  // 在v5中，users-permissions中间件可能需要作为插件中间件
-  // 或者完全移除，让插件自己处理
+  'strapi::users-permissions',
 ];
+EOF
+
+# 重新构建
+npm run build
+
+# 启动服务
+npm run develop
+
+echo "✅ 已降级到Strapi v4.25.23"
