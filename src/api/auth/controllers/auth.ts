@@ -946,8 +946,8 @@ export default factories.createCoreController(
         </a>
         
         <br>
-        <a href="https://zenithus.app/auth/download?invite=${inviterInfo?.inviteCode || ''}" class="fallback-btn">
-            📥 下载APP
+        <a href="https://zenithus.app/api/auth/register?ref=${inviterInfo?.inviteCode || ''}" class="fallback-btn">
+            📝 立即注册
         </a>
     </div>
     
