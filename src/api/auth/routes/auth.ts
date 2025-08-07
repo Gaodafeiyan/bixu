@@ -200,24 +200,7 @@ export default {
         auth: {},
       },
     },
-    // 绑定手机
-    {
-      method: 'POST',
-      path: '/auth/bind-phone',
-      handler: 'auth.bindPhone',
-      config: {
-        auth: {},
-      },
-    },
-    // 发送验证码
-    {
-      method: 'POST',
-      path: '/auth/send-verification-code',
-      handler: 'auth.sendVerificationCode',
-      config: {
-        auth: false,
-      },
-    },
+
     // 应用设置
     {
       method: 'GET',
@@ -235,15 +218,7 @@ export default {
         auth: {},
       },
     },
-    // 手机登录
-    {
-      method: 'POST',
-      path: '/auth/phone-login',
-      handler: 'auth.phoneLogin',
-      config: {
-        auth: false,
-      },
-    },
+
 
   ],
 }; 

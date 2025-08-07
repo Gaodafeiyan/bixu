@@ -1398,60 +1398,7 @@ export default factories.createCoreController(
       }
     },
 
-    // 绑定手机
-    async bindPhone(ctx) {
-      try {
-        const userId = ctx.state.user.id;
-        const { phone, verificationCode } = ctx.request.body;
 
-        if (!phone || !verificationCode) {
-          return ctx.badRequest('手机号和验证码不能为空');
-        }
-
-        // 这里应该验证验证码
-        // 验证成功后更新用户手机号
-        await strapi.entityService.update('plugin::users-permissions.user', userId, {
-          data: { phone }
-        });
-
-        ctx.body = {
-          success: true,
-          message: '手机绑定成功'
-        };
-      } catch (error) {
-        ctx.throw(500, `绑定手机失败: ${error.message}`);
-      }
-    },
-
-    // 发送验证码
-    async sendVerificationCode(ctx) {
-      try {
-        const { phone, type = 'sms' } = ctx.request.body;
-
-        if (!phone) {
-          return ctx.badRequest('手机号不能为空');
-        }
-
-        // 生成验证码
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-        // 这里应该调用短信服务发送验证码
-        // 暂时模拟发送成功
-        console.log(`向 ${phone} 发送验证码: ${verificationCode}`);
-
-        ctx.body = {
-          success: true,
-          message: '验证码发送成功',
-          data: {
-            phone,
-            type,
-            expiresIn: 300 // 5分钟过期
-          }
-        };
-      } catch (error) {
-        ctx.throw(500, `发送验证码失败: ${error.message}`);
-      }
-    },
 
     // 获取应用设置
     async getAppSettings(ctx) {
@@ -1500,45 +1447,7 @@ export default factories.createCoreController(
       }
     },
 
-    // 手机登录
-    async phoneLogin(ctx) {
-      try {
-        const { phone, verificationCode } = ctx.request.body;
 
-        if (!phone || !verificationCode) {
-          return ctx.badRequest('手机号和验证码不能为空');
-        }
-
-        // 这里应该验证验证码
-        // 验证成功后查找用户
-        const users = await strapi.entityService.findMany('plugin::users-permissions.user', {
-          filters: { phone } as any
-        });
-
-        if (users.length === 0) {
-          return ctx.badRequest('用户不存在');
-        }
-
-        const user = users[0];
-        
-        // 生成JWT token
-        const jwt = strapi.plugin('users-permissions').service('jwt').issue({
-          id: user.id
-        });
-
-        ctx.body = {
-          jwt,
-          user: {
-            id: user.id,
-            username: user.username,
-            email: user.email,
-            phone: user.phone
-          }
-        };
-      } catch (error) {
-        ctx.throw(500, `手机登录失败: ${error.message}`);
-      }
-    },
 
 
   })
