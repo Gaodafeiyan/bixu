@@ -1112,11 +1112,30 @@ export default factories.createCoreController(
             color: #dc3545;
             font-size: 14px;
             margin-top: 5px;
+            padding: 10px;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
         }
         .success {
             color: #28a745;
             font-size: 14px;
             margin-top: 5px;
+            padding: 10px;
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            border-radius: 5px;
+        }
+        .field-error {
+            color: #dc3545;
+            font-size: 12px;
+            margin-top: 5px;
+        }
+        .form-group.error input {
+            border-color: #dc3545;
+        }
+        .form-group.success input {
+            border-color: #28a745;
         }
     </style>
 </head>
@@ -1139,24 +1158,28 @@ export default factories.createCoreController(
         `}
         
         <form id="registerForm" method="post" action="/api/auth/invite-register">
-            <div class="form-group">
+            <div class="form-group" id="username-group">
                 <label for="username">用户名</label>
                 <input type="text" id="username" name="username" required>
+                <div class="field-error" id="username-error"></div>
             </div>
             
-            <div class="form-group">
+            <div class="form-group" id="email-group">
                 <label for="email">邮箱</label>
                 <input type="email" id="email" name="email" required>
+                <div class="field-error" id="email-error"></div>
             </div>
             
-            <div class="form-group">
+            <div class="form-group" id="password-group">
                 <label for="password">密码</label>
                 <input type="password" id="password" name="password" required>
+                <div class="field-error" id="password-error"></div>
             </div>
             
-            <div class="form-group">
+            <div class="form-group" id="inviteCode-group">
                 <label for="inviteCode">邀请码</label>
                 <input type="text" id="inviteCode" name="inviteCode" value="${inviterInfo?.inviteCode || ''}" readonly>
+                <div class="field-error" id="inviteCode-error"></div>
             </div>
             
             <button type="submit" class="register-btn">立即注册</button>
@@ -1207,6 +1230,80 @@ export default factories.createCoreController(
             console.log('表单事件监听器设置完成');
         }
         
+        // 清除所有错误提示
+        function clearErrors() {
+            document.querySelectorAll('.field-error').forEach(el => el.textContent = '');
+            document.querySelectorAll('.form-group').forEach(el => el.classList.remove('error', 'success'));
+            document.getElementById('message').innerHTML = '';
+        }
+        
+        // 显示字段错误
+        function showFieldError(fieldId, message) {
+            const group = document.getElementById(fieldId + '-group');
+            const errorEl = document.getElementById(fieldId + '-error');
+            if (group && errorEl) {
+                group.classList.add('error');
+                errorEl.textContent = message;
+            }
+        }
+        
+        // 验证邮箱格式
+        function validateEmail(email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return emailRegex.test(email);
+        }
+        
+        // 验证用户名格式
+        function validateUsername(username) {
+            return username.length >= 3 && username.length <= 20 && /^[a-zA-Z0-9_]+$/.test(username);
+        }
+        
+        // 验证密码强度
+        function validatePassword(password) {
+            return password.length >= 6;
+        }
+        
+        // 前端验证
+        function validateForm(data) {
+            clearErrors();
+            let isValid = true;
+            
+            // 验证用户名
+            if (!data.username) {
+                showFieldError('username', '用户名不能为空');
+                isValid = false;
+            } else if (!validateUsername(data.username)) {
+                showFieldError('username', '用户名长度3-20位，只能包含字母、数字和下划线');
+                isValid = false;
+            }
+            
+            // 验证邮箱
+            if (!data.email) {
+                showFieldError('email', '邮箱不能为空');
+                isValid = false;
+            } else if (!validateEmail(data.email)) {
+                showFieldError('email', '请输入有效的邮箱格式');
+                isValid = false;
+            }
+            
+            // 验证密码
+            if (!data.password) {
+                showFieldError('password', '密码不能为空');
+                isValid = false;
+            } else if (!validatePassword(data.password)) {
+                showFieldError('password', '密码长度至少6位');
+                isValid = false;
+            }
+            
+            // 验证邀请码
+            if (!data.inviteCode) {
+                showFieldError('inviteCode', '邀请码不能为空');
+                isValid = false;
+            }
+            
+            return isValid;
+        }
+        
         async function handleSubmit(e) {
             console.log('=== handleSubmit函数开始执行 ===');
             
@@ -1214,13 +1311,19 @@ export default factories.createCoreController(
                 // 获取表单数据
                 const formData = new FormData(e.target);
                 const data = {
-                    username: formData.get('username'),
-                    email: formData.get('email'),
+                    username: formData.get('username').trim(),
+                    email: formData.get('email').trim(),
                     password: formData.get('password'),
-                    inviteCode: formData.get('inviteCode')
+                    inviteCode: formData.get('inviteCode').trim()
                 };
                 
                 console.log('准备发送数据:', data);
+                
+                // 前端验证
+                if (!validateForm(data)) {
+                    console.log('前端验证失败');
+                    return;
+                }
                 
                 // 禁用提交按钮
                 const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -1252,7 +1355,20 @@ export default factories.createCoreController(
                 } else {
                     const errorData = await response.json();
                     const errorMessage = errorData.message || '注册失败';
-                    document.getElementById('message').innerHTML = '<div class="error">注册失败：' + errorMessage + '</div>';
+                    
+                    // 根据错误类型显示具体提示
+                    if (errorMessage.includes('用户名已存在')) {
+                        showFieldError('username', '用户名已被使用，请选择其他用户名');
+                    } else if (errorMessage.includes('邮箱已存在')) {
+                        showFieldError('email', '该邮箱已被注册，请使用其他邮箱');
+                    } else if (errorMessage.includes('邀请码无效')) {
+                        showFieldError('inviteCode', '邀请码无效，请检查后重试');
+                    } else if (errorMessage.includes('邮箱格式')) {
+                        showFieldError('email', '请输入有效的邮箱格式');
+                    } else {
+                        document.getElementById('message').innerHTML = '<div class="error">注册失败：' + errorMessage + '</div>';
+                    }
+                    
                     if (submitBtn) {
                         submitBtn.disabled = false;
                         submitBtn.textContent = '立即注册';
