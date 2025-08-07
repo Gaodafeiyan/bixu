@@ -1155,6 +1155,11 @@ export default factories.createCoreController(
             </div>
             
             <div class="form-group">
+                <label for="confirmPassword">确认密码</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" required maxlength="100">
+            </div>
+            
+            <div class="form-group">
                 <label for="inviteCode">邀请码</label>
                 <input type="text" id="inviteCode" name="inviteCode" value="${inviterInfo?.inviteCode || ''}" readonly maxlength="50">
             </div>
@@ -1213,10 +1218,19 @@ export default factories.createCoreController(
             try {
                 // 获取表单数据
                 const formData = new FormData(e.target);
+                const password = formData.get('password');
+                const confirmPassword = formData.get('confirmPassword');
+                
+                // 验证密码确认
+                if (password !== confirmPassword) {
+                    document.getElementById('message').innerHTML = '<div class="error">注册失败：两次输入的密码不一致</div>';
+                    return;
+                }
+                
                 const data = {
                     username: formData.get('username'),
                     email: formData.get('email'),
-                    password: formData.get('password'),
+                    password: password,
                     inviteCode: formData.get('inviteCode')
                 };
                 
