@@ -2,16 +2,16 @@ export default ({ env }) => ({
   'users-permissions': {
     config: {
       jwt: {
-        expiresIn: '7d'
+        expiresIn: '7d',
+        secret: env('JWT_SECRET', 'your-jwt-secret-key-here')
       },
       register: {
-        enabled: false,      // 彻底关掉默认注册
+        enabled: false,
         defaultRole: 'authenticated'
       },
-      // 禁用默认的注册路由，使用我们自定义的路由
       routes: {
         register: false,
-        'auth/register': false  // 明确禁用 /api/auth/register 路由
+        'auth/register': false
       }
     }
   },
