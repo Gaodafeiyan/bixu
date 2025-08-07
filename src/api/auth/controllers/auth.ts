@@ -1258,14 +1258,19 @@ export default factories.createCoreController(
                     
                     // 根据错误类型显示具体提示
                     let displayMessage = '注册失败';
-                    if (errorMessage.includes('用户名已存在')) {
+                    
+                    // 检查错误信息的各种可能格式
+                    if (errorMessage.includes('用户名已存在') || errorMessage.includes('用户名重复')) {
                         displayMessage = '注册失败：用户名重复';
-                    } else if (errorMessage.includes('邮箱已存在')) {
+                    } else if (errorMessage.includes('邮箱已存在') || errorMessage.includes('邮箱重复')) {
                         displayMessage = '注册失败：邮箱重复';
                     } else if (errorMessage.includes('邀请码无效')) {
                         displayMessage = '注册失败：邀请码无效';
                     } else if (errorMessage.includes('缺少必要参数')) {
                         displayMessage = '注册失败：请填写完整信息';
+                    } else if (errorMessage.includes('注册失败')) {
+                        // 如果错误信息已经包含"注册失败"，直接使用
+                        displayMessage = errorMessage;
                     } else {
                         displayMessage = '注册失败：' + errorMessage;
                     }
