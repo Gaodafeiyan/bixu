@@ -1,6 +1,17 @@
 export default {
   type: 'content-api',
   routes: [
+    // 健康检查路由
+    {
+      method: 'GET',
+      path: '/api/health',
+      handler: 'auth.health',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
     // 邀请注册
     {
       method: 'POST',
