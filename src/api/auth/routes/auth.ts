@@ -141,10 +141,10 @@ export default {
         middlewares: [],
       },
     },
-    // H5注册页面路由
+    // H5注册页面路由 - 修复路径
     {
       method: 'GET',
-      path: '/register',
+      path: '/api/auth/register',
       handler: 'auth.registerPage',
       config: {
         auth: false,
@@ -155,7 +155,7 @@ export default {
     // 重定向旧路径到新路径
     {
       method: 'GET',
-      path: '/api/auth/register',
+      path: '/register',
       handler: 'auth.redirectToRegister',
       config: {
         auth: false,

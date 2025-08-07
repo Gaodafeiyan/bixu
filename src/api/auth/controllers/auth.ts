@@ -442,8 +442,8 @@ export default factories.createCoreController(
     // 重定向旧路径到新路径
     async redirectToRegister(ctx) {
       const { ref } = ctx.query;
-      const redirectUrl = `/register?ref=${ref}`;
-      console.log(`重定向: /api/auth/register?ref=${ref} -> ${redirectUrl}`);
+      const redirectUrl = `/api/auth/register?ref=${ref}`;
+      console.log(`重定向: /register?ref=${ref} -> ${redirectUrl}`);
       return ctx.redirect(redirectUrl);
     },
 
