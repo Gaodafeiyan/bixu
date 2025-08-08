@@ -201,10 +201,18 @@ export class HybridPushService {
   async removeInvalidTokens(invalidTokens: string[], serviceType: string) {
     try {
       for (const token of invalidTokens) {
-        await this.strapi.entityService.update('api::user-push-token.user-push-token' as any, {
+        // 先查找要更新的记录
+        const existingTokens = await this.strapi.entityService.findMany('api::user-push-token.user-push-token' as any, {
           filters: { pushToken: token, serviceType } as any,
-          data: { isActive: false },
         });
+
+        if (existingTokens && existingTokens.length > 0) {
+          for (const existingToken of existingTokens) {
+            await this.strapi.entityService.update('api::user-push-token.user-push-token' as any, existingToken.id, {
+              data: { isActive: false },
+            });
+          }
+        }
       }
       console.log(`✅ 已移除 ${invalidTokens.length} 个无效token (${serviceType})`);
     } catch (error) {
@@ -251,10 +259,18 @@ export class HybridPushService {
    */
   async unregisterUserToken(userId: number, pushToken: string, serviceType: string) {
     try {
-      await this.strapi.entityService.update('api::user-push-token.user-push-token' as any, {
+      // 先查找要更新的记录
+      const existingTokens = await this.strapi.entityService.findMany('api::user-push-token.user-push-token' as any, {
         filters: { userId, pushToken, serviceType } as any,
-        data: { isActive: false },
       });
+
+      if (existingTokens && existingTokens.length > 0) {
+        for (const existingToken of existingTokens) {
+          await this.strapi.entityService.update('api::user-push-token.user-push-token' as any, existingToken.id, {
+            data: { isActive: false },
+          });
+        }
+      }
 
       console.log(`✅ 用户 ${userId} 的${serviceType} token注销成功`);
       return { success: true, message: 'Token注销成功' };
