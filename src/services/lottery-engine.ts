@@ -362,13 +362,13 @@ export default ({ strapi }) => ({
         user: record.user.id, // 直接关联用户
         status: 'pending',
         remark: `奖品: ${prize.name}`,
-        receiverName: '待填写',
-        mobile: '待填写',
-        province: '待填写',
-        city: '待填写',
-        district: '待填写',
-        address: '待填写',
-        zipCode: '待填写'
+        receiverName: null, // 改为null，而不是"待填写"
+        mobile: null,
+        province: null,
+        city: null,
+        district: null,
+        address: null,
+        zipCode: null
       };
 
       const shippingOrder = await strapi.entityService.create('api::shipping-order.shipping-order' as any, {
