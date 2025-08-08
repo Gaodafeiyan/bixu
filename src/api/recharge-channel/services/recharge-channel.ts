@@ -512,6 +512,115 @@ export default ({ strapi }) => ({
     }
   },
 
+  // 创建AI代币兑换（不创建提现订单）
+  async createAiTokenExchange(userId: number, tokenSymbol: string, amount: string) {
+    try {
+      // 验证用户AI代币余额
+      const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        filters: { user: { id: userId } }
+      });
+
+      const wallet = wallets[0];
+      if (!wallet) {
+        throw new Error('用户钱包不存在');
+      }
+
+      // 检查用户AI代币价值余额
+      const aiYueBalance = new Decimal(wallet.aiYue || '0');
+      if (aiYueBalance.lessThanOrEqualTo(0)) {
+        throw new Error('AI代币价值余额不足');
+      }
+
+      // 验证金额
+      const amountDecimal = new Decimal(amount);
+      if (amountDecimal.lessThanOrEqualTo(0)) {
+        throw new Error('兑换金额必须大于0');
+      }
+
+      // 获取实时价格并计算代币数量
+      let usdtValue: Decimal;
+      let exchangeAmount: Decimal;
+      
+      if (tokenSymbol === 'USDT') {
+        // USDT直接使用数量作为价值
+        usdtValue = amountDecimal;
+        exchangeAmount = amountDecimal;
+      } else {
+        // 其他代币：用户输入的是USDT价值，需要计算代币数量
+        const tokenPrice = await getTokenPrice(tokenSymbol);
+        usdtValue = amountDecimal; // 用户输入的就是USDT价值
+        exchangeAmount = usdtValue.div(new Decimal(tokenPrice)); // 计算代币数量
+        console.log(`💰 ${tokenSymbol}实时价格: ${tokenPrice} USDT`);
+        console.log(`💰 用户输入${amount} USDT价值，转换为${exchangeAmount.toString()} ${tokenSymbol}`);
+      }
+
+      // 检查余额是否足够
+      if (aiYueBalance.lessThan(usdtValue)) {
+        throw new Error(`AI代币价值余额不足: 需要 ${usdtValue.toString()} USDT, 当前余额 ${aiYueBalance.toString()} USDT`);
+      }
+
+      // 立即扣除用户AI代币价值余额（扣除USDT价值）
+      const newAiYueBalance = aiYueBalance.sub(usdtValue);
+      
+      // 解析现有的aiTokenBalances
+      let tokenBalances = {};
+      if (wallet.aiTokenBalances) {
+        try {
+          tokenBalances = JSON.parse(wallet.aiTokenBalances);
+          console.log(`🔍 解析现有aiTokenBalances: ${wallet.aiTokenBalances}`);
+          console.log(`🔍 解析后的tokenBalances:`, tokenBalances);
+        } catch (error) {
+          console.error('解析aiTokenBalances失败:', error);
+          tokenBalances = {};
+        }
+      } else {
+        console.log(`🔍 用户钱包aiTokenBalances为空或null`);
+      }
+
+      // 将转换后的代币数量添加到aiTokenBalances中
+      const currentTokenBalance = new Decimal(tokenBalances[tokenSymbol] || '0');
+      const newTokenBalance = currentTokenBalance.add(exchangeAmount);
+      tokenBalances[tokenSymbol] = newTokenBalance.toString();
+      
+      console.log(`🔍 兑换${tokenSymbol}余额: 当前${currentTokenBalance.toString()} + 新增${exchangeAmount.toString()} = ${newTokenBalance.toString()}`);
+      console.log(`🔍 更新后的tokenBalances:`, tokenBalances);
+
+      // 更新钱包余额：扣除aiYue，添加代币余额
+      const updateData = {
+        aiYue: newAiYueBalance.toString(),
+        aiTokenBalances: JSON.stringify(tokenBalances)
+      };
+      
+      console.log(`🔍 准备更新钱包数据:`, updateData);
+      console.log(`🔍 钱包ID: ${wallet.id}`);
+      console.log(`🔍 用户ID: ${userId}`);
+      
+      try {
+        const updatedWallet = await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
+          data: updateData
+        });
+        
+        console.log(`✅ 钱包更新成功:`, updatedWallet);
+        console.log(`✅ 更新后的aiYue: ${updatedWallet.aiYue}`);
+        console.log(`✅ 更新后的aiTokenBalances: ${updatedWallet.aiTokenBalances}`);
+      } catch (updateError) {
+        console.error(`❌ 钱包更新失败:`, updateError);
+        throw new Error(`钱包更新失败: ${updateError.message}`);
+      }
+
+      console.log(`💰 兑换完成: aiYue减少${usdtValue.toString()} USDT, ${tokenSymbol}增加${exchangeAmount.toString()}`);
+
+      return {
+        exchangeAmount: exchangeAmount.toString(),
+        usdtValue: usdtValue.toString(),
+        tokenSymbol: tokenSymbol
+      };
+    } catch (error) {
+      console.error('AI代币兑换失败:', error);
+      throw error;
+    }
+  },
+
   // 监控钱包交易
   async monitorWalletTransactions() {
     try {

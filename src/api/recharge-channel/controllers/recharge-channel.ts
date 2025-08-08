@@ -595,20 +595,22 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
   async aiTokenWithdrawal(ctx) {
     try {
       const userId = ctx.state.user.id;
-      const { amount, address, network = 'BSC', tokenSymbol } = ctx.request.body;
+      const { amount, address, network = 'BSC', tokenSymbol, isExchange = false } = ctx.request.body;
 
-      if (!amount || !address || !tokenSymbol) {
+      if (!amount || !tokenSymbol) {
         return ctx.badRequest('缺少必要参数');
       }
 
       // 验证金额格式
       if (isNaN(Number(amount)) || Number(amount) <= 0) {
-        return ctx.badRequest('提现金额必须是大于0的数字');
+        return ctx.badRequest('金额必须是大于0的数字');
       }
 
-      // 验证地址格式（简单验证）
-      if (address.length < 10) {
-        return ctx.badRequest('提现地址格式不正确');
+      // 如果是兑换操作，不需要验证地址
+      if (!isExchange) {
+        if (!address || address.length < 10) {
+          return ctx.badRequest('提现地址格式不正确');
+        }
       }
 
       // 验证代币符号
@@ -617,28 +619,47 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         return ctx.badRequest('不支持的代币类型');
       }
 
-      console.log(`用户 ${userId} 选择代币: ${tokenSymbol}`);
+      console.log(`用户 ${userId} 操作: ${isExchange ? '兑换' : '提现'} ${tokenSymbol}`);
 
-      const withdrawalOrder = await strapi
-        .service('api::recharge-channel.recharge-channel')
-        .createAiTokenWithdrawalOrder(userId, tokenSymbol, amount, address, network);
+      if (isExchange) {
+        // 兑换操作：只进行余额转换，不创建提现订单
+        const exchangeResult = await strapi
+          .service('api::recharge-channel.recharge-channel')
+          .createAiTokenExchange(userId, tokenSymbol, amount);
+        
+        ctx.body = {
+          success: true,
+          data: {
+            amount: amount,
+            tokenSymbol: tokenSymbol,
+            exchangeAmount: exchangeResult.exchangeAmount,
+            message: "兑换成功"
+          },
+          message: 'AI代币兑换成功'
+        };
+      } else {
+        // 提现操作：创建提现订单
+        const withdrawalOrder = await strapi
+          .service('api::recharge-channel.recharge-channel')
+          .createAiTokenWithdrawalOrder(userId, tokenSymbol, amount, address, network);
 
-      ctx.body = {
-        success: true,
-        data: {
-          orderNo: withdrawalOrder.orderNo,
-          amount: withdrawalOrder.amount,
-          actualAmount: withdrawalOrder.actualAmount,
-          fee: withdrawalOrder.fee,
-          status: withdrawalOrder.status,
-          requestTime: withdrawalOrder.requestTime,
-          tokenSymbol: tokenSymbol
-        } as any as any,
-        message: 'AI代币提现订单创建成功'
-      };
+        ctx.body = {
+          success: true,
+          data: {
+            orderNo: withdrawalOrder.orderNo,
+            amount: withdrawalOrder.amount,
+            actualAmount: withdrawalOrder.actualAmount,
+            fee: withdrawalOrder.fee,
+            status: withdrawalOrder.status,
+            requestTime: withdrawalOrder.requestTime,
+            tokenSymbol: tokenSymbol
+          } as any as any,
+          message: 'AI代币提现订单创建成功'
+        };
+      }
     } catch (error) {
-      console.error('创建AI代币提现订单失败:', error);
-      ctx.throw(500, `创建AI代币提现订单失败: ${error.message}`);
+      console.error('AI代币操作失败:', error);
+      ctx.throw(500, `AI代币操作失败: ${error.message}`);
     }
   },
 
