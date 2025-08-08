@@ -336,6 +336,17 @@ export default ({ strapi }) => ({
     try {
       console.log(`创建发货订单 - 记录ID: ${recordId}, 奖品: ${prize.name}, 类型: ${prize.jiangpinType}`);
       
+      // 检查是否为需要发货的实物奖品
+      const virtualTypes = ['usdt', 'ai_token', 'token', 'coin', 'points', 'credits', 'virtual', 'digital'];
+      const isVirtualPrize = virtualTypes.includes(prize.jiangpinType?.toLowerCase());
+      
+      if (isVirtualPrize) {
+        console.log(`✅ 跳过发货订单创建 - 虚拟奖品: ${prize.name}`);
+        return;
+      }
+      
+      console.log(`📦 为实物奖品创建发货订单: ${prize.name}`);
+      
       const shippingOrderData = {
         record: recordId,
         status: 'pending',
