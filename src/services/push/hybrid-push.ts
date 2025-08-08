@@ -28,6 +28,8 @@ export class HybridPushService {
       // 获取用户的推送token
       const tokens = await this.getUserPushTokens(userId);
       
+      console.log(`🔍 用户 ${userId} 的推送token:`, tokens);
+      
       if (tokens.length === 0) {
         console.log(`用户 ${userId} 没有注册的推送token`);
         return { success: false, message: '用户没有注册的推送token' };
@@ -130,6 +132,15 @@ export class HybridPushService {
    */
   async sendJPushPush(tokens: string[], title: string, body: string, data?: any) {
     try {
+      console.log('🔍 JPush推送调试信息:', {
+        JPUSH_APP_KEY: JPUSH_APP_KEY ? '已配置' : '未配置',
+        JPUSH_MASTER_SECRET: JPUSH_MASTER_SECRET ? '已配置' : '未配置',
+        JPUSH_AUTH: JPUSH_AUTH ? '已生成' : '未生成',
+        tokens: tokens,
+        title: title,
+        body: body,
+      });
+      
       if (!JPUSH_AUTH) {
         console.log('⚠️ JPush配置不完整，跳过JPush推送');
         return { success: false, message: 'JPush配置不完整' };
