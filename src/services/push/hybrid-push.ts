@@ -206,10 +206,10 @@ export class HybridPushService {
           filters: { pushToken: token, serviceType } as any,
         });
 
-        if (existingTokens && existingTokens.length > 0) {
+        if (existingTokens && Array.isArray(existingTokens) && existingTokens.length > 0) {
           for (const existingToken of existingTokens) {
             await this.strapi.entityService.update('api::user-push-token.user-push-token' as any, existingToken.id, {
-              data: { isActive: false },
+              data: { isActive: false } as any,
             });
           }
         }
@@ -264,10 +264,10 @@ export class HybridPushService {
         filters: { userId, pushToken, serviceType } as any,
       });
 
-      if (existingTokens && existingTokens.length > 0) {
+      if (existingTokens && Array.isArray(existingTokens) && existingTokens.length > 0) {
         for (const existingToken of existingTokens) {
           await this.strapi.entityService.update('api::user-push-token.user-push-token' as any, existingToken.id, {
-            data: { isActive: false },
+            data: { isActive: false } as any,
           });
         }
       }
