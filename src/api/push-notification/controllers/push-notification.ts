@@ -1,4 +1,5 @@
 import { Strapi } from '@strapi/strapi';
+import { HybridPushService } from '../../../services/push/hybrid-push';
 
 export default ({ strapi }: { strapi: Strapi }) => ({
   /**
@@ -7,18 +8,41 @@ export default ({ strapi }: { strapi: Strapi }) => ({
   async sendToUser(ctx) {
     try {
       const { userId, title, body, data } = ctx.request.body;
-
+      
       if (!userId || !title || !body) {
         return ctx.badRequest('userId, title, body是必需的');
       }
 
-      const pushNotificationService = strapi.service('api::push-notification.push-notification');
-      const result = await pushNotificationService.sendToUser(userId, title, body, data);
+      const hybridPushService = new HybridPushService(strapi);
+      const result = await hybridPushService.sendToUser(userId, title, body, data);
 
       return ctx.send(result);
     } catch (error) {
       console.error('发送推送通知失败:', error);
       return ctx.internalServerError('发送推送通知失败');
+    }
+  },
+
+  /**
+   * 测试推送通知
+   */
+  async test(ctx) {
+    try {
+      const userId = Number(ctx.request.body?.userId || ctx.query.userId);
+      if (!userId) {
+        return ctx.badRequest('userId是必需的');
+      }
+
+      const hybridPushService = new HybridPushService(strapi);
+      const result = await hybridPushService.sendToUser(userId, '测试推送', '这是一条测试通知', {
+        screen: 'investment_detail',
+        orderId: '28',
+      });
+
+      return ctx.send(result);
+    } catch (error) {
+      console.error('测试推送通知失败:', error);
+      return ctx.internalServerError('测试推送通知失败');
     }
   },
 

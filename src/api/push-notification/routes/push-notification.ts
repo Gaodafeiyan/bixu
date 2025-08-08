@@ -34,5 +34,16 @@ export default {
         middlewares: [],
       },
     },
+    {
+      method: 'POST',
+      path: '/push-notification/test',
+      handler: 'push-notification.test',
+      config: {
+        type: 'content-api',
+        auth: {},
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 }; 

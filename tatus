@@ -3,3 +3,6 @@
 [33m3ed4649[m 修复用户注册密码加密问题，使用strapi.entityService.create确保密码正确加密
 [33m46e14a5[m 修复dinggou-jihua控制器findPage方法的返回类型问题
 [33m705e686[m 修复用户注册时的角色设置问题，使用正确的authenticated角色ID
+[33m46a4147[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m)[m 修复Firebase推送通知API路由路径 - 修复前端和后端API路径不匹配问题 - 更新push-notification路由从/push/改为/push-notification/ - 更新user-fcm-token路由从/fcm/改为/user-fcm-token/ - 确保前端调用路径与后端路由一致
+[33mac1f7d1[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m 添加发货订单统计接口：myStats方法和路由
+[33m9acbfcb[m 修复我的奖品显示问题：发货订单数据格式改为null

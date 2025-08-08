@@ -1,0 +1,49 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_push_tokens",
+  "info": {
+    "singularName": "user-push-token",
+    "pluralName": "user-push-tokens",
+    "displayName": "User Push Token",
+    "description": "存储用户的推送Token（支持Firebase和JPush）"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {},
+  "attributes": {
+    "userId": {
+      "type": "integer",
+      "required": true,
+      "description": "用户ID"
+    },
+    "pushToken": {
+      "type": "text",
+      "required": true,
+      "description": "推送Token（FCM Token或JPush RegistrationID）"
+    },
+    "serviceType": {
+      "type": "enumeration",
+      "enum": [
+        "firebase",
+        "jpush"
+      ],
+      "required": true,
+      "description": "推送服务类型"
+    },
+    "deviceType": {
+      "type": "enumeration",
+      "enum": [
+        "android",
+        "ios"
+      ],
+      "default": "android",
+      "description": "设备类型"
+    },
+    "isActive": {
+      "type": "boolean",
+      "default": true,
+      "description": "token是否有效"
+    }
+  }
+}
