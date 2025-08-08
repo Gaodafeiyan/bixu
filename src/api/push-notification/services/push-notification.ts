@@ -1,3 +1,3 @@
-import pushNotificationService from '../../../services/push-notification';
+import { HybridPushService } from '../../../services/push/hybrid-push';
 
-export default () => pushNotificationService; 
+export default ({ strapi }) => new HybridPushService(strapi); 
