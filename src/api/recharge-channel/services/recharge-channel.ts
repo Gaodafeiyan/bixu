@@ -261,7 +261,20 @@ export default ({ strapi }) => ({
 
       const channelList = Array.isArray(channels) ? channels : [channels];
       if (channelList.length === 0) {
-        throw new Error(`没有可用的${currency}提现通道`);
+        // 提供更详细的错误信息
+        console.error(`❌ 没有找到${currency}提现通道`);
+        console.error(`❌ 查找条件: network=${network}, asset=${currency}, status=active, channelType=withdrawal`);
+        
+        // 查找所有可用的提现通道，用于调试
+        const allChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+          filters: {
+            status: 'active',
+            channelType: { $in: ['withdrawal', 'both'] }
+          }
+        });
+        console.error(`❌ 所有可用的提现通道:`, allChannels.map((c: any) => ({ name: c.name, asset: c.asset, network: c.network })));
+        
+        throw new Error(`没有可用的${currency}提现通道，请在后台配置${currency}的提现通道`);
       }
 
       const channel = channelList[0]; // 选择第一个可用通道

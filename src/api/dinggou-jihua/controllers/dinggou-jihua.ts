@@ -5,10 +5,11 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
   // 继承默认的find方法
   async find(ctx) {
     try {
-      // 直接使用strapi.entityService
+      // 直接使用strapi.entityService，添加固定排序
       const result = await strapi.entityService.findPage('api::dinggou-jihua.dinggou-jihua', {
         ...ctx.query,
-        populate: []
+        populate: [],
+        sort: { benjinUSDT: 'asc' } // 按照投资金额从小到大排序，确保固定顺序
       });
       return result;
     } catch (error) {
