@@ -4,9 +4,27 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
   // 继承默认的find方法
   async find(ctx) {
     try {
+      // 如果是用户查询，只返回当前用户的发货订单
+      const userId = ctx.state.user?.id;
+      const query = { ...ctx.query };
+      
+      if (userId) {
+        // 添加用户过滤条件
+        if (!query.filters) {
+          query.filters = {};
+        }
+        query.filters.record = {
+          user: { id: userId }
+        };
+      }
+      
       const result = await strapi.entityService.findPage('api::shipping-order.shipping-order' as any, {
-        ...ctx.query,
-        populate: ['record', 'record.user', 'record.jiangpin']
+        ...query,
+        populate: {
+          record: {
+            populate: ['user', 'jiangpin']
+          }
+        }
       });
       return result;
     } catch (error) {

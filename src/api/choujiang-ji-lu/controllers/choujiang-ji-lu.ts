@@ -127,12 +127,16 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
           console.log(`   中奖: ${record.isWon}`);
           console.log(`   记录ID: ${record.id}`);
           
-          // 查询该记录对应的发货订单
+          // 查询该记录对应的发货订单 - 修复查询逻辑
           const shippingOrders = await strapi.entityService.findMany('api::shipping-order.shipping-order' as any, {
             filters: {
               record: { id: record.id }
             },
-            populate: ['record']
+            populate: {
+              record: {
+                populate: ['jiangpin']
+              }
+            }
           }) as any[];
           
           if (shippingOrders && shippingOrders.length > 0) {
