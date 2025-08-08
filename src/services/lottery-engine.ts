@@ -252,18 +252,13 @@ export default ({ strapi }) => ({
       });
       console.log(`✅ 抽奖记录创建成功，记录ID: ${record.id}`);
 
-      // 8. 如果是实物奖品且中奖，创建发货订单
-      const isPhysicalPrize = selectedPrize.jiangpinType === 'physical' || 
-                              selectedPrize.name?.includes('宝马') || 
-                              selectedPrize.name?.includes('手机') || 
-                              selectedPrize.name?.includes('电脑');
-      
-      if (isWon && isPhysicalPrize) {
+      // 8. 如果中奖，创建发货订单
+      if (isWon) {
         console.log('🔍 步骤8: 创建发货订单');
         await this.createShippingOrder(record.id, selectedPrize);
         console.log(`✅ 发货订单创建成功`);
       } else {
-        console.log(`✅ 跳过发货订单创建（非实物奖品或未中奖）`);
+        console.log(`✅ 跳过发货订单创建（未中奖）`);
       }
 
       console.log(`🎉 抽奖流程完成 - 用户: ${userId}, 中奖: ${isWon}, 奖品: ${selectedPrize.name}`);
@@ -343,17 +338,6 @@ export default ({ strapi }) => ({
   // 创建发货订单
   async createShippingOrder(recordId: number, prize: any): Promise<void> {
     try {
-      // 检查是否为实体商品（包括宝马x5等）
-      const isPhysicalPrize = prize.jiangpinType === 'physical' || 
-                              prize.name?.includes('宝马') || 
-                              prize.name?.includes('手机') || 
-                              prize.name?.includes('电脑');
-      
-      if (!isPhysicalPrize) {
-        console.log(`跳过创建发货订单 - 奖品类型: ${prize.jiangpinType}, 奖品: ${prize.name}`);
-        return;
-      }
-
       console.log(`创建发货订单 - 记录ID: ${recordId}, 奖品: ${prize.name}, 类型: ${prize.jiangpinType}`);
       
       const shippingOrderData = {

@@ -125,13 +125,14 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
           console.log(`🔍 记录 ${i + 1}:`);
           console.log(`   奖品: ${record.jiangpin?.name || '未知'}`);
           console.log(`   中奖: ${record.isWon}`);
+          console.log(`   记录ID: ${record.id}`);
           
           // 查询该记录对应的发货订单
           const shippingOrders = await strapi.entityService.findMany('api::shipping-order.shipping-order' as any, {
             filters: {
               record: { id: record.id }
             },
-            populate: ['record', 'record.jiangpin']
+            populate: ['record']
           }) as any[];
           
           if (shippingOrders && shippingOrders.length > 0) {
@@ -142,6 +143,8 @@ export default factories.createCoreController('api::choujiang-ji-lu.choujiang-ji
             console.log(`   手机: ${record.shippingOrder.mobile || 'null'}`);
           } else {
             console.log(`   发货订单: 不存在`);
+            // 如果没有发货订单，设置默认值
+            record.shippingOrder = null;
           }
         }
       }
