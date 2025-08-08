@@ -86,6 +86,13 @@ export default {
       type: 'text',
       maxLength: 500,
     },
+    // 直接关联用户（用于快速查询）
+    user: {
+      type: 'relation',
+      relation: 'manyToOne',
+      target: 'plugin::users-permissions.user',
+      required: false,
+    },
     // 发货时间
     shippedAt: {
       type: 'datetime',

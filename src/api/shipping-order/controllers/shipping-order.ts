@@ -9,13 +9,18 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
       const query = { ...ctx.query };
       
       if (userId) {
-        // 添加用户过滤条件
+        // 添加用户过滤条件 - 支持两种方式：直接用户关联和通过记录关联
         if (!query.filters) {
           query.filters = {};
         }
-        query.filters.record = {
-          user: { id: userId }
-        };
+        
+        // 优先使用直接用户关联，如果没有则通过记录关联
+        if (!query.filters.user) {
+          query.filters.$or = [
+            { user: { id: userId } },
+            { record: { user: { id: userId } } }
+          ];
+        }
       }
       
       const result = await strapi.entityService.findPage('api::shipping-order.shipping-order' as any, {

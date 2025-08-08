@@ -347,8 +347,19 @@ export default ({ strapi }) => ({
       
       console.log(`📦 为实物奖品创建发货订单: ${prize.name}`);
       
+      // 获取抽奖记录以获取用户ID
+      const record = await strapi.entityService.findOne('api::choujiang-ji-lu.choujiang-ji-lu' as any, recordId, {
+        populate: ['user']
+      });
+      
+      if (!record || !record.user) {
+        console.error('❌ 无法获取抽奖记录或用户信息');
+        return;
+      }
+      
       const shippingOrderData = {
         record: recordId,
+        user: record.user.id, // 直接关联用户
         status: 'pending',
         remark: `奖品: ${prize.name}`,
         receiverName: '待填写',
