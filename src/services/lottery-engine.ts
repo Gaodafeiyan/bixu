@@ -279,6 +279,7 @@ export default ({ strapi }) => ({
   // 发放奖品
   async grantPrize(userId: number, prize: any): Promise<void> {
     try {
+      // 确保用户有钱包（但不直接修改余额）
       let wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: { id: userId } }
       }) as any[];
@@ -301,23 +302,18 @@ export default ({ strapi }) => ({
         userWallet = wallets[0];
       }
 
+      // 根据奖品类型处理，但不直接修改钱包余额
       switch (prize.jiangpinType) {
         case 'usdt':
-          const currentBalance = new Decimal(userWallet.usdtYue || 0);
-          const newBalance = currentBalance.plus(prize.value);
-          await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-            data: { usdtYue: newBalance.toString() }
-          });
-          console.log(`用户 ${userId} 获得 USDT 奖励: ${prize.value}, 新余额: ${newBalance}`);
+          // 创建USDT奖品记录，但不直接加到钱包余额
+          console.log(`用户 ${userId} 获得 USDT 奖品: ${prize.value} USDT`);
+          console.log(`注意：USDT奖品价值不直接加到钱包余额，避免影响累积收益计算`);
           break;
 
         case 'ai_token':
-          const currentAiBalance = new Decimal(userWallet.aiYue || 0);
-          const newAiBalance = currentAiBalance.plus(prize.value);
-          await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
-            data: { aiYue: newAiBalance.toString() }
-          });
-          console.log(`用户 ${userId} 获得 AI代币 奖励: ${prize.value}, 新余额: ${newAiBalance}`);
+          // 创建AI代币奖品记录，但不直接加到钱包余额
+          console.log(`用户 ${userId} 获得 AI代币 奖品: ${prize.value} USDT等值`);
+          console.log(`注意：AI代币奖品价值不直接加到钱包余额，避免影响累积收益计算`);
           break;
 
         case 'physical':
