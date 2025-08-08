@@ -216,19 +216,13 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 发送投资成功推送通知
       try {
-        console.log('🔍 尝试获取推送服务...');
-        const pushNotificationService = strapi.service('api::push-notification.push-notification');
-        console.log('✅ 推送服务获取成功:', !!pushNotificationService);
-        
-        if (pushNotificationService && typeof pushNotificationService.sendToUser === 'function') {
-          await pushNotificationService.sendToUser(userId,
-            '🎉 投资成功',
-            `您已成功投资 ${investmentAmount.toString()} USDT，投资订单已创建！计划：${plan.name}`
-          );
-          console.log(`📱 投资成功推送已发送给用户 ${userId}`);
-        } else {
-          console.error('❌ 推送服务不可用或方法不存在');
-        }
+        const { HybridPushService } = require('../../../services/push/hybrid-push');
+        const hybridPushService = new HybridPushService(strapi);
+        await hybridPushService.sendToUser(userId,
+          '🎉 投资成功',
+          `您已成功投资 ${investmentAmount.toString()} USDT，投资订单已创建！计划：${plan.name}`
+        );
+        console.log(`📱 投资成功推送已发送给用户 ${userId}`);
       } catch (error) {
         console.error('❌ 发送投资成功推送失败:', error);
       }
@@ -497,8 +491,9 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
             // 发送邀请奖励推送通知
             try {
               if (rewardResult.inviterId) {
-                const pushNotificationService = strapi.service('api::push-notification.push-notification');
-                await pushNotificationService.sendToUser(rewardResult.inviterId,
+                const { HybridPushService } = require('../../../services/push/hybrid-push');
+                const hybridPushService = new HybridPushService(strapi);
+                await hybridPushService.sendToUser(rewardResult.inviterId,
                   '邀请奖励到账',
                   `恭喜！您邀请的好友赎回成功，奖励${rewardResult.rewardAmount}USDT已到账`
                 );
@@ -522,8 +517,9 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 发送赎回成功推送通知
       try {
-        const pushNotificationService = strapi.service('api::push-notification.push-notification');
-        await pushNotificationService.sendToUser(userId,
+        const { HybridPushService } = require('../../../services/push/hybrid-push');
+        const hybridPushService = new HybridPushService(strapi);
+        await hybridPushService.sendToUser(userId,
           '🎉 赎回成功',
           `您的投资已成功赎回！总收益：${totalPayout.toString()} USDT，其中本金：${investmentAmount.toString()} USDT，收益：${staticYield.toString()} USDT`
         );

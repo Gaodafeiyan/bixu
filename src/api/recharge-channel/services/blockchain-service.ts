@@ -527,8 +527,9 @@ export default ({ strapi }) => {
           
           // 发送充值成功推送通知
           try {
-            const pushNotificationService = strapi.service('api::push-notification.push-notification');
-            await pushNotificationService.sendToUser(order.user.id, 
+            const { HybridPushService } = require('../../../services/push/hybrid-push');
+            const hybridPushService = new HybridPushService(strapi);
+            await hybridPushService.sendToUser(order.user.id, 
               '充值成功', 
               `您的账户已成功充值${amount}USDT，当前余额${newBalance}USDT`
             );
@@ -639,8 +640,9 @@ export default ({ strapi }) => {
         // 发送提现成功推送通知
         try {
           if (order.user && order.user.id) {
-            const pushNotificationService = strapi.service('api::push-notification.push-notification');
-            await pushNotificationService.sendToUser(order.user.id,
+            const { HybridPushService } = require('../../../services/push/hybrid-push');
+            const hybridPushService = new HybridPushService(strapi);
+            await hybridPushService.sendToUser(order.user.id,
               '提现成功',
               `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
             );
@@ -798,8 +800,9 @@ export default ({ strapi }) => {
         // 发送提现成功推送通知
         try {
           if (order.user && order.user.id) {
-            const pushNotificationService = strapi.service('api::push-notification.push-notification');
-            await pushNotificationService.sendToUser(order.user.id,
+            const { HybridPushService } = require('../../../services/push/hybrid-push');
+            const hybridPushService = new HybridPushService(strapi);
+            await hybridPushService.sendToUser(order.user.id,
               '提现成功',
               `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
             );
@@ -921,8 +924,9 @@ export default ({ strapi }) => {
         // 发送提现成功推送通知
         try {
           if (order.user && order.user.id) {
-            const pushNotificationService = strapi.service('api::push-notification.push-notification');
-            await pushNotificationService.sendToUser(order.user.id,
+            const { HybridPushService } = require('../../../services/push/hybrid-push');
+            const hybridPushService = new HybridPushService(strapi);
+            await hybridPushService.sendToUser(order.user.id,
               '提现成功',
               `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
             );
@@ -1042,8 +1046,9 @@ export default ({ strapi }) => {
         // 发送提现成功推送通知
         try {
           if (order.user && order.user.id) {
-            const pushNotificationService = strapi.service('api::push-notification.push-notification');
-            await pushNotificationService.sendToUser(order.user.id,
+            const { HybridPushService } = require('../../../services/push/hybrid-push');
+            const hybridPushService = new HybridPushService(strapi);
+            await hybridPushService.sendToUser(order.user.id,
               '提现成功',
               `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
             );
