@@ -4,6 +4,14 @@ export default {
     // 自定义路由 - 必须放在默认CRUD路由之前
     {
       method: 'GET',
+      path: '/shipping-orders/my-stats',
+      handler: 'shipping-order.myStats',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    {
+      method: 'GET',
       path: '/shipping-orders/stats',
       handler: 'shipping-order.getShippingStats',
       config: {
@@ -88,16 +96,25 @@ export default {
       method: 'POST',
       path: '/shipping-orders',
       handler: 'shipping-order.create',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
     },
     {
       method: 'PUT',
       path: '/shipping-orders/:id',
       handler: 'shipping-order.update',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
     },
     {
       method: 'DELETE',
       path: '/shipping-orders/:id',
       handler: 'shipping-order.delete',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
     },
   ],
 }; 

@@ -360,5 +360,56 @@ export default factories.createCoreController('api::shipping-order.shipping-orde
       console.error('获取发货订单列表失败:', error);
       ctx.throw(500, `获取发货订单列表失败: ${error.message}`);
     }
+  },
+
+  // 获取用户发货订单统计
+  async myStats(ctx) {
+    try {
+      const userId = ctx.state.user?.id;
+      if (!userId) {
+        return ctx.unauthorized('用户未登录');
+      }
+
+      console.log('📊 获取用户发货订单统计 - 用户ID:', userId);
+
+      // 查询各种状态的订单数量
+      const q = async (status: string) => {
+        return await strapi.db.query('api::shipping-order.shipping-order').count({
+          where: { 
+            $or: [
+              { user: { id: userId } },
+              { record: { user: { id: userId } } }
+            ],
+            status 
+          },
+        });
+      };
+
+      const [pending, processing, shipped, delivered] = await Promise.all([
+        q('pending'),
+        q('processing'), 
+        q('shipped'),
+        q('delivered'),
+      ]);
+
+      const stats = {
+        pending,
+        processing,
+        shipped,
+        delivered,
+        total: pending + processing + shipped + delivered
+      };
+
+      console.log('📊 发货订单统计结果:', stats);
+
+      ctx.body = {
+        success: true,
+        data: stats,
+        message: '获取发货订单统计成功'
+      };
+    } catch (error) {
+      console.error('获取发货订单统计失败:', error);
+      ctx.throw(500, `获取发货订单统计失败: ${error.message}`);
+    }
   }
 })); 
