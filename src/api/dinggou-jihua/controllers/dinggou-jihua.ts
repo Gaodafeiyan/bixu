@@ -216,12 +216,19 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
 
       // 发送投资成功推送通知
       try {
+        console.log('🔍 尝试获取推送服务...');
         const pushNotificationService = strapi.service('api::push-notification.push-notification');
-        await pushNotificationService.sendToUser(userId,
-          '🎉 投资成功',
-          `您已成功投资 ${investmentAmount.toString()} USDT，投资订单已创建！计划：${plan.name}`
-        );
-        console.log(`📱 投资成功推送已发送给用户 ${userId}`);
+        console.log('✅ 推送服务获取成功:', !!pushNotificationService);
+        
+        if (pushNotificationService && typeof pushNotificationService.sendToUser === 'function') {
+          await pushNotificationService.sendToUser(userId,
+            '🎉 投资成功',
+            `您已成功投资 ${investmentAmount.toString()} USDT，投资订单已创建！计划：${plan.name}`
+          );
+          console.log(`📱 投资成功推送已发送给用户 ${userId}`);
+        } else {
+          console.error('❌ 推送服务不可用或方法不存在');
+        }
       } catch (error) {
         console.error('❌ 发送投资成功推送失败:', error);
       }
