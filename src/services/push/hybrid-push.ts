@@ -172,7 +172,19 @@ export class HybridPushService {
       };
     } catch (error) {
       console.error('❌ JPush推送发送失败:', error);
-      return { success: false, error: error.message };
+      
+      // 添加详细的错误信息
+      let errorMessage = error.message;
+      if (error.response) {
+        console.error('JPush API响应错误:', {
+          status: error.response.status,
+          statusText: error.response.statusText,
+          data: error.response.data,
+        });
+        errorMessage = `JPush API错误 (${error.response.status}): ${JSON.stringify(error.response.data)}`;
+      }
+      
+      return { success: false, error: errorMessage };
     }
   }
 
