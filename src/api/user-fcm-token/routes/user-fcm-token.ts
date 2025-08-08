@@ -3,7 +3,7 @@ export default {
   routes: [
     {
       method: 'POST',
-      path: '/fcm/register',
+      path: '/user-fcm-token/register',
       handler: 'user-fcm-token.registerToken',
       config: {
         type: 'content-api',
@@ -14,7 +14,7 @@ export default {
     },
     {
       method: 'POST',
-      path: '/fcm/unregister',
+      path: '/user-fcm-token/unregister',
       handler: 'user-fcm-token.unregisterToken',
       config: {
         type: 'content-api',
@@ -25,7 +25,7 @@ export default {
     },
     {
       method: 'GET',
-      path: '/fcm/tokens',
+      path: '/user-fcm-token/tokens',
       handler: 'user-fcm-token.getUserTokens',
       config: {
         type: 'content-api',

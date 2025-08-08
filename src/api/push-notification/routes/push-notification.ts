@@ -3,7 +3,7 @@ export default {
   routes: [
     {
       method: 'POST',
-      path: '/push/send-to-user',
+      path: '/push-notification/send-to-user',
       handler: 'push-notification.sendToUser',
       config: {
         type: 'content-api',
@@ -14,7 +14,7 @@ export default {
     },
     {
       method: 'POST',
-      path: '/push/send-to-all',
+      path: '/push-notification/send-to-all',
       handler: 'push-notification.sendToAllUsers',
       config: {
         type: 'content-api',
@@ -25,7 +25,7 @@ export default {
     },
     {
       method: 'POST',
-      path: '/push/send-announcement',
+      path: '/push-notification/send-announcement',
       handler: 'push-notification.sendSystemAnnouncement',
       config: {
         type: 'content-api',
