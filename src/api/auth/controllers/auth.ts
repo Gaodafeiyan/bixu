@@ -1737,6 +1737,28 @@ export default factories.createCoreController(
           return ctx.notFound('用户不存在');
         }
 
+        // 🔥 新增：获取用户当前最高有效档位
+        let currentTierInfo = null;
+        try {
+          const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+          const currentTier = await rewardConfigService.getUserCurrentTier(userId);
+          
+          if (currentTier) {
+            currentTierInfo = {
+              tierName: currentTier.name,
+              principal: currentTier.principal,
+              staticRate: currentTier.staticRate,
+              referralRate: currentTier.referralRate,
+              maxCommission: currentTier.maxCommission,
+              // 计算示例
+              exampleCalculation: `下级投资1000U时，您可获得：min(1000, ${currentTier.maxCommission}) × ${(currentTier.staticRate * 100).toFixed(0)}% × ${(currentTier.referralRate * 100).toFixed(0)}% = ${Math.min(1000, currentTier.maxCommission) * currentTier.staticRate * currentTier.referralRate} USDT`
+            };
+          }
+        } catch (tierError) {
+          console.error('获取用户档位信息失败:', tierError);
+          // 不影响主要功能
+        }
+
         // 生成包含邀请码的注册页面链接
         const registerLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
         
@@ -1760,7 +1782,9 @@ export default factories.createCoreController(
             inviteLink: inviteLink,
             appDownloadLink: registerLink,
             qrCodeData: qrCodeData,
-            username: user.username
+            username: user.username,
+            // 🔥 新增：当前档位信息
+            currentTier: currentTierInfo
           }
         };
       } catch (error) {
