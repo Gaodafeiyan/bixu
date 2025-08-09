@@ -1,6 +1,6 @@
 import { factories } from '@strapi/strapi';
 import QRCode from 'qrcode';
-import { getApkDownloadUrl, getApkFallbackUrl, checkCdnAvailability } from '../../../config/cdn';
+
 
 export default factories.createCoreController(
   'plugin::users-permissions.user',
@@ -779,44 +779,58 @@ export default factories.createCoreController(
     // APK下载
       async downloadApk(ctx) {
     try {
-      // 检查CDN可用性并获取下载链接
-      const cdnUrl = getApkDownloadUrl();
-      const fallbackUrl = getApkFallbackUrl();
-      
-      // 设置响应头
+      // 设置响应头，强制下载
       ctx.set('Content-Type', 'application/vnd.android.package-archive');
       ctx.set('Content-Disposition', 'attachment; filename="zenithus-v1.10.apk"');
-      ctx.set('Cache-Control', 'public, max-age=3600'); // 1小时缓存
+      ctx.set('Cache-Control', 'no-cache');
       
-      // 重定向到CDN
-      ctx.status = 302;
-      ctx.set('Location', cdnUrl);
-      ctx.body = {
-        success: true,
-        message: '重定向到CDN下载',
-        downloadUrl: cdnUrl,
-        fallbackUrl: fallbackUrl
-      };
+      // 返回服务器上的APK文件
+      const apkPath = '/var/www/html/app-release.apk';
       
-      console.log('📦 APK下载重定向到CDN:', cdnUrl);
+      // 检查文件是否存在
+      const fs = require('fs');
+      const path = require('path');
       
-      // 记录下载行为
-      try {
-        const { userId, downloadType, userAgent, ip } = ctx.request.body;
-        console.log('下载记录:', {
-          userId: userId || 'anonymous',
-          downloadType: downloadType || 'apk',
-          userAgent: userAgent || ctx.request.headers['user-agent'],
-          ip: ip || ctx.request.ip,
-          timestamp: new Date().toISOString(),
-          cdnUrl: cdnUrl
+      console.log('检查APK文件路径:', apkPath);
+      
+      if (fs.existsSync(apkPath)) {
+        const stats = fs.statSync(apkPath);
+        console.log('APK文件存在，大小:', stats.size, '字节');
+        
+        // 设置文件大小头
+        ctx.set('Content-Length', stats.size.toString());
+        
+        // 创建文件流
+        const fileStream = fs.createReadStream(apkPath);
+        
+        // 处理流错误
+        fileStream.on('error', (error) => {
+          console.error('文件流错误:', error);
+          ctx.throw(500, '文件读取失败');
         });
-      } catch (error) {
-        console.error('记录下载失败:', error);
+        
+        ctx.body = fileStream;
+        
+        console.log('📦 APK下载成功:', {
+          ip: ctx.request.ip,
+          userAgent: ctx.request.headers['user-agent'],
+          fileSize: stats.size,
+          timestamp: new Date().toISOString()
+        });
+        
+      } else {
+        // 如果文件不存在，返回错误信息
+        console.error('APK文件不存在:', apkPath);
+        ctx.status = 404;
+        ctx.body = {
+          error: 'APK文件不存在',
+          message: '请确保APK文件已放置在正确位置',
+          path: apkPath
+        };
       }
       
     } catch (error) {
-      console.error('APK下载重定向失败:', error);
+      console.error('APK下载失败:', error);
       ctx.throw(500, 'APK下载失败');
     }
   },
