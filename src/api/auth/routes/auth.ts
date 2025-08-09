@@ -70,5 +70,14 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    // 记录分享行为
+    {
+      method: 'POST',
+      path: '/auth/track-invite-share',
+      handler: 'auth.trackInviteShare',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
   ],
 }; 

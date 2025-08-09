@@ -370,7 +370,7 @@ export default factories.createCoreController(
         if (!activeOrders || activeOrders.length === 0) {
           console.log(`用户 ${userId} 没有有效的订单`);
           return ctx.body = {
-            success: true,
+          success: true,
             data: null,
             message: '用户没有有效的投资订单'
           };
@@ -392,7 +392,7 @@ export default factories.createCoreController(
 
         if (!maxTierOrder) {
           return ctx.body = {
-            success: true,
+          success: true,
             data: null,
             message: '未找到有效的投资订单'
           };
@@ -446,6 +446,35 @@ export default factories.createCoreController(
         return 0;
       }
     },
+
+    // 记录分享行为
+    async trackInviteShare(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { shareType, sharePlatform } = ctx.request.body;
+        
+        if (!shareType || !sharePlatform) {
+          return ctx.badRequest('缺少必要参数');
+        }
+
+        // 记录分享行为到数据库（可选）
+        // 这里可以创建一个分享记录表来存储分享行为
+        console.log(`用户 ${userId} 进行了分享行为: ${shareType} - ${sharePlatform}`);
+
+        ctx.body = {
+          success: true,
+          message: '分享行为记录成功',
+          data: {
+            shareType,
+            sharePlatform,
+            timestamp: new Date().toISOString(),
+          }
+        };
+      } catch (error) {
+        console.error('记录分享行为失败:', error);
+        ctx.throw(500, `记录分享行为失败: ${error.message}`);
+      }
+    },
   })
 );
 
@@ -455,6 +484,6 @@ function generateInviteCode(): string {
   let result = '';
   for (let i = 0; i < 8; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
+} 
   return result;
 }
