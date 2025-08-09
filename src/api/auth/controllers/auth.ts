@@ -2156,8 +2156,7 @@ export default factories.createCoreController(
             const rewardRecord = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
               filters: { 
                 tuijianRen: { id: userId },
-                laiyuanRen: { id: referral.id },
-                laiyuanDan: { id: order.id }
+                laiyuanRen: { id: referral.id }
               }
             }) as any[];
 
@@ -2210,8 +2209,7 @@ export default factories.createCoreController(
             const rewardRecord = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
               filters: { 
                 tuijianRen: { id: userId },
-                laiyuanRen: { id: referral.id },
-                laiyuanDan: { id: order.id }
+                laiyuanRen: { id: referral.id }
               }
             }) as any[];
 
