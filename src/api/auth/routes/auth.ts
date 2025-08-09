@@ -70,6 +70,15 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    // 获取当前档位信息
+    {
+      method: 'GET',
+      path: '/auth/current-tier-info',
+      handler: 'auth.getCurrentTierInfo',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
     // 生成邀请链接
     {
       method: 'GET',
