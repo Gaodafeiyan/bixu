@@ -239,8 +239,6 @@ export default factories.createCoreController(
             <button type="submit" class="btn">注册</button>
         </form>
         
-        <button onclick="downloadApp()" class="btn download-btn">下载APP</button>
-        
         <div class="features">
             <h3>平台特色</h3>
             <ul>
@@ -281,20 +279,20 @@ export default factories.createCoreController(
                 const result = await response.json();
                 
                 if (response.ok) {
-                    showMessage('注册成功！正在跳转到APP...', 'success');
+                    showMessage('注册成功！正在跳转到下载页面...', 'success');
                     
-                    // 显示下载提示
-                    const downloadTip = document.createElement('div');
-                    downloadTip.className = 'download-tip';
-                    downloadTip.innerHTML = '<div style="background: rgba(0, 231, 255, 0.1); padding: 15px; border-radius: 10px; margin-top: 15px; text-align: center;"><p style="color: #00E7FF; margin-bottom: 10px;">🎉 注册成功！</p><p style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin-bottom: 15px;">正在为您跳转到APP下载页面...</p><button onclick="downloadApp()" style="background: linear-gradient(45deg, #00E7FF, #FF3CF4); color: white; border: none; padding: 12px 24px; border-radius: 8px; font-weight: bold; cursor: pointer;">立即下载APP</button></div>';
+                    // 显示成功提示
+                    const successTip = document.createElement('div');
+                    successTip.className = 'success-tip';
+                    successTip.innerHTML = '<div style="background: rgba(0, 231, 255, 0.1); padding: 15px; border-radius: 10px; margin-top: 15px; text-align: center;"><p style="color: #00E7FF; margin-bottom: 10px;">🎉 注册成功！</p><p style="color: rgba(255, 255, 255, 0.8); font-size: 14px; margin-bottom: 15px;">正在为您跳转到下载页面...</p></div>';
                     
                     const form = document.getElementById('registerForm');
-                    form.appendChild(downloadTip);
+                    form.appendChild(successTip);
                     
-                    // 3秒后自动跳转
+                    // 2秒后自动跳转到下载页面
                     setTimeout(() => {
-                        downloadApp();
-                    }, 3000);
+                        window.location.href = '/api/auth/download';
+                    }, 2000);
                 } else {
                     showMessage(result.message || '注册失败，请重试', 'error');
                 }
@@ -320,42 +318,7 @@ export default factories.createCoreController(
             form.appendChild(messageDiv);
         }
         
-        function downloadApp() {
-            // 检测设备类型
-            const userAgent = navigator.userAgent.toLowerCase();
-            
-            if (/android/.test(userAgent)) {
-                // Android设备 - 尝试打开应用或跳转到应用商店
-                try {
-                    // 首先尝试打开应用
-                    window.location.href = 'zenithus://register?ref=${inviteCode}';
-                    
-                    // 如果应用未安装，3秒后跳转到下载页面
-                    setTimeout(() => {
-                        window.location.href = 'https://play.google.com/store/apps/details?id=com.zenithus.app';
-                    }, 3000);
-                } catch (e) {
-                    // 如果出错，直接跳转到下载页面
-                    window.location.href = 'https://play.google.com/store/apps/details?id=com.zenithus.app';
-                }
-            } else if (/iphone|ipad|ipod/.test(userAgent)) {
-                // iOS设备 - 尝试打开应用，如果失败则跳转到App Store
-                try {
-                    window.location.href = 'zenithus://register?ref=${inviteCode}';
-                    
-                    // 如果应用未安装，3秒后跳转到App Store
-                    setTimeout(() => {
-                        window.location.href = 'https://apps.apple.com/app/zenithus/id123456789';
-                    }, 3000);
-                } catch (e) {
-                    window.location.href = 'https://apps.apple.com/app/zenithus/id123456789';
-                }
-            } else {
-                // 其他设备 - 显示下载页面
-                const downloadUrl = 'https://zenithus.app/auth/download';
-                window.open(downloadUrl, '_blank');
-            }
-        }
+
     </script>
 </body>
 </html>`;
