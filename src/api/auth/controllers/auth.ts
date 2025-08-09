@@ -17,6 +17,323 @@ export default factories.createCoreController(
       }
     },
 
+    // H5注册页面
+    async showRegisterPage(ctx) {
+      try {
+        const inviteCode = ctx.params.inviteCode || ctx.query.ref;
+        
+        // 生成H5注册页面HTML
+        const html = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenithus - 邀请注册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0D1117 0%, #161B22 100%);
+            color: white;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 400px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .logo h1 {
+            font-size: 28px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00E7FF, #FF3CF4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        
+        .logo p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            transition: all 0.3s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #00E7FF;
+            box-shadow: 0 0 0 3px rgba(0, 231, 255, 0.1);
+        }
+        
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .invite-code {
+            background: linear-gradient(45deg, #00E7FF, #FF3CF4);
+            padding: 15px;
+            border-radius: 12px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        
+        .invite-code span {
+            font-size: 18px;
+            font-weight: bold;
+            color: white;
+            letter-spacing: 2px;
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(45deg, #00E7FF, #FF3CF4);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 231, 255, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .download-btn {
+            background: linear-gradient(45deg, #D4AF37, #FFD700);
+            color: #000;
+        }
+        
+        .download-btn:hover {
+            box-shadow: 0 8px 25px rgba(212, 175, 55, 0.3);
+        }
+        
+        .features {
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+        }
+        
+        .features h3 {
+            color: #00E7FF;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .features ul {
+            list-style: none;
+            color: rgba(255, 255, 255, 0.8);
+        }
+        
+        .features li {
+            margin-bottom: 8px;
+            padding-left: 20px;
+            position: relative;
+        }
+        
+        .features li:before {
+            content: "🌟";
+            position: absolute;
+            left: 0;
+        }
+        
+        .error {
+            color: #ff6b6b;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+        
+        .success {
+            color: #51cf66;
+            font-size: 14px;
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">
+            <h1>Zenithus</h1>
+            <p>AI大健康出海平台</p>
+        </div>
+        
+        <div class="invite-code">
+            <span>邀请码: ${inviteCode || '请输入邀请码'}</span>
+        </div>
+        
+        <form id="registerForm">
+            <div class="form-group">
+                <label for="username">用户名</label>
+                <input type="text" id="username" name="username" placeholder="请输入用户名" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">邮箱</label>
+                <input type="email" id="email" name="email" placeholder="请输入邮箱" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">密码</label>
+                <input type="password" id="password" name="password" placeholder="请输入密码" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="inviteCode">邀请码</label>
+                <input type="text" id="inviteCode" name="inviteCode" value="${inviteCode || ''}" placeholder="请输入邀请码" required>
+            </div>
+            
+            <button type="submit" class="btn">注册</button>
+        </form>
+        
+        <button onclick="downloadApp()" class="btn download-btn">下载APP</button>
+        
+        <div class="features">
+            <h3>平台特色</h3>
+            <ul>
+                <li>AI健康科技投资</li>
+                <li>邀请有礼奖励</li>
+                <li>抽奖豪华礼包</li>
+                <li>安全可靠保障</li>
+            </ul>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('registerForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const data = {
+                username: formData.get('username'),
+                email: formData.get('email'),
+                password: formData.get('password'),
+                inviteCode: formData.get('inviteCode')
+            };
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.textContent = '注册中...';
+            submitBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/api/auth/invite-register', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                const result = await response.json();
+                
+                if (response.ok) {
+                    showMessage('注册成功！正在跳转到APP...', 'success');
+                    setTimeout(() => {
+                        downloadApp();
+                    }, 2000);
+                } else {
+                    showMessage(result.message || '注册失败，请重试', 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误，请检查网络连接', 'error');
+            } finally {
+                submitBtn.textContent = originalText;
+                submitBtn.disabled = false;
+            }
+        });
+        
+        function showMessage(message, type) {
+            const existingMessage = document.querySelector('.message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = \`message \${type}\`;
+            messageDiv.textContent = message;
+            
+            const form = document.getElementById('registerForm');
+            form.appendChild(messageDiv);
+        }
+        
+        function downloadApp() {
+            // 检测设备类型
+            const userAgent = navigator.userAgent.toLowerCase();
+            
+            if (/android/.test(userAgent)) {
+                // Android设备 - 尝试打开应用或跳转到应用商店
+                window.location.href = 'intent://zenithus.app/register?ref=${inviteCode}#Intent;scheme=https;package=com.zenithus.app;end';
+            } else if (/iphone|ipad|ipod/.test(userAgent)) {
+                // iOS设备 - 跳转到App Store
+                window.location.href = 'https://apps.apple.com/app/zenithus/id123456789';
+            } else {
+                // 其他设备 - 显示下载链接
+                alert('请扫描二维码下载APP');
+            }
+        }
+    </script>
+</body>
+</html>`;
+
+        ctx.type = 'text/html';
+        ctx.body = html;
+      } catch (error) {
+        console.error('生成注册页面失败:', error);
+        ctx.throw(500, '生成注册页面失败');
+      }
+    },
+
     // 邀请注册
     async inviteRegister(ctx) {
       try {

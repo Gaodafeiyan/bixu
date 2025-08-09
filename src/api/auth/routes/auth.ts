@@ -12,6 +12,27 @@ export default {
         middlewares: [],
       },
     },
+    // H5注册页面路由
+    {
+      method: 'GET',
+      path: '/register',
+      handler: 'auth.showRegisterPage',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'GET',
+      path: '/register/:inviteCode',
+      handler: 'auth.showRegisterPage',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
     // 邀请注册
     {
       method: 'POST',
