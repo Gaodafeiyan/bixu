@@ -1906,72 +1906,34 @@ export default factories.createCoreController(
         
         console.log(`🔍 开始获取用户 ${userId} 的当前档位信息...`);
         
-        // 获取用户所有有效的认购订单（running、redeemable、finished状态）
-        const activeOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
-          filters: { 
-            user: { id: userId },
-            status: { $in: ['running', 'redeemable', 'finished'] }  // 包含所有有效状态
-          },
-          populate: ['jihua']
-        }) as any[];
+        // 使用档位配置服务获取用户当前档位
+        const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
+        const currentTier = await rewardConfigService.getUserCurrentTier(userId);
 
-        console.log(`用户 ${userId} 的有效订单数量: ${activeOrders.length}`);
-
-        if (!activeOrders || activeOrders.length === 0) {
-          console.log(`用户 ${userId} 没有有效的订单`);
+        if (!currentTier) {
+          console.log(`用户 ${userId} 没有有效的档位`);
           return ctx.body = {
-          success: true,
+            success: true,
             data: null,
-            message: '用户没有有效的投资订单'
+            message: '用户没有有效的投资档位'
           };
         }
 
-        // 找到最高档位的订单
-        let maxTierOrder = null;
-        let maxPrincipal = 0;
+        console.log(`用户 ${userId} 的当前档位: ${currentTier.name}`);
 
-        for (const order of activeOrders) {
-          const orderPrincipal = parseFloat(order.principal || order.amount || 0);
-          console.log(`订单 ${order.id}: 状态=${order.status}, 金额=${orderPrincipal}, 计划=${order.jihua?.name}`);
-
-          if (orderPrincipal > maxPrincipal) {
-            maxTierOrder = order;
-            maxPrincipal = orderPrincipal;
-          }
-        }
-
-        if (!maxTierOrder) {
-          return ctx.body = {
-          success: true,
-            data: null,
-            message: '未找到有效的投资订单'
-          };
-        }
-
-        const plan = maxTierOrder.jihua;
-        console.log(`用户最高档位订单: 计划=${plan?.name}, 金额=${maxPrincipal} USDT`);
-
-        // 计算静态收益（年化）
-        const staticRate = parseFloat(plan?.jingtaiBili || 0) / 100; // 转换为小数
-        const aiRate = parseFloat(plan?.aiBili || 0) / 100; // AI代币奖励比例
-        const cycleDays = parseInt(plan?.zhouQiTian || 30);
-        
-        // 计算周期收益
-        const cycleStaticRate = (staticRate * cycleDays / 365) * 100; // 转换为百分比
-        const cycleAiRate = (aiRate * cycleDays / 365) * 100; // 转换为百分比
+        // 生成示例计算
+        const exampleCalculation = rewardConfigService.calculateReferralReward(currentTier, 1000);
 
         ctx.body = {
           success: true,
           data: {
-            tierName: plan?.name || '未知档位',
-            principal: maxPrincipal,
-            staticRate: staticRate,
-            aiRate: aiRate,
-            cycleDays: cycleDays,
-            cycleStaticRate: cycleStaticRate,
-            cycleAiRate: cycleAiRate,
-            planCode: plan?.jihuaCode,
-            description: `当前档位: ${plan?.name}，投资金额: ${maxPrincipal} USDT，年化静态收益率: ${(staticRate * 100).toFixed(2)}%，周期静态收益: ${cycleStaticRate.toFixed(2)}%，AI代币奖励: ${(aiRate * 100).toFixed(2)}%，投资周期: ${cycleDays}天`
+            tierName: currentTier.name,
+            principal: currentTier.principal,
+            staticRate: currentTier.staticRate,
+            referralRate: currentTier.referralRate,
+            maxCommission: currentTier.maxCommission,
+            exampleCalculation: exampleCalculation.calculation,
+            description: `当前档位: ${currentTier.name}，投资金额: ${currentTier.principal} USDT，静态收益率: ${(currentTier.staticRate * 100).toFixed(0)}%，返佣系数: ${(currentTier.referralRate * 100).toFixed(0)}%，最大可计佣: ${currentTier.maxCommission} USDT`
           }
         };
       } catch (error) {
