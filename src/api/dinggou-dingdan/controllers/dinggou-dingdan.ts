@@ -158,9 +158,6 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
 
   // 重写create方法，添加数据验证
   async create(ctx) {
-    // 开始数据库事务
-    const transaction = await strapi.db.transaction();
-    
     try {
       const { data } = ctx.request.body;
       
@@ -191,20 +188,20 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
       
       console.log(`开始创建订单 - 用户: ${data.user}, 计划: ${data.jihua}, 金额: ${data.amount}`);
       
-      // 在事务中创建订单
-      const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
-        data: {
-          user: data.user,
-          jihua: data.jihua,
-          amount: data.amount,
-          principal: data.principal || data.amount,
-          yield_rate: data.yield_rate || 0,
-          cycle_days: data.cycle_days || 30,
-          start_at: data.start_at || new Date(),
-          end_at: data.end_at || new Date(Date.now() + (data.cycle_days || 30) * 24 * 60 * 60 * 1000),
-          status: data.status || 'pending'
-        } as any as any
-      }, { transaction });
+              // 创建订单
+        const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
+          data: {
+            user: data.user,
+            jihua: data.jihua,
+            amount: data.amount,
+            principal: data.principal || data.amount,
+            yield_rate: data.yield_rate || 0,
+            cycle_days: data.cycle_days || 30,
+            start_at: data.start_at || new Date(),
+            end_at: data.end_at || new Date(Date.now() + (data.cycle_days || 30) * 24 * 60 * 60 * 1000),
+            status: data.status || 'pending'
+          } as any as any
+        });
       
       console.log(`订单创建成功 - ID: ${order.id}`);
       
@@ -223,9 +220,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         }
       }
       
-      // 提交事务
-      await transaction.commit();
-      console.log(`事务提交成功 - 订单ID: ${order.id}`);
+      console.log(`订单创建成功 - ID: ${order.id}`);
       
       // 发送实时通知
       try {
@@ -256,9 +251,7 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         message: '订单创建成功'
       };
     } catch (error) {
-      // 回滚事务
-      await transaction.rollback();
-      console.error('创建订单失败，事务已回滚:', error);
+      console.error('创建订单失败:', error);
       ctx.throw(500, `创建订单失败: ${error.message}`);
     }
   },

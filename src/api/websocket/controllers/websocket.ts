@@ -1,6 +1,6 @@
 import { factories } from '@strapi/strapi';
 
-export default factories.createCoreController('api::websocket.websocket', ({ strapi }) => ({
+export default ({ strapi }) => ({
   // 处理WebSocket连接
   async handleConnection(ctx) {
     try {

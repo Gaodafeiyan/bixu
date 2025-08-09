@@ -53,7 +53,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       const result = await authController.getTeamOrders(ctx);
       
-      if (result.success) {
+      if (result && result.success) {
         this.sendToUser(userId, 'team_orders_update', result.data);
       }
     } catch (error) {
