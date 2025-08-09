@@ -51,7 +51,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         query: { page: 1, pageSize: 20 }
       } as any;
 
-      const result = await authController.getTeamOrders(ctx);
+      const result = await authController.getTeamOrders(ctx) as any;
       
       if (result && result.success) {
         this.sendToUser(userId, 'team_orders_update', result.data);
