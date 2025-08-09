@@ -44,18 +44,118 @@ export default ({ strapi }: { strapi: Strapi }) => ({
   // 发送团队订单更新
   async sendTeamOrdersUpdate(userId: string) {
     try {
-      // 获取用户的团队订单数据
-      const authController = strapi.controller('api::auth.auth');
-      const ctx = {
-        state: { user: { id: userId } },
-        query: { page: 1, pageSize: 20 }
-      } as any;
+      // 直接获取用户的团队订单数据，避免控制器调用问题
+      const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
+        filters: { invitedBy: { id: userId } }
+      }) as any[];
 
-      const result = await authController.getTeamOrders(ctx) as any;
-      
-      if (result && result.success) {
-        this.sendToUser(userId, 'team_orders_update', result.data);
+      const allOrders = [];
+      let totalOrders = 0;
+      let runningOrders = 0;
+      let finishedOrders = 0;
+      let totalRewards = 0;
+      let pendingRewards = 0;
+
+      // 获取所有订单用于统计
+      for (const referral of directReferrals) {
+        const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+          filters: { user: { id: referral.id } },
+          populate: ['jihua'],
+          sort: { createdAt: 'desc' }
+        }) as any[];
+        
+        for (const order of orders) {
+          totalOrders++;
+          
+          if (order.status === 'running') {
+            runningOrders++;
+          } else if (order.status === 'finished') {
+            finishedOrders++;
+          }
+
+          // 计算奖励统计
+          const rewardRecord = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+            filters: { 
+              tuijianRen: { id: userId },
+              laiyuanRen: { id: referral.id },
+              laiyuanDan: { id: order.id }
+            }
+          }) as any[];
+
+          if (rewardRecord.length > 0) {
+            const rewardAmount = rewardRecord[0].shouyiUSDT || '0';
+            totalRewards += parseFloat(rewardAmount);
+            
+            if (order.status !== 'finished') {
+              pendingRewards += parseFloat(rewardAmount);
+            }
+          }
+
+          // 计算到期时间
+          let expiryDate = null;
+          let daysRemaining = null;
+          
+          if (order.createdAt && order.jihua) {
+            const createdDate = new Date(order.createdAt);
+            const durationDays = order.jihua.duration || 90;
+            expiryDate = new Date(createdDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+            
+            const now = new Date();
+            const remainingMs = expiryDate.getTime() - now.getTime();
+            daysRemaining = Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+          }
+
+          let rewardAmount = '0';
+          let rewardStatus = 'none';
+          
+          if (rewardRecord.length > 0) {
+            rewardAmount = rewardRecord[0].shouyiUSDT || '0';
+            
+            if (order.status === 'finished') {
+              rewardStatus = 'paid';
+            } else if (order.status === 'running') {
+              rewardStatus = 'pending';
+            }
+          }
+
+          allOrders.push({
+            orderId: order.id,
+            username: referral.username,
+            registrationDate: referral.createdAt,
+            status: order.status,
+            planName: order.jihua?.name,
+            amount: order.amount,
+            principal: order.principal,
+            investmentDate: order.start_at,
+            expiryDate: expiryDate,
+            daysRemaining: daysRemaining,
+            rewardAmount: rewardAmount,
+            rewardStatus: rewardStatus
+          });
+        }
       }
+
+      const result = {
+        success: true,
+        data: {
+          totalOrders,
+          runningOrders,
+          finishedOrders,
+          totalRewards: totalRewards.toFixed(2),
+          pendingRewards: pendingRewards.toFixed(2),
+          orders: allOrders.slice(0, 20), // 只取前20条
+          pagination: {
+            page: 1,
+            pageSize: 20,
+            total: allOrders.length,
+            totalPages: Math.ceil(allOrders.length / 20),
+            hasNext: allOrders.length > 20,
+            hasPrev: false
+          }
+        }
+      };
+      
+      this.sendToUser(userId, 'team_orders_update', result.data);
     } catch (error) {
       console.error(`获取用户 ${userId} 团队订单更新失败:`, error);
     }
