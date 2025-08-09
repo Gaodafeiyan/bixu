@@ -217,5 +217,16 @@ export default {
         middlewares: [],
       },
     },
+    // 白皮书页面
+    {
+      method: 'GET',
+      path: '/auth/whitepaper',
+      handler: 'auth.showWhitepaperPage',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 }; 
