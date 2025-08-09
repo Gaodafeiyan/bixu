@@ -1785,10 +1785,22 @@ export default factories.createCoreController(
         const totalEarnings = await this.calculateTotalEarnings(userId);
 
         // 格式化团队成员数据
-        const members = directReferrals.map((user: any) => ({
-          username: user.username,
-          registrationDate: user.createdAt.toISOString().split('T')[0],
-        }));
+        const members = directReferrals.map((user: any) => {
+          // 🔥 修复：确保createdAt是Date对象
+          let registrationDate;
+          if (user.createdAt instanceof Date) {
+            registrationDate = user.createdAt.toISOString().split('T')[0];
+          } else if (typeof user.createdAt === 'string') {
+            registrationDate = new Date(user.createdAt).toISOString().split('T')[0];
+          } else {
+            registrationDate = new Date().toISOString().split('T')[0];
+          }
+          
+          return {
+            username: user.username,
+            registrationDate: registrationDate,
+          };
+        });
 
         ctx.body = {
           success: true,
