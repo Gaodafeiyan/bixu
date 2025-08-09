@@ -206,5 +206,16 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    // 记录下载行为
+    {
+      method: 'POST',
+      path: '/auth/track-download',
+      handler: 'auth.trackDownload',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
   ],
 }; 
