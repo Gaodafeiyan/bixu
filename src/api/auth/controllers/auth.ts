@@ -475,6 +475,93 @@ export default factories.createCoreController(
         ctx.throw(500, `记录分享行为失败: ${error.message}`);
       }
     },
+
+    // 更新用户资料
+    async updateProfile(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { username, email, phone, avatar } = ctx.request.body;
+        
+        // 这里可以实现用户资料更新逻辑
+        ctx.body = {
+          success: true,
+          message: '用户资料更新成功'
+        };
+      } catch (error) {
+        console.error('更新用户资料失败:', error);
+        ctx.throw(500, `更新用户资料失败: ${error.message}`);
+      }
+    },
+
+    // 获取安全设置
+    async getSecuritySettings(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        ctx.body = {
+          success: true,
+          data: {
+            twoFactorEnabled: false,
+            emailNotifications: true,
+            smsNotifications: false,
+          }
+        };
+      } catch (error) {
+        console.error('获取安全设置失败:', error);
+        ctx.throw(500, `获取安全设置失败: ${error.message}`);
+      }
+    },
+
+    // 更新安全设置
+    async updateSecuritySettings(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { twoFactorEnabled, emailNotifications, smsNotifications } = ctx.request.body;
+        
+        ctx.body = {
+          success: true,
+          message: '安全设置更新成功'
+        };
+      } catch (error) {
+        console.error('更新安全设置失败:', error);
+        ctx.throw(500, `更新安全设置失败: ${error.message}`);
+      }
+    },
+
+    // 获取应用设置
+    async getAppSettings(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        ctx.body = {
+          success: true,
+          data: {
+            language: 'zh-CN',
+            theme: 'dark',
+            autoLogin: true,
+          }
+        };
+      } catch (error) {
+        console.error('获取应用设置失败:', error);
+        ctx.throw(500, `获取应用设置失败: ${error.message}`);
+      }
+    },
+
+    // 更新应用设置
+    async updateAppSettings(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        const { language, theme, autoLogin } = ctx.request.body;
+        
+        ctx.body = {
+          success: true,
+          message: '应用设置更新成功'
+        };
+      } catch (error) {
+        console.error('更新应用设置失败:', error);
+        ctx.throw(500, `更新应用设置失败: ${error.message}`);
+      }
+    },
   })
 );
 

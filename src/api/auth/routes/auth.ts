@@ -79,5 +79,50 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    // 更新用户资料
+    {
+      method: 'PUT',
+      path: '/auth/update-profile',
+      handler: 'auth.updateProfile',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    // 获取安全设置
+    {
+      method: 'GET',
+      path: '/auth/security-settings',
+      handler: 'auth.getSecuritySettings',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    // 更新安全设置
+    {
+      method: 'PUT',
+      path: '/auth/security-settings',
+      handler: 'auth.updateSecuritySettings',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    // 获取应用设置
+    {
+      method: 'GET',
+      path: '/auth/app-settings',
+      handler: 'auth.getAppSettings',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    // 更新应用设置
+    {
+      method: 'PUT',
+      path: '/auth/app-settings',
+      handler: 'auth.updateAppSettings',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
   ],
 }; 
