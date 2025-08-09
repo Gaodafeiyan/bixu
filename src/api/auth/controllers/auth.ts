@@ -562,6 +562,119 @@ export default factories.createCoreController(
         ctx.throw(500, `更新应用设置失败: ${error.message}`);
       }
     },
+
+    // 获取团队订单信息
+    async getTeamOrders(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        console.log(`🔍 获取用户 ${userId} 的团队订单信息`);
+
+        // 获取用户直接邀请的下级用户
+        const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { invitedBy: { id: userId } },
+          populate: ['dinggou_dingdans', 'dinggou_dingdans.jihua']
+        }) as any[];
+
+        console.log(`用户 ${userId} 的直接邀请人数: ${directReferrals.length}`);
+
+        const teamOrders = [];
+        let totalOrders = 0;
+        let runningOrders = 0;
+        let finishedOrders = 0;
+        let totalRewards = 0;
+        let pendingRewards = 0;
+
+        for (const referral of directReferrals) {
+          const orders = referral.dinggou_dingdans || [];
+          
+          for (const order of orders) {
+            totalOrders++;
+            
+            if (order.status === 'running') {
+              runningOrders++;
+            } else if (order.status === 'finished') {
+              finishedOrders++;
+            }
+
+            // 计算到期时间
+            let expiryDate = null;
+            let daysRemaining = null;
+            
+            if (order.createdAt && order.jihua) {
+              const createdDate = new Date(order.createdAt);
+              const durationDays = order.jihua.duration || 90; // 默认90天
+              expiryDate = new Date(createdDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
+              
+              const now = new Date();
+              const remainingMs = expiryDate.getTime() - now.getTime();
+              daysRemaining = Math.max(0, Math.ceil(remainingMs / (24 * 60 * 60 * 1000)));
+            }
+
+            // 获取邀请奖励信息
+            const rewardRecord = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+              filters: { 
+                tuijianRen: { id: userId },
+                laiyuanRen: { id: referral.id },
+                laiyuanDan: { id: order.id }
+              }
+            }) as any[];
+
+            let rewardAmount = '0';
+            let rewardStatus = 'none';
+            
+            if (rewardRecord.length > 0) {
+              rewardAmount = rewardRecord[0].shouyiUSDT || '0';
+              totalRewards += parseFloat(rewardAmount);
+              
+              if (order.status === 'finished') {
+                rewardStatus = 'paid';
+              } else {
+                rewardStatus = 'pending';
+                pendingRewards += parseFloat(rewardAmount);
+              }
+            }
+
+            teamOrders.push({
+              orderId: order.id,
+              username: referral.username,
+              registrationDate: referral.createdAt ? new Date(referral.createdAt).toLocaleDateString() : '',
+              status: order.status,
+              planName: order.jihua?.name || '未知计划',
+              amount: order.principal || order.amount || '0',
+              investmentDate: order.createdAt ? new Date(order.createdAt).toLocaleDateString() : '',
+              expiryDate: expiryDate ? expiryDate.toLocaleDateString() : null,
+              daysRemaining: daysRemaining,
+              rewardAmount: rewardAmount,
+              rewardStatus: rewardStatus
+            });
+          }
+        }
+
+        // 按投资时间排序，最新的在前面
+        teamOrders.sort((a, b) => {
+          const dateA = new Date(a.investmentDate);
+          const dateB = new Date(b.investmentDate);
+          return dateB.getTime() - dateA.getTime();
+        });
+
+        ctx.body = {
+          success: true,
+          data: {
+            totalOrders,
+            runningOrders,
+            finishedOrders,
+            totalRewards: totalRewards.toFixed(2),
+            pendingRewards: pendingRewards.toFixed(2),
+            orders: teamOrders
+          },
+          message: '团队订单信息获取成功'
+        };
+      } catch (error) {
+        console.error('获取团队订单信息失败:', error);
+        ctx.throw(500, `获取团队订单信息失败: ${error.message}`);
+      }
+    },
   })
 );
 

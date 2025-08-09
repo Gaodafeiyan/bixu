@@ -124,5 +124,14 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    // 获取团队订单信息
+    {
+      method: 'GET',
+      path: '/auth/team-orders',
+      handler: 'auth.getTeamOrders',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
   ],
 }; 
