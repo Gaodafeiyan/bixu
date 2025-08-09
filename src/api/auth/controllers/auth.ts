@@ -204,7 +204,9 @@ export default factories.createCoreController(
 <body>
     <div class="container">
         <div class="logo">
-            <div style="width: 60px; height: 60px; background: linear-gradient(45deg, #00E7FF, #FF3CF4); border-radius: 15px; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold;">Z</div>
+            <div style="width: 60px; height: 60px; background: #2a2a2a; border-radius: 12px; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; position: relative;">
+                <div style="width: 32px; height: 32px; background: linear-gradient(135deg, #FF6B9D 0%, #FFD700 100%); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); border: 2px solid #FFD700;"></div>
+            </div>
             <h1>Zenithus</h1>
             <p>AI驱动的大健康跨境平台</p>
         </div>
@@ -629,15 +631,19 @@ export default factories.createCoreController(
 <body>
     <div class="hero-section">
         <div class="logo-container">
-            <div class="logo">Z</div>
+            <div class="logo">
+                <div style="width: 80px; height: 80px; background: #2a2a2a; border-radius: 16px; margin: 0 auto 20px; display: flex; align-items: center; justify-content: center; position: relative;">
+                    <div style="width: 42px; height: 42px; background: linear-gradient(135deg, #FF6B9D 0%, #FFD700 100%); clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%); border: 2px solid #FFD700;"></div>
+                </div>
+            </div>
         </div>
         
         <h1 class="hero-title">Zenithus｜AI驱动的大健康跨境平台</h1>
         <p class="hero-subtitle">让高品质草本多肽走向全球，用智能连接健康与增长</p>
         
         <div class="download-section">
-            <a href="https://play.google.com/store/apps/details?id=com.zenithus.app" class="download-btn" onclick="trackDownload('android')">
-                📱 立即下载 Android 安装包（v2.1.0｜15.6MB）
+            <a href="/api/auth/download-apk" class="download-btn" onclick="trackDownload('android')">
+                📱 立即下载 Android 安装包（v1.10）
             </a>
             <br>
             <a href="https://zenithus.app/auth/download" class="download-btn secondary-btn">
@@ -645,11 +651,7 @@ export default factories.createCoreController(
             </a>
         </div>
         
-        <div class="security-info">
-            <h3>🔒 安全说明</h3>
-            <p>仅从官方渠道下载。安装前可对照校验码：SHA-256 a1b2c3d4e5f6...</p>
-            <p>兼容性：Android 8.0 及以上（ARM64 优先适配）</p>
-        </div>
+
     </div>
     
     <div class="features-section">
@@ -742,19 +744,7 @@ export default factories.createCoreController(
         </div>
     </div>
     
-    <div class="version-info">
-        <h3>版本信息</h3>
-        <div class="version-details">
-            <p>当前版本：v2.1.0（发布日期：2024-01-15）</p>
-            <p>文件大小：15.6MB</p>
-            <p>校验值：SHA-256 a1b2c3d4e5f6...</p>
-            <p style="margin-top: 15px; color: rgba(255, 255, 255, 0.6); font-size: 12px;">
-                本页面信息仅用于产品与服务介绍，不构成医疗、营养或财务建议。<br>
-                请阅读并同意《用户协议》《隐私政策》《风险提示》。<br>
-                未成年人请在监护人指导下使用。
-            </p>
-        </div>
-    </div>
+
     
     <script>
         function trackDownload(platform) {
@@ -780,6 +770,37 @@ export default factories.createCoreController(
       } catch (error) {
         console.error('生成下载页面失败:', error);
         ctx.throw(500, '生成下载页面失败');
+      }
+    },
+
+    // APK下载
+    async downloadApk(ctx) {
+      try {
+        // 设置响应头，强制下载
+        ctx.set('Content-Type', 'application/vnd.android.package-archive');
+        ctx.set('Content-Disposition', 'attachment; filename="zenithus-v1.10.apk"');
+        
+        // 这里应该返回实际的APK文件
+        // 暂时返回一个占位符，您需要将实际的APK文件放在public目录下
+        const apkPath = './public/zenithus-v1.10.apk';
+        
+        // 检查文件是否存在
+        const fs = require('fs');
+        const path = require('path');
+        
+        if (fs.existsSync(apkPath)) {
+          ctx.body = fs.createReadStream(apkPath);
+        } else {
+          // 如果文件不存在，返回错误信息
+          ctx.status = 404;
+          ctx.body = {
+            error: 'APK文件不存在',
+            message: '请确保APK文件已放置在正确位置'
+          };
+        }
+      } catch (error) {
+        console.error('APK下载失败:', error);
+        ctx.throw(500, 'APK下载失败');
       }
     },
 
