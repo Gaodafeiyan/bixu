@@ -390,14 +390,14 @@ export default factories.createCoreController(
           return ctx.notFound('用户不存在');
         }
 
-        // 生成包含邀请码的深度链接
-        const deepLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/auth/download?invite=${user.inviteCode}`;
+        // 生成包含邀请码的注册页面链接
+        const registerLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
         const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
         
-        // 生成包含邀请码的二维码（指向深度链接）
-        const qrCodeData = await QRCode.toDataURL(deepLink, {
+        // 生成包含邀请码的二维码（指向注册页面）
+        const qrCodeData = await QRCode.toDataURL(registerLink, {
           width: 200,
           margin: 2,
           color: {
@@ -414,7 +414,7 @@ export default factories.createCoreController(
           data: {
             inviteCode: user.inviteCode,
             inviteLink: inviteLink,
-            appDownloadLink: deepLink,
+            appDownloadLink: registerLink,
             qrCodeData: qrCodeData,
             shareStats: shareStats,
             username: user.username
@@ -471,14 +471,14 @@ export default factories.createCoreController(
           return ctx.notFound('用户不存在');
         }
 
-        // 生成包含邀请码的APP下载链接
-        const appDownloadLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/auth/download?invite=${user.inviteCode}`;
+        // 生成包含邀请码的注册页面链接
+        const registerLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
         
         // 生成邀请链接（用于网页分享）
         const inviteLink = `${process.env.FRONTEND_URL || 'https://zenithus.app'}/register?ref=${user.inviteCode}`;
         
-        // 生成包含邀请码的二维码（指向APP下载链接）
-        const qrCodeData = await QRCode.toDataURL(appDownloadLink, {
+        // 生成包含邀请码的二维码（指向注册页面）
+        const qrCodeData = await QRCode.toDataURL(registerLink, {
           width: 200,
           margin: 2,
           color: {
@@ -492,7 +492,7 @@ export default factories.createCoreController(
           data: {
             qrCodeData: qrCodeData,
             inviteLink: inviteLink,
-            appDownloadLink: appDownloadLink
+            appDownloadLink: registerLink
           }
         };
       } catch (error) {
