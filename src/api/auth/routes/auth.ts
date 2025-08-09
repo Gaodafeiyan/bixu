@@ -43,6 +43,17 @@ export default {
         middlewares: [],
       },
     },
+    // 下载页面路由
+    {
+      method: 'GET',
+      path: '/download',
+      handler: 'auth.showDownloadPage',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
     // 邀请注册
     {
       method: 'POST',

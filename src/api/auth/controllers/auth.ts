@@ -204,8 +204,9 @@ export default factories.createCoreController(
 <body>
     <div class="container">
         <div class="logo">
+            <div style="width: 60px; height: 60px; background: linear-gradient(45deg, #00E7FF, #FF3CF4); border-radius: 15px; margin: 0 auto 15px; display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold;">Z</div>
             <h1>Zenithus</h1>
-            <p>AI大健康出海平台</p>
+            <p>AI驱动的大健康跨境平台</p>
         </div>
         
         <div class="invite-code">
@@ -362,6 +363,423 @@ export default factories.createCoreController(
       } catch (error) {
         console.error('生成注册页面失败:', error);
         ctx.throw(500, '生成注册页面失败');
+      }
+    },
+
+    // 下载页面
+    async showDownloadPage(ctx) {
+      try {
+        const html = `
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zenithus｜AI驱动的大健康跨境平台</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #0D1117 0%, #161B22 100%);
+            color: white;
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+        
+        .hero-section {
+            padding: 60px 20px;
+            text-align: center;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .logo-container {
+            margin-bottom: 40px;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(45deg, #00E7FF, #FF3CF4);
+            border-radius: 20px;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .hero-title {
+            font-size: 36px;
+            font-weight: bold;
+            background: linear-gradient(45deg, #00E7FF, #FF3CF4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            line-height: 1.2;
+        }
+        
+        .hero-subtitle {
+            font-size: 18px;
+            color: rgba(255, 255, 255, 0.8);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        
+        .download-section {
+            margin: 40px 0;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            padding: 18px 40px;
+            margin: 10px;
+            background: linear-gradient(45deg, #00E7FF, #FF3CF4);
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            box-shadow: 0 4px 15px rgba(0, 231, 255, 0.3);
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0, 231, 255, 0.4);
+        }
+        
+        .secondary-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .secondary-btn:hover {
+            background: rgba(255, 255, 255, 0.15);
+        }
+        
+        .security-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .security-info h3 {
+            color: #00E7FF;
+            margin-bottom: 15px;
+            font-size: 16px;
+        }
+        
+        .security-info p {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            margin-bottom: 8px;
+        }
+        
+        .features-section {
+            margin: 60px 0;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .feature-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(0, 231, 255, 0.1);
+        }
+        
+        .feature-icon {
+            font-size: 32px;
+            margin-bottom: 20px;
+        }
+        
+        .feature-title {
+            color: #00E7FF;
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+        }
+        
+        .feature-desc {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+            line-height: 1.6;
+        }
+        
+        .product-section {
+            margin: 60px 0;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 20px;
+            padding: 40px;
+        }
+        
+        .product-title {
+            text-align: center;
+            color: #00E7FF;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 30px;
+        }
+        
+        .product-highlights {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+        
+        .highlight-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .highlight-title {
+            color: #00E7FF;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .highlight-desc {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 12px;
+        }
+        
+        .faq-section {
+            margin: 60px 0;
+        }
+        
+        .faq-item {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .faq-question {
+            color: #00E7FF;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .faq-answer {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 14px;
+        }
+        
+        .version-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 20px;
+            margin: 30px 0;
+            text-align: center;
+        }
+        
+        .version-info h3 {
+            color: #00E7FF;
+            margin-bottom: 15px;
+        }
+        
+        .version-details {
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+        }
+        
+        @media (max-width: 768px) {
+            .hero-title {
+                font-size: 28px;
+            }
+            
+            .hero-subtitle {
+                font-size: 16px;
+            }
+            
+            .features-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hero-section">
+        <div class="logo-container">
+            <div class="logo">Z</div>
+        </div>
+        
+        <h1 class="hero-title">Zenithus｜AI驱动的大健康跨境平台</h1>
+        <p class="hero-subtitle">让高品质草本多肽走向全球，用智能连接健康与增长</p>
+        
+        <div class="download-section">
+            <a href="https://play.google.com/store/apps/details?id=com.zenithus.app" class="download-btn" onclick="trackDownload('android')">
+                📱 立即下载 Android 安装包（v2.1.0｜15.6MB）
+            </a>
+            <br>
+            <a href="/whitepaper" class="download-btn secondary-btn">
+                📖 了解平台 · 白皮书
+            </a>
+        </div>
+        
+        <div class="security-info">
+            <h3>🔒 安全说明</h3>
+            <p>仅从官方渠道下载。安装前可对照校验码：SHA-256 a1b2c3d4e5f6...</p>
+            <p>兼容性：Android 8.0 及以上（ARM64 优先适配）</p>
+        </div>
+    </div>
+    
+    <div class="features-section">
+        <h2 style="text-align: center; color: #00E7FF; font-size: 28px; margin-bottom: 40px;">为什么选择 Zenithus</h2>
+        
+        <div class="features-grid">
+            <div class="feature-card">
+                <div class="feature-icon">🤖</div>
+                <div class="feature-title">AI 智能营销</div>
+                <div class="feature-desc">多维人群洞察与效果优化，提升触达与转化，让好产品更快被看见。</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🌐</div>
+                <div class="feature-title">国际品质供应链</div>
+                <div class="feature-desc">严选研发与制造体系，稳定供给、批次可追溯、品质更放心。</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🔄</div>
+                <div class="feature-title">一站式生态</div>
+                <div class="feature-desc">商城专区、淘金专区、认购专区三大版块，覆盖消费、互动与增值。</div>
+            </div>
+            
+            <div class="feature-card">
+                <div class="feature-icon">🛡️</div>
+                <div class="feature-title">合规与隐私保护</div>
+                <div class="feature-desc">遵循目的最小化与分级加密，账号与订单数据全程受保护。</div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="product-section">
+        <h2 class="product-title">核心产品亮点（草本多肽）</h2>
+        <p style="text-align: center; color: rgba(255, 255, 255, 0.8); margin-bottom: 30px;">科学配方 · 品质优选</p>
+        
+        <div class="product-highlights">
+            <div class="highlight-item">
+                <div class="highlight-title">胶原蛋白肽</div>
+                <div class="highlight-desc">鳕鱼胶原蛋白肽、罗非鱼胶原肽（专利）——有助于提升水润度与肌肤弹性*</div>
+            </div>
+            
+            <div class="highlight-item">
+                <div class="highlight-title">大豆肽</div>
+                <div class="highlight-desc">江南大学专利——协同营养吸收，增强体能与活力*</div>
+            </div>
+            
+            <div class="highlight-item">
+                <div class="highlight-title">弹性蛋白肽</div>
+                <div class="highlight-desc">鲣鱼弹性支撑，紧致加分*</div>
+            </div>
+            
+            <div class="highlight-item">
+                <div class="highlight-title">益生元组合</div>
+                <div class="highlight-desc">低聚果糖、菊粉、水苏糖——调节肠道菌群，帮助消化与吸收*</div>
+            </div>
+            
+            <div class="highlight-item">
+                <div class="highlight-title">复合益生菌</div>
+                <div class="highlight-desc">出厂添加量≥500亿CFU/袋，合成消化酶、维持菌群平衡*</div>
+            </div>
+            
+            <div class="highlight-item">
+                <div class="highlight-title">酵母抽提物</div>
+                <div class="highlight-desc">抗氧化支持，抵御日常环境压力*</div>
+            </div>
+        </div>
+        
+        <p style="text-align: center; color: rgba(255, 255, 255, 0.6); font-size: 12px; margin-top: 20px;">
+            *以上为营养与功效性原料的一般性说明，非医疗诊疗或治愈承诺。实际感受因人而异，请以产品标签与说明书为准。
+        </p>
+    </div>
+    
+    <div class="faq-section">
+        <h2 style="text-align: center; color: #00E7FF; font-size: 28px; margin-bottom: 40px;">常见问题（FAQ）</h2>
+        
+        <div class="faq-item">
+            <div class="faq-question">Q：下载很慢或中断怎么办？</div>
+            <div class="faq-answer">A：可在 Wi-Fi 环境下重试，或使用备用下载通道。</div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Q：我的数据安全吗？</div>
+            <div class="faq-answer">A：账号、订单与地址等信息遵循最小化采集，采用分级加密与访问控制，仅用于订单履约与服务所必需的场景。</div>
+        </div>
+        
+        <div class="faq-item">
+            <div class="faq-question">Q：认购与活动是否有风险？</div>
+            <div class="faq-answer">A：任何认购与权益活动均有不确定性，请理性参与，详细规则以公告与条款为准。</div>
+        </div>
+    </div>
+    
+    <div class="version-info">
+        <h3>版本信息</h3>
+        <div class="version-details">
+            <p>当前版本：v2.1.0（发布日期：2024-01-15）</p>
+            <p>文件大小：15.6MB</p>
+            <p>校验值：SHA-256 a1b2c3d4e5f6...</p>
+            <p style="margin-top: 15px; color: rgba(255, 255, 255, 0.6); font-size: 12px;">
+                本页面信息仅用于产品与服务介绍，不构成医疗、营养或财务建议。<br>
+                请阅读并同意《用户协议》《隐私政策》《风险提示》。<br>
+                未成年人请在监护人指导下使用。
+            </p>
+        </div>
+    </div>
+    
+    <script>
+        function trackDownload(platform) {
+            fetch('/api/auth/track-download', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    platform: platform,
+                    timestamp: new Date().toISOString()
+                })
+            }).catch(error => {
+                console.log('下载追踪失败:', error);
+            });
+        }
+    </script>
+</body>
+</html>`;
+
+        ctx.type = 'text/html';
+        ctx.body = html;
+      } catch (error) {
+        console.error('生成下载页面失败:', error);
+        ctx.throw(500, '生成下载页面失败');
       }
     },
 
