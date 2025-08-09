@@ -2059,8 +2059,10 @@ export default factories.createCoreController(
     async getTeamOrders(ctx) {
       try {
         const userId = ctx.state.user.id;
+        const page = parseInt(ctx.query.page) || 1;
+        const pageSize = parseInt(ctx.query.pageSize) || 20;
         
-        console.log(`🔍 获取用户 ${userId} 的团队订单信息`);
+        console.log(`🔍 获取用户 ${userId} 的团队订单信息 - 页码: ${page}, 每页: ${pageSize}`);
 
         // 获取用户直接邀请的下级用户
         const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
@@ -2076,8 +2078,8 @@ export default factories.createCoreController(
         let totalRewards = 0;
         let pendingRewards = 0;
 
+        // 获取所有订单用于统计（不分页）
         for (const referral of directReferrals) {
-          // 获取该用户的订单
           const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
             filters: { user: { id: referral.id } },
             populate: ['jihua']
@@ -2092,6 +2094,36 @@ export default factories.createCoreController(
               finishedOrders++;
             }
 
+            // 计算奖励统计
+            const rewardRecord = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+              filters: { 
+                tuijianRen: { id: userId },
+                laiyuanRen: { id: referral.id },
+                laiyuanDan: { id: order.id }
+              }
+            }) as any[];
+
+            if (rewardRecord.length > 0) {
+              const rewardAmount = rewardRecord[0].shouyiUSDT || '0';
+              totalRewards += parseFloat(rewardAmount);
+              
+              if (order.status !== 'finished') {
+                pendingRewards += parseFloat(rewardAmount);
+              }
+            }
+          }
+        }
+
+        // 分页获取订单详情
+        const allOrders = [];
+        for (const referral of directReferrals) {
+          const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+            filters: { user: { id: referral.id } },
+            populate: ['jihua'],
+            sort: { createdAt: 'desc' }
+          }) as any[];
+          
+          for (const order of orders) {
             // 计算到期时间
             let expiryDate = null;
             let daysRemaining = null;
@@ -2120,17 +2152,15 @@ export default factories.createCoreController(
             
             if (rewardRecord.length > 0) {
               rewardAmount = rewardRecord[0].shouyiUSDT || '0';
-              totalRewards += parseFloat(rewardAmount);
               
               if (order.status === 'finished') {
                 rewardStatus = 'paid';
               } else {
                 rewardStatus = 'pending';
-                pendingRewards += parseFloat(rewardAmount);
               }
             }
 
-            teamOrders.push({
+            allOrders.push({
               orderId: order.id,
               username: referral.username,
               registrationDate: referral.createdAt ? new Date(referral.createdAt).toLocaleDateString() : '',
@@ -2141,16 +2171,28 @@ export default factories.createCoreController(
               expiryDate: expiryDate ? expiryDate.toLocaleDateString() : null,
               daysRemaining: daysRemaining,
               rewardAmount: rewardAmount,
-              rewardStatus: rewardStatus
+              rewardStatus: rewardStatus,
+              createdAt: order.createdAt // 用于排序
             });
           }
         }
 
         // 按投资时间排序，最新的在前面
-        teamOrders.sort((a, b) => {
-          const dateA = new Date(a.investmentDate);
-          const dateB = new Date(b.investmentDate);
+        allOrders.sort((a, b) => {
+          const dateA = new Date(a.createdAt);
+          const dateB = new Date(b.createdAt);
           return dateB.getTime() - dateA.getTime();
+        });
+
+        // 分页处理
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedOrders = allOrders.slice(startIndex, endIndex);
+
+        // 移除用于排序的临时字段
+        const finalOrders = paginatedOrders.map(order => {
+          const { createdAt, ...rest } = order;
+          return rest;
         });
 
         ctx.body = {
@@ -2161,7 +2203,15 @@ export default factories.createCoreController(
             finishedOrders,
             totalRewards: totalRewards.toFixed(2),
             pendingRewards: pendingRewards.toFixed(2),
-            orders: teamOrders
+            orders: finalOrders,
+            pagination: {
+              page,
+              pageSize,
+              total: allOrders.length,
+              totalPages: Math.ceil(allOrders.length / pageSize),
+              hasNext: page < Math.ceil(allOrders.length / pageSize),
+              hasPrev: page > 1
+            }
           },
           message: '团队订单信息获取成功'
         };

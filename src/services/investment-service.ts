@@ -58,6 +58,9 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
   // 新的邀请奖励处理逻辑（按上级档位封顶计算）
   async processInvitationRewardV2(order: any) {
+    // 开始数据库事务
+    const transaction = await strapi.db.transaction();
+    
     try {
       const userId = order.user.id;
       const investmentAmount = new Decimal(order.amount);
@@ -102,7 +105,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       console.log(`邀请奖励计算: ${rewardCalculation.calculation}`);
 
-      // 创建邀请奖励记录
+      // 在事务中创建邀请奖励记录
       const rewardRecord = await strapi.entityService.create('api::yaoqing-jiangli.yaoqing-jiangli', {
         data: {
           shouyiUSDT: rewardAmount.toString(),
@@ -115,11 +118,11 @@ export default ({ strapi }: { strapi: Strapi }) => ({
           childPrincipal: childPrincipal.toString(),
           commissionablePrincipal: Math.min(childPrincipal, parentTier.maxCommission).toString()
         }
-      });
+      }, { transaction });
 
       console.log(`邀请奖励记录创建成功: ID ${rewardRecord.id}`);
 
-      // 更新邀请人钱包余额
+      // 在事务中更新邀请人钱包余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: { id: user.invitedBy.id } }
       }) as any[];
@@ -131,12 +134,16 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         
         await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
           data: { usdtYue: newBalance.toString() } as any as any as any
-        });
+        }, { transaction });
 
         console.log(`邀请人钱包余额更新: 用户 ${user.invitedBy.id}, 原余额 ${currentBalance.toString()}, 新余额 ${newBalance.toString()}`);
       } else {
         console.warn(`邀请人 ${user.invitedBy.id} 没有找到钱包，无法更新余额`);
       }
+
+      // 提交事务
+      await transaction.commit();
+      console.log(`邀请奖励事务提交成功: 订单 ${order.id}`);
 
       const result = {
         success: true,
@@ -153,7 +160,9 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       
       return result;
     } catch (error) {
-      console.error('❌ 邀请奖励处理失败:', error);
+      // 回滚事务
+      await transaction.rollback();
+      console.error('❌ 邀请奖励处理失败，事务已回滚:', error);
       return {
         success: false,
         error: error.message,

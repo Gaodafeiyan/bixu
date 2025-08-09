@@ -158,6 +158,9 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
 
   // 重写create方法，添加数据验证
   async create(ctx) {
+    // 开始数据库事务
+    const transaction = await strapi.db.transaction();
+    
     try {
       const { data } = ctx.request.body;
       
@@ -186,6 +189,9 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         return ctx.badRequest('金额必须是大于0的数字');
       }
       
+      console.log(`开始创建订单 - 用户: ${data.user}, 计划: ${data.jihua}, 金额: ${data.amount}`);
+      
+      // 在事务中创建订单
       const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
         data: {
           user: data.user,
@@ -198,7 +204,28 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
           end_at: data.end_at || new Date(Date.now() + (data.cycle_days || 30) * 24 * 60 * 60 * 1000),
           status: data.status || 'pending'
         } as any as any
-      });
+      }, { transaction });
+      
+      console.log(`订单创建成功 - ID: ${order.id}`);
+      
+      // 处理邀请奖励（在事务中）
+      if (order.status === 'running') {
+        console.log(`开始处理邀请奖励 - 订单ID: ${order.id}`);
+        
+        const investmentService = strapi.service('api::investment-service.investment-service');
+        const rewardResult = await investmentService.processInvitationRewardV2(order);
+        
+        if (!rewardResult.success) {
+          console.log(`邀请奖励处理失败: ${rewardResult.message}`);
+          // 注意：这里不抛出错误，因为订单创建成功，奖励失败不应该影响订单
+        } else {
+          console.log(`邀请奖励处理成功: ${rewardResult.message}`);
+        }
+      }
+      
+      // 提交事务
+      await transaction.commit();
+      console.log(`事务提交成功 - 订单ID: ${order.id}`);
       
       ctx.body = {
         success: true,
@@ -206,7 +233,9 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         message: '订单创建成功'
       };
     } catch (error) {
-      console.error('创建订单失败:', error);
+      // 回滚事务
+      await transaction.rollback();
+      console.error('创建订单失败，事务已回滚:', error);
       ctx.throw(500, `创建订单失败: ${error.message}`);
     }
   },
