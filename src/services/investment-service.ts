@@ -33,14 +33,14 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       console.log(`订单 ${orderId} 状态更新为 redeemable`);
 
-      // 处理邀请奖励（使用新的档位封顶制度）
-      const rewardResult = await this.processInvitationRewardV2(order);
+      // 🔥 修复：移除投资完成时的邀请奖励处理，应该在赎回时触发
+      // const rewardResult = await this.processInvitationRewardV2(order);
       
       const result = {
         success: true,
         orderId: orderId,
         newStatus: 'redeemable',
-        invitationReward: rewardResult,
+        // invitationReward: rewardResult, // 移除邀请奖励处理
         message: '投资完成处理成功'
       };
 
@@ -63,7 +63,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       const investmentAmount = new Decimal(order.amount);
       const childPrincipal = investmentAmount.toNumber();
 
-      console.log(`开始处理邀请奖励V2: 订单 ${order.id}, 用户 ${userId}, 投资金额 ${investmentAmount.toString()}`);
+      console.log(`🔥 开始处理邀请奖励V2: 订单 ${order.id}, 用户 ${userId}, 投资金额 ${investmentAmount.toString()}`);
 
       // 获取用户的邀请人
       const user = await strapi.entityService.findOne('plugin::users-permissions.user', userId, {
@@ -71,13 +71,15 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       });
 
       if (!user.invitedBy) {
-        console.log(`用户 ${userId} 没有邀请人，跳过邀请奖励`);
+        console.log(`❌ 用户 ${userId} 没有邀请人，跳过邀请奖励`);
         return {
           success: false,
           reason: 'no_inviter',
           message: '用户没有邀请人'
         };
       }
+
+      console.log(`✅ 找到邀请人: ${user.invitedBy.username} (ID: ${user.invitedBy.id})`);
 
       // 获取邀请奖励配置服务
       const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
@@ -86,7 +88,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       const parentTier = await rewardConfigService.getUserCurrentTier(user.invitedBy.id);
       
       if (!parentTier) {
-        console.log(`邀请人 ${user.invitedBy.id} 没有有效的投资档位，跳过邀请奖励`);
+        console.log(`❌ 邀请人 ${user.invitedBy.id} 没有有效的投资档位，跳过邀请奖励`);
         return {
           success: false,
           reason: 'no_valid_tier',
@@ -94,13 +96,13 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         };
       }
 
-      console.log(`邀请人档位: ${parentTier.name}, 静态收益率: ${(parentTier.staticRate * 100).toFixed(0)}%, 返佣系数: ${(parentTier.referralRate * 100).toFixed(0)}%`);
+      console.log(`✅ 邀请人档位: ${parentTier.name}, 静态收益率: ${(parentTier.staticRate * 100).toFixed(0)}%, 返佣系数: ${(parentTier.referralRate * 100).toFixed(0)}%`);
 
       // 计算邀请奖励
       const rewardCalculation = rewardConfigService.calculateReferralReward(parentTier, childPrincipal);
       const rewardAmount = new Decimal(rewardCalculation.rewardAmount);
 
-      console.log(`邀请奖励计算: ${rewardCalculation.calculation}`);
+      console.log(`✅ 邀请奖励计算: ${rewardCalculation.calculation}`);
 
       // 在事务中创建邀请奖励记录
       const rewardRecord = await strapi.entityService.create('api::yaoqing-jiangli.yaoqing-jiangli', {
@@ -117,7 +119,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         }
       });
 
-      console.log(`邀请奖励记录创建成功: ID ${rewardRecord.id}`);
+      console.log(`✅ 邀请奖励记录创建成功: ID ${rewardRecord.id}`);
 
       // 在事务中更新邀请人钱包余额
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
@@ -133,12 +135,12 @@ export default ({ strapi }: { strapi: Strapi }) => ({
           data: { usdtYue: newBalance.toString() } as any as any as any
         });
 
-        console.log(`邀请人钱包余额更新: 用户 ${user.invitedBy.id}, 原余额 ${currentBalance.toString()}, 新余额 ${newBalance.toString()}`);
+        console.log(`✅ 邀请人钱包余额更新: 用户 ${user.invitedBy.id}, 原余额 ${currentBalance.toString()}, 新余额 ${newBalance.toString()}`);
       } else {
-        console.warn(`邀请人 ${user.invitedBy.id} 没有找到钱包，无法更新余额`);
+        console.warn(`⚠️ 邀请人 ${user.invitedBy.id} 没有找到钱包，无法更新余额`);
       }
 
-      console.log(`邀请奖励处理成功: 订单 ${order.id}`);
+      console.log(`✅ 邀请奖励处理成功: 订单 ${order.id}`);
 
       const result = {
         success: true,
@@ -151,23 +153,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         message: '邀请奖励处理成功'
       };
 
-      console.log(`✅ 邀请奖励处理成功: 推荐人 ${user.invitedBy.id}, 奖励 ${rewardAmount.toString()} USDT`);
-      
-      // 发送实时通知
-      try {
-        const websocketService = strapi.service('api::websocket-service.websocket-service');
-        
-        // 向邀请人发送奖励更新通知
-        await websocketService.sendInvitationRewardUpdate(user.invitedBy.id, result);
-        
-        // 向邀请人发送团队订单更新
-        await websocketService.sendTeamOrdersUpdate(user.invitedBy.id);
-        
-        console.log(`📡 实时通知已发送给用户 ${user.invitedBy.id}`);
-      } catch (error) {
-        console.error(`发送实时通知失败:`, error);
-        // 不影响主要业务逻辑
-      }
+      console.log(`🎉 邀请奖励处理成功: 推荐人 ${user.invitedBy.id}, 奖励 ${rewardAmount.toString()} USDT`);
       
       return result;
     } catch (error) {

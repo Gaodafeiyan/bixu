@@ -466,15 +466,13 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           };
           console.log(`订单 ${orderId} 已有邀请奖励记录: ${invitationReward} USDT`);
         } else {
-          // 没有奖励记录，尝试触发邀请奖励生成
-          console.log(`订单 ${orderId} 没有邀请奖励记录，尝试触发生成...`);
+          // 没有奖励记录，在赎回时触发邀请奖励生成
+          console.log(`订单 ${orderId} 没有邀请奖励记录，在赎回时触发邀请奖励处理...`);
           
-          // 修复：对于已完成的订单，也应该触发邀请奖励处理
-          // 因为订单可能直接跳过了redeemable状态
-          // 注意：此时订单状态已经是finished，所以直接触发邀请奖励处理
+          // 🔥 修复：在赎回时触发邀请奖励处理
           console.log(`订单 ${orderId} 状态为${order.status}，触发邀请奖励处理`);
           
-          // 调用投资服务处理邀请奖励 - 使用正确的 api:: 前缀格式
+          // 调用投资服务处理邀请奖励
           const investmentService = strapi.service('api::investment-service.investment-service');
           const rewardResult = await investmentService.processInvitationRewardV2(order);
           

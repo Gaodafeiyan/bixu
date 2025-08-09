@@ -32,17 +32,16 @@ export default ({ strapi }) => ({
 
       console.log(`订单 ${orderId} 状态更新为 redeemable`);
 
-      // 处理邀请奖励（使用新的档位封顶制度）
-      // 注意：不要使用this，重新获取服务实例
-      const rewardResult = await strapi
-        .service('api::investment-service.investment-service')
-        .processInvitationRewardV2(order);
+      // 🔥 修复：移除投资完成时的邀请奖励处理，应该在赎回时触发
+      // const rewardResult = await strapi
+      //   .service('api::investment-service.investment-service')
+      //   .processInvitationRewardV2(order);
       
       const result = {
         success: true,
         orderId: orderId,
         newStatus: 'redeemable',
-        invitationReward: rewardResult,
+        // invitationReward: rewardResult, // 移除邀请奖励处理
         message: '投资完成处理成功'
       };
 
