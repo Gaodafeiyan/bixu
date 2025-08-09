@@ -350,7 +350,7 @@ export default factories.createCoreController(
                 }
             } else {
                 // 其他设备 - 显示下载页面
-                const downloadUrl = 'https://zenithus.app/download';
+                const downloadUrl = 'https://zenithus.app/auth/download';
                 window.open(downloadUrl, '_blank');
             }
         }
@@ -640,7 +640,7 @@ export default factories.createCoreController(
                 📱 立即下载 Android 安装包（v2.1.0｜15.6MB）
             </a>
             <br>
-            <a href="/whitepaper" class="download-btn secondary-btn">
+            <a href="https://zenithus.app/auth/download" class="download-btn secondary-btn">
                 📖 了解平台 · 白皮书
             </a>
         </div>
