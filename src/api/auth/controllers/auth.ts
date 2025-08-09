@@ -1,6 +1,6 @@
 import { factories } from '@strapi/strapi';
 import QRCode from 'qrcode';
-import { getApkDownloadUrl, getApkFallbackUrl, checkCdnAvailability } from '../../config/cdn';
+import { getApkDownloadUrl, getApkFallbackUrl, checkCdnAvailability } from '../../../config/cdn';
 
 export default factories.createCoreController(
   'plugin::users-permissions.user',
