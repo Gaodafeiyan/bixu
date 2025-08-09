@@ -54,6 +54,26 @@ export default {
         middlewares: [],
       },
     },
+    {
+      method: 'GET',
+      path: '/auth/download',
+      handler: 'auth.showDownloadPage',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'GET',
+      path: '/api/download',
+      handler: 'auth.showDownloadPage',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
     // 邀请注册
     {
       method: 'POST',
