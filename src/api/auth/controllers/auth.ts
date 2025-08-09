@@ -573,7 +573,11 @@ export default factories.createCoreController(
         // 获取用户直接邀请的下级用户
         const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
           filters: { invitedBy: { id: userId } },
-          populate: ['dinggou_dingdans', 'dinggou_dingdans.jihua']
+          populate: {
+            dinggou_dingdans: {
+              populate: ['jihua']
+            }
+          }
         }) as any[];
 
         console.log(`用户 ${userId} 的直接邀请人数: ${directReferrals.length}`);
