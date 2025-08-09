@@ -1832,10 +1832,22 @@ export default factories.createCoreController(
           }, 0);
 
         // 格式化收益记录
-        const formattedRewards = rewards.map((reward: any) => ({
-          amount: reward.shouyiUSDT,
-          timestamp: reward.createdAt.toISOString().replace('T', ' ').substring(0, 19),
-        }));
+        const formattedRewards = rewards.map((reward: any) => {
+          // 🔥 修复：确保createdAt是Date对象
+          let timestamp;
+          if (reward.createdAt instanceof Date) {
+            timestamp = reward.createdAt.toISOString().replace('T', ' ').substring(0, 19);
+          } else if (typeof reward.createdAt === 'string') {
+            timestamp = new Date(reward.createdAt).toISOString().replace('T', ' ').substring(0, 19);
+          } else {
+            timestamp = new Date().toISOString().replace('T', ' ').substring(0, 19);
+          }
+          
+          return {
+            amount: reward.shouyiUSDT,
+            timestamp: timestamp,
+          };
+        });
 
         ctx.body = {
           success: true,
