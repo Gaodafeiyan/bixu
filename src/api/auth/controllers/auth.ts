@@ -572,12 +572,7 @@ export default factories.createCoreController(
 
         // 获取用户直接邀请的下级用户
         const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
-          filters: { invitedBy: { id: userId } },
-          populate: {
-            dinggou_dingdans: {
-              populate: ['jihua']
-            }
-          }
+          filters: { invitedBy: { id: userId } }
         }) as any[];
 
         console.log(`用户 ${userId} 的直接邀请人数: ${directReferrals.length}`);
@@ -590,7 +585,11 @@ export default factories.createCoreController(
         let pendingRewards = 0;
 
         for (const referral of directReferrals) {
-          const orders = referral.dinggou_dingdans || [];
+          // 获取该用户的订单
+          const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+            filters: { user: { id: referral.id } },
+            populate: ['jihua']
+          }) as any[];
           
           for (const order of orders) {
             totalOrders++;
