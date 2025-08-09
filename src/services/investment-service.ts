@@ -158,6 +158,22 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       console.log(`✅ 邀请奖励处理成功: 推荐人 ${user.invitedBy.id}, 奖励 ${rewardAmount.toString()} USDT`);
       
+      // 发送实时通知
+      try {
+        const websocketService = strapi.service('api::websocket-service.websocket-service');
+        
+        // 向邀请人发送奖励更新通知
+        await websocketService.sendInvitationRewardUpdate(user.invitedBy.id, result);
+        
+        // 向邀请人发送团队订单更新
+        await websocketService.sendTeamOrdersUpdate(user.invitedBy.id);
+        
+        console.log(`📡 实时通知已发送给用户 ${user.invitedBy.id}`);
+      } catch (error) {
+        console.error(`发送实时通知失败:`, error);
+        // 不影响主要业务逻辑
+      }
+      
       return result;
     } catch (error) {
       // 回滚事务

@@ -227,6 +227,29 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
       await transaction.commit();
       console.log(`事务提交成功 - 订单ID: ${order.id}`);
       
+      // 发送实时通知
+      try {
+        const websocketService = strapi.service('api::websocket-service.websocket-service');
+        
+        // 向订单创建者发送订单状态更新
+        await websocketService.sendOrderStatusUpdate(data.user, order);
+        
+        // 如果有邀请人，也向邀请人发送团队订单更新
+        const user = await strapi.entityService.findOne('plugin::users-permissions.user', data.user, {
+          populate: ['invitedBy']
+        });
+        
+        if (user.invitedBy) {
+          await websocketService.sendTeamOrdersUpdate(user.invitedBy.id);
+          console.log(`📡 团队订单更新已发送给邀请人 ${user.invitedBy.id}`);
+        }
+        
+        console.log(`📡 实时通知已发送给用户 ${data.user}`);
+      } catch (error) {
+        console.error(`发送实时通知失败:`, error);
+        // 不影响主要业务逻辑
+      }
+      
       ctx.body = {
         success: true,
         data: order,
