@@ -52,6 +52,24 @@ export default {
         auth: {},  // 空对象表示需要登录
       },
     },
+    // 获取团队信息
+    {
+      method: 'GET',
+      path: '/auth/team-info',
+      handler: 'auth.getTeamInfo',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
+    // 获取收益信息
+    {
+      method: 'GET',
+      path: '/auth/reward-info',
+      handler: 'auth.getRewardInfo',
+      config: {
+        auth: {},  // 空对象表示需要登录
+      },
+    },
     // 生成邀请链接
     {
       method: 'GET',

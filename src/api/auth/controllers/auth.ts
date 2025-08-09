@@ -346,6 +346,105 @@ export default factories.createCoreController(
       }
     },
 
+    // 获取团队信息
+    async getTeamInfo(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        // 获取直接推荐的用户
+        const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { invitedBy: userId },
+          fields: ['id', 'username', 'createdAt'],
+          sort: { createdAt: 'desc' },
+        });
+
+        // 计算总收益（这里可以根据实际业务逻辑计算）
+        const totalEarnings = await this.calculateTotalEarnings(userId);
+
+        // 格式化团队成员数据
+        const members = directReferrals.map(user => ({
+          username: user.username,
+          registrationDate: user.createdAt.toISOString().split('T')[0],
+        }));
+
+        ctx.body = {
+          success: true,
+          data: {
+            directReferrals: directReferrals.length,
+            totalEarnings: totalEarnings.toFixed(2),
+            members: members,
+          }
+        };
+      } catch (error) {
+        console.error('获取团队信息失败:', error);
+        ctx.throw(500, `获取团队信息失败: ${error.message}`);
+      }
+    },
+
+    // 获取收益信息
+    async getRewardInfo(ctx) {
+      try {
+        const userId = ctx.state.user.id;
+        
+        // 获取邀请奖励记录
+        const rewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+          filters: { tuijianRen: userId },
+          fields: ['id', 'shouyiUSDT', 'createdAt'],
+          sort: { createdAt: 'desc' },
+          limit: 10,
+        });
+
+        // 计算总收益
+        const totalRewards = rewards.reduce((sum, reward) => {
+          return sum + (parseFloat(reward.shouyiUSDT) || 0);
+        }, 0);
+
+        // 计算本月收益
+        const currentMonth = new Date();
+        const monthStart = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), 1);
+        const monthlyRewards = rewards
+          .filter(reward => new Date(reward.createdAt) >= monthStart)
+          .reduce((sum, reward) => {
+            return sum + (parseFloat(reward.shouyiUSDT) || 0);
+          }, 0);
+
+        // 格式化收益记录
+        const formattedRewards = rewards.map(reward => ({
+          amount: reward.shouyiUSDT,
+          timestamp: reward.createdAt.toISOString().replace('T', ' ').substring(0, 19),
+        }));
+
+        ctx.body = {
+          success: true,
+          data: {
+            totalRewards: totalRewards.toFixed(2),
+            monthlyRewards: monthlyRewards.toFixed(2),
+            rewards: formattedRewards,
+          }
+        };
+      } catch (error) {
+        console.error('获取收益信息失败:', error);
+        ctx.throw(500, `获取收益信息失败: ${error.message}`);
+      }
+    },
+
+    // 计算总收益的辅助方法
+    async calculateTotalEarnings(userId) {
+      try {
+        const rewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+          filters: { tuijianRen: userId },
+          fields: ['shouyiUSDT'],
+        });
+
+        return rewards.reduce((sum, reward) => {
+          return sum + (parseFloat(reward.shouyiUSDT) || 0);
+        }, 0);
+      } catch (error) {
+        console.error('计算总收益失败:', error);
+        return 0;
+      }
+    },
+
     // 验证邀请码
     async validateInviteCode(ctx) {
       try {
