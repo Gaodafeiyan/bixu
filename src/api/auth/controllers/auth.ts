@@ -2161,6 +2161,14 @@ export default factories.createCoreController(
               }
             }) as any[];
 
+            console.log(`🔍 订单 ${order.id} 奖励记录:`, {
+              orderId: order.id,
+              referralId: referral.id,
+              orderStatus: order.status,
+              rewardRecordsFound: rewardRecord.length,
+              rewardAmount: rewardRecord.length > 0 ? rewardRecord[0].shouyiUSDT : '0'
+            });
+
             if (rewardRecord.length > 0) {
               const rewardAmount = rewardRecord[0].shouyiUSDT || '0';
               totalRewards += parseFloat(rewardAmount);
@@ -2168,6 +2176,8 @@ export default factories.createCoreController(
               if (order.status !== 'finished') {
                 pendingRewards += parseFloat(rewardAmount);
               }
+              
+              console.log(`💰 奖励计算: 订单 ${order.id}, 奖励 ${rewardAmount} USDT, 状态 ${order.status}`);
             }
           }
         }
@@ -2252,6 +2262,31 @@ export default factories.createCoreController(
           const { createdAt, ...rest } = order;
           return rest;
         });
+
+        // 添加调试日志
+        console.log(`🔍 团队订单统计 - 用户 ${userId}:`);
+        console.log(`  总订单数: ${totalOrders}`);
+        console.log(`  进行中订单: ${runningOrders}`);
+        console.log(`  已完成订单: ${finishedOrders}`);
+        console.log(`  总奖励: ${totalRewards.toFixed(2)} USDT`);
+        console.log(`  待分配奖励: ${pendingRewards.toFixed(2)} USDT`);
+        console.log(`  订单列表数量: ${finalOrders.length}`);
+        
+        // 检查是否有邀请奖励记录
+        const allRewardRecords = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+          filters: { tuijianRen: { id: userId } }
+        }) as any[];
+        
+        console.log(`🔍 邀请奖励记录总数: ${allRewardRecords.length}`);
+        if (allRewardRecords.length > 0) {
+          console.log(`🔍 邀请奖励记录详情:`, allRewardRecords.map(r => ({
+            id: r.id,
+            amount: r.shouyiUSDT,
+            inviter: r.tuijianRen?.id,
+            invitee: r.laiyuanRen?.id,
+            order: r.laiyuanDan?.id
+          })));
+        }
 
         ctx.body = {
           success: true,
