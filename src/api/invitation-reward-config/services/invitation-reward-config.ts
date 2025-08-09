@@ -48,11 +48,11 @@ export default ({ strapi }: { strapi: Strapi }) => ({
     try {
       console.log(`🔍 开始获取用户 ${userId} 的当前档位...`);
       
-      // 🔥 修复：考虑所有有效状态的订单（running、redeemable、finished）
+      // 🔥 修复：只考虑进行中的订单（running状态）
       const activeOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { 
           user: { id: userId },
-          status: { $in: ['running', 'redeemable', 'finished'] }  // 考虑所有有效状态
+          status: 'running'  // 只考虑进行中的订单
         },
         populate: ['jihua']
       }) as any[];
