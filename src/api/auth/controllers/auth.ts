@@ -223,12 +223,20 @@ export default factories.createCoreController(
             
             <div class="form-group">
                 <label for="email">邮箱</label>
-                <input type="email" id="email" name="email" placeholder="请输入邮箱" required>
+                <input type="email" id="email" name="email" placeholder="请输入邮箱" pattern="[a-z0-9._%+-]+@[a-z0-9.-]+\.[a-z]{2,}$" minlength="5" maxlength="50" required>
+                <small style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">请输入有效的邮箱地址</small>
             </div>
             
             <div class="form-group">
                 <label for="password">密码</label>
-                <input type="password" id="password" name="password" placeholder="请输入密码" required>
+                <input type="password" id="password" name="password" placeholder="请输入密码" minlength="6" maxlength="20" required>
+                <small style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">密码长度6-20位</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="confirmPassword">确认密码</label>
+                <input type="password" id="confirmPassword" name="confirmPassword" placeholder="请再次输入密码" minlength="6" maxlength="20" required>
+                <small style="color: rgba(255, 255, 255, 0.6); font-size: 12px;">请确保两次输入的密码一致</small>
             </div>
             
             <div class="form-group">
@@ -255,11 +263,42 @@ export default factories.createCoreController(
             e.preventDefault();
             
             const formData = new FormData(this);
+            const username = formData.get('username');
+            const email = formData.get('email');
+            const password = formData.get('password');
+            const confirmPassword = formData.get('confirmPassword');
+            const inviteCode = formData.get('inviteCode');
+            
+            // 验证邮箱格式
+            const emailPattern = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+            if (!emailPattern.test(email)) {
+                showMessage('请输入有效的邮箱地址', 'error');
+                return;
+            }
+            
+            // 验证邮箱长度
+            if (email.length < 5 || email.length > 50) {
+                showMessage('邮箱长度应在5-50位之间', 'error');
+                return;
+            }
+            
+            // 验证密码长度
+            if (password.length < 6 || password.length > 20) {
+                showMessage('密码长度应在6-20位之间', 'error');
+                return;
+            }
+            
+            // 验证确认密码
+            if (password !== confirmPassword) {
+                showMessage('两次输入的密码不一致', 'error');
+                return;
+            }
+            
             const data = {
-                username: formData.get('username'),
-                email: formData.get('email'),
-                password: formData.get('password'),
-                inviteCode: formData.get('inviteCode')
+                username,
+                email,
+                password,
+                inviteCode
             };
             
             const submitBtn = this.querySelector('button[type="submit"]');
