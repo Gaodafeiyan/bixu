@@ -15,6 +15,16 @@ export default {
     // H5注册页面路由
     {
       method: 'GET',
+      path: '/auth/register',
+      handler: 'auth.showRegisterPage',
+      config: {
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+    {
+      method: 'GET',
       path: '/register',
       handler: 'auth.showRegisterPage',
       config: {
