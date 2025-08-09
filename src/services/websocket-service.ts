@@ -97,7 +97,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
           
           if (order.createdAt && order.jihua) {
             const createdDate = new Date(order.createdAt);
-            const durationDays = order.jihua.duration || 90;
+            const durationDays = order.jihua.zhouQiTian || 90; // 使用投资计划的周期天数
             expiryDate = new Date(createdDate.getTime() + durationDays * 24 * 60 * 60 * 1000);
             
             const now = new Date();
