@@ -780,9 +780,8 @@ export default factories.createCoreController(
         ctx.set('Content-Type', 'application/vnd.android.package-archive');
         ctx.set('Content-Disposition', 'attachment; filename="zenithus-v1.10.apk"');
         
-        // 这里应该返回实际的APK文件
-        // 暂时返回一个占位符，您需要将实际的APK文件放在public目录下
-        const apkPath = './public/zenithus-v1.10.apk';
+        // 返回服务器上的APK文件
+        const apkPath = '/var/www/html/app-release.apk';
         
         // 检查文件是否存在
         const fs = require('fs');
