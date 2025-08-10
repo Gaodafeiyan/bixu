@@ -104,8 +104,19 @@ export default ({ strapi }: { strapi: Strapi }) => ({
 
       console.log(`✅ 邀请奖励计算: ${rewardCalculation.calculation}`);
 
-      // 在事务中创建邀请奖励记录
-      const rewardRecord = await strapi.entityService.create('api::yaoqing-jiangli.yaoqing-jiangli', {
+      // 幂等检查：是否已为该订单发过奖励
+      const existed = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli' as any, {
+        filters: { tuijianRen: user.invitedBy.id, laiyuanRen: userId, laiyuanDan: order.id },
+        limit: 1,
+      });
+      if (Array.isArray(existed) && existed.length) {
+        console.log(`⚠️ 已存在该订单的邀请奖励记录，跳过创建，rewardId=${existed[0].id}`);
+      }
+
+      // 在事务中创建邀请奖励记录（若不存在）
+      const rewardRecord = (Array.isArray(existed) && existed.length)
+        ? existed[0]
+        : await strapi.entityService.create('api::yaoqing-jiangli.yaoqing-jiangli', {
         data: {
           shouyiUSDT: rewardAmount.toString(),
           tuijianRen: user.invitedBy.id,
@@ -126,18 +137,31 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         filters: { user: { id: user.invitedBy.id } }
       }) as any[];
 
-      if (wallets && wallets.length > 0) {
-        const wallet = wallets[0];
-        const currentBalance = new Decimal(wallet.usdtYue || 0);
-        const newBalance = currentBalance.plus(rewardAmount);
-        
-        await strapi.entityService.update('api::qianbao-yue.qianbao-yue', wallet.id, {
-          data: { usdtYue: newBalance.toString() } as any as any as any
-        });
+      let walletRecord = wallets && wallets.length > 0 ? wallets[0] : null;
+      if (!walletRecord) {
+        console.warn(`⚠️ 邀请人 ${user.invitedBy.id} 没有找到钱包，尝试自动创建...`);
+        try {
+          walletRecord = await strapi.entityService.create('api::qianbao-yue.qianbao-yue' as any, {
+            data: {
+              usdtYue: '0',
+              aiYue: '0',
+              aiTokenBalances: '{}',
+              user: user.invitedBy.id,
+            } as any,
+          });
+          console.log(`✅ 自动创建钱包成功: 钱包ID ${walletRecord.id}`);
+        } catch (createErr) {
+          console.error(`❌ 自动创建钱包失败:`, createErr);
+        }
+      }
 
+      if (walletRecord) {
+        const currentBalance = new Decimal(walletRecord.usdtYue || 0);
+        const newBalance = currentBalance.plus(rewardAmount);
+        await strapi.entityService.update('api::qianbao-yue.qianbao-yue', walletRecord.id, {
+          data: { usdtYue: newBalance.toString() } as any as any as any,
+        });
         console.log(`✅ 邀请人钱包余额更新: 用户 ${user.invitedBy.id}, 原余额 ${currentBalance.toString()}, 新余额 ${newBalance.toString()}`);
-      } else {
-        console.warn(`⚠️ 邀请人 ${user.invitedBy.id} 没有找到钱包，无法更新余额`);
       }
 
       console.log(`✅ 邀请奖励处理成功: 订单 ${order.id}`);

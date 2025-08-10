@@ -89,16 +89,18 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         return null;
       }
 
-      // 根据最高金额找到对应的档位
-      const tier = REWARD_TIERS.find(t => t.principal === maxPrincipal);
-      
-      if (tier) {
-        if (VERBOSE) console.log(`用户 ${userId} 的最终档位: ${tier.name}`);
-        return tier;
-      } else {
-        if (VERBOSE) console.log(`⚠️ 订单金额 ${maxPrincipal} 没有对应的档位配置`);
-        return null;
+      // 根据最高金额找到对应的档位（就近向下匹配）
+      const sorted = [...REWARD_TIERS].sort((a, b) => a.principal - b.principal);
+      let matched: RewardTier | null = null;
+      for (const t of sorted) {
+        if (maxPrincipal >= t.principal) matched = t; else break;
       }
+      if (matched) {
+        if (VERBOSE) console.log(`用户 ${userId} 的最终档位: ${matched.name}（就近向下匹配，maxPrincipal=${maxPrincipal}）`);
+        return matched;
+      }
+      if (VERBOSE) console.log(`⚠️ 订单金额 ${maxPrincipal} 小于最小档位 ${sorted[0].principal}`);
+      return null;
     } catch (error) {
       console.error('获取用户当前档位失败:', error);
       return null;
