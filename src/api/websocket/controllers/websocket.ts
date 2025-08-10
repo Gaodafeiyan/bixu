@@ -58,4 +58,4 @@ export default ({ strapi }) => ({
       ctx.throw(500, `发送消息失败: ${error.message}`);
     }
   }
-}));
+});

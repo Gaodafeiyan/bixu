@@ -439,12 +439,14 @@ export default ({ strapi }) => {
         );
 
         console.log(`📊 找到 ${orders.length} 个相关订单`);
+        console.log(`🔍 活跃充值地址: ${Array.from(addrSet).join(', ')}`);
+        console.log(`🔍 订单地址: ${orders.map(o => o.receiveAddress).join(', ')}`);
 
         // 检查是否是ETH转账
         if (tx.value && tx.value !== '0x0') {
           const ethAmount = parseFloat(web3.utils.fromWei(tx.value, 'ether'));
           
-          // 优先匹配pending订单
+          // 优先匹配pending订单 - 修复地址大小写匹配
           let matchingOrder = orders.find(order => 
             order.status === 'pending' &&
             order.receiveAddress.toLowerCase() === tx.to.toLowerCase() &&
@@ -493,7 +495,7 @@ export default ({ strapi }) => {
 
                 console.log(`🔍 检测到${channel.asset}转账: 到地址 ${toAddress}, 金额 ${tokenAmount.toString()} ${channel.asset}, decimals: ${decimals}`);
 
-                // 查找匹配的充值订单 - 允许一定的金额误差
+                // 查找匹配的充值订单 - 允许一定的金额误差，修复地址匹配
                 let matchingOrder = orders.find(order => {
                   const orderAmount = new Decimal(order.amount);
                   const difference = orderAmount.minus(tokenAmount).abs();
@@ -534,6 +536,7 @@ export default ({ strapi }) => {
         }
 
         console.log(`⚠️ 未找到匹配的充值订单，交易哈希: ${tx.hash}`);
+        console.log(`🔍 交易详情: to=${tx.to}, value=${tx.value}, input=${tx.input ? tx.input.slice(0, 20) + '...' : 'N/A'}`);
       } catch (error) {
         console.error('❌ 处理交易失败:', error);
       }
@@ -571,12 +574,33 @@ export default ({ strapi }) => {
           }
         });
 
-        // 增加用户钱包余额
-        const wallets = await this.strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+        // 查找用户钱包，如果不存在则自动创建
+        let wallets = await this.strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
           filters: { user: { id: order.user.id } }
         });
 
-        const wallet = wallets[0];
+        let wallet = wallets[0];
+        
+        // 如果钱包不存在，自动创建
+        if (!wallet) {
+          console.log(`🔄 用户 ${order.user.id} 钱包不存在，自动创建钱包`);
+          try {
+            wallet = await this.strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
+              data: {
+                usdtYue: '0',
+                aiYue: '0',
+                aiTokenBalances: '{}',
+                user: order.user.id
+              }
+            });
+            console.log(`✅ 为用户 ${order.user.id} 自动创建钱包成功，钱包ID: ${wallet.id}`);
+          } catch (createError) {
+            console.error(`❌ 为用户 ${order.user.id} 创建钱包失败:`, createError);
+            throw new Error(`创建钱包失败: ${createError.message}`);
+          }
+        }
+
+        // 更新钱包余额
         if (wallet) {
           const currentBalance = parseFloat(wallet.usdtYue || '0');
           const newBalance = currentBalance + parseFloat(amount);
@@ -602,7 +626,8 @@ export default ({ strapi }) => {
             console.error('❌ 发送充值成功推送失败:', error);
           }
         } else {
-          console.warn(`⚠️ 用户 ${order.user.id} 没有找到钱包记录`);
+          console.error(`❌ 用户 ${order.user.id} 钱包创建失败，无法更新余额`);
+          throw new Error('钱包创建失败');
         }
       } catch (error) {
         console.error('❌ 完成充值订单失败:', error);

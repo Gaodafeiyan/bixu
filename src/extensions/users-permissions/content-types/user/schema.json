@@ -12,6 +12,9 @@
     "draftAndPublish": false
   },
   "pluginOptions": {},
+  "lifecycles": {
+    "afterCreate": "api::qianbao-yue.qianbao-yue.createUserWallet"
+  },
   "attributes": {
     "username": {
       "type": "string",

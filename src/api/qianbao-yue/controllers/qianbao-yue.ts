@@ -337,5 +337,36 @@ export default factories.createCoreController(
         ctx.throw(500, `创建钱包失败: ${error.message}`);
       }
     },
+
+    // 用户注册后自动创建钱包的方法
+    async createUserWallet(data: any) {
+      try {
+        console.log(`🔄 为新用户 ${data.id} 自动创建钱包`);
+        
+        // 检查用户是否已有钱包
+        const existingWallet = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
+          filters: { user: { id: data.id } }
+        }) as any[];
+        
+        if (existingWallet.length > 0) {
+          console.log(`⚠️ 用户 ${data.id} 已存在钱包，跳过创建`);
+          return;
+        }
+        
+        // 创建默认钱包
+        const wallet = await strapi.entityService.create('api::qianbao-yue.qianbao-yue', {
+          data: {
+            usdtYue: '0',
+            aiYue: '0',
+            aiTokenBalances: '{}',
+            user: data.id
+          }
+        });
+        
+        console.log(`✅ 用户 ${data.id} 钱包创建成功，钱包ID: ${wallet.id}`);
+      } catch (error) {
+        console.error(`❌ 为用户 ${data.id} 创建钱包失败:`, error);
+      }
+    },
   })
 ); 
