@@ -40,6 +40,9 @@ const SHIB_CONTRACT_ADDRESS = '0x2859e4544c4bb03966803b044a93563bd2d0dd4d';
 
 // 小窗口扫描配置
 const SCAN_STEP = 100; // 每次扫描100个区块，平衡性能和及时性
+const SCAN_BACK_RANGE = 3000; // 回扫范围：3000个区块
+const CHAIN_CONFIRMATIONS = 3; // BSC/Polygon确认数：3个
+const SCAN_ALWAYS = true; // 总是回扫，不管有没有pending订单
 let lastProcessedBlock = 0;
 
 // 调试开关
@@ -142,15 +145,20 @@ export default ({ strapi }) => {
         }
 
         const currentBlock = await web3.eth.getBlockNumber();
-        if (lastProcessedBlock >= Number(currentBlock)) {
-          return; // 没有新区块
-        }
+        const tip = Number(currentBlock);
+        
+        // 计算扫描范围
+        const fromBlock = Math.max(lastProcessedBlock + 1, tip - SCAN_BACK_RANGE - CHAIN_CONFIRMATIONS);
+        const toBlock = tip - CHAIN_CONFIRMATIONS;
 
-        const fromBlock = lastProcessedBlock + 1;
-        const toBlock = Math.min(Number(currentBlock), fromBlock + SCAN_STEP - 1);
+        if (fromBlock > toBlock) {
+          if (VERBOSE) console.log('📊 没有新区块需要扫描');
+          return;
+        }
 
         if (VERBOSE) {
           console.log(`🔍 扫描区块范围: ${fromBlock} - ${toBlock} (共${toBlock - fromBlock + 1}个区块)`);
+          console.log(`📊 当前区块: ${tip}, 确认数: ${CHAIN_CONFIRMATIONS}`);
         }
         
         await this.scanRange(fromBlock, toBlock);
@@ -414,29 +422,46 @@ export default ({ strapi }) => {
         
         const walletAddresses = activeChannels.map(channel => channel.walletAddress);
         
-        // 查找匹配的充值订单 - 只查找最近24小时内的订单
-        const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        // 查找匹配的充值订单 - 扩展搜索范围到7天，包含所有状态
+        const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
         const orders = await this.strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
-            status: 'pending',
             receiveAddress: { $in: walletAddresses },
-            createdAt: { $gte: oneDayAgo }
+            createdAt: { $gte: sevenDaysAgo }
           },
           populate: ['user'], // 包含user关系
           sort: { createdAt: 'desc' } // 按创建时间倒序，优先匹配最新订单
         });
 
+        console.log(`📊 找到 ${orders.length} 个相关订单`);
+
         // 检查是否是ETH转账
         if (tx.value && tx.value !== '0x0') {
           const ethAmount = parseFloat(web3.utils.fromWei(tx.value, 'ether'));
-          const matchingOrder = orders.find(order => 
+          
+          // 优先匹配pending订单
+          let matchingOrder = orders.find(order => 
+            order.status === 'pending' &&
             order.receiveAddress.toLowerCase() === tx.to.toLowerCase() &&
             parseFloat(order.amount) === ethAmount
           );
 
+          // 如果没有pending订单，尝试匹配其他状态的订单（防止重复入账）
+          if (!matchingOrder) {
+            matchingOrder = orders.find(order => 
+              order.receiveAddress.toLowerCase() === tx.to.toLowerCase() &&
+              parseFloat(order.amount) === ethAmount &&
+              order.txHash !== tx.hash // 避免重复处理
+            );
+          }
+
           if (matchingOrder) {
-            console.log(`✅ 找到匹配的ETH充值订单: ${matchingOrder.orderNo}`);
-            await this.completeRechargeOrder(matchingOrder, tx.hash, ethAmount.toString());
+            console.log(`✅ 找到匹配的ETH充值订单: ${matchingOrder.orderNo}, 状态: ${matchingOrder.status}`);
+            if (matchingOrder.status === 'pending') {
+              await this.completeRechargeOrder(matchingOrder, tx.hash, ethAmount.toString());
+            } else {
+              console.log(`⚠️ 订单 ${matchingOrder.orderNo} 已处理过，跳过`);
+            }
             return;
           }
         }
@@ -448,29 +473,50 @@ export default ({ strapi }) => {
               // 解析代币转账数据
               const methodId = tx.input.slice(0, 10);
               if (methodId === '0xa9059cbb') { // transfer方法
-                const toAddress = '0x' + tx.input.slice(10, 74);
-                const amountHex = '0x' + tx.input.slice(74);
+                // 修复地址解析：64位参数中真正的地址在最后40位
+                const toAddress = '0x' + tx.input.slice(26, 66);
+                
+                // 修复金额解析：使用Web3的ABI解码器
+                const amountHex = '0x' + tx.input.slice(66);
+                const amountWei = web3.utils.hexToNumberString(amountHex);
                 
                 // 使用后台配置的decimals
                 const decimals = channel.decimals || 18;
-                const amountWei = new Decimal(amountHex);
-                const tokenAmount = amountWei.dividedBy(new Decimal(10).pow(decimals));
+                const tokenAmount = new Decimal(amountWei).dividedBy(new Decimal(10).pow(decimals));
 
                 console.log(`🔍 检测到${channel.asset}转账: 到地址 ${toAddress}, 金额 ${tokenAmount.toString()} ${channel.asset}`);
 
                 // 查找匹配的充值订单 - 允许一定的金额误差
-                const matchingOrder = orders.find(order => {
+                let matchingOrder = orders.find(order => {
                   const orderAmount = new Decimal(order.amount);
                   const difference = orderAmount.minus(tokenAmount).abs();
-                  const tolerance = new Decimal(0.01); // 允许0.01的误差
+                  const tolerance = new Decimal(0.1); // 增加容差到0.1
                   
-                  return order.receiveAddress.toLowerCase() === toAddress.toLowerCase() && 
+                  return order.status === 'pending' &&
+                         order.receiveAddress.toLowerCase() === toAddress.toLowerCase() && 
                          difference.lessThanOrEqualTo(tolerance);
                 });
 
+                // 如果没有pending订单，尝试匹配其他状态的订单
+                if (!matchingOrder) {
+                  matchingOrder = orders.find(order => {
+                    const orderAmount = new Decimal(order.amount);
+                    const difference = orderAmount.minus(tokenAmount).abs();
+                    const tolerance = new Decimal(0.1);
+                    
+                    return order.receiveAddress.toLowerCase() === toAddress.toLowerCase() && 
+                           difference.lessThanOrEqualTo(tolerance) &&
+                           order.txHash !== tx.hash; // 避免重复处理
+                  });
+                }
+
                 if (matchingOrder) {
-                  console.log(`✅ 找到匹配的${channel.asset}充值订单: ${matchingOrder.orderNo}`);
-                  await this.completeRechargeOrder(matchingOrder, tx.hash, tokenAmount.toString());
+                  console.log(`✅ 找到匹配的${channel.asset}充值订单: ${matchingOrder.orderNo}, 状态: ${matchingOrder.status}`);
+                  if (matchingOrder.status === 'pending') {
+                    await this.completeRechargeOrder(matchingOrder, tx.hash, tokenAmount.toString());
+                  } else {
+                    console.log(`⚠️ 订单 ${matchingOrder.orderNo} 已处理过，跳过`);
+                  }
                   return;
                 }
               }
@@ -489,15 +535,30 @@ export default ({ strapi }) => {
     // 完成充值订单
     async completeRechargeOrder(order: any, txHash: string, amount: string) {
       try {
-        console.log(`💰 完成充值订单: ${order.orderNo}, 金额: ${amount} ETH`);
+        console.log(`💰 完成充值订单: ${order.orderNo}, 金额: ${amount} USDT`);
+
+        // 幂等性检查：如果订单已经完成且txHash相同，跳过
+        if (order.status === 'completed' && order.txHash === txHash) {
+          console.log(`⚠️ 订单 ${order.orderNo} 已处理过，跳过重复处理`);
+          return;
+        }
+
+        // 获取交易收据
+        let blockNumber = 0;
+        try {
+          const receipt = await web3.eth.getTransactionReceipt(txHash);
+          blockNumber = receipt.blockNumber;
+        } catch (receiptError) {
+          console.warn(`⚠️ 获取交易收据失败: ${receiptError.message}`);
+        }
 
         // 更新订单状态
         await this.strapi.entityService.update('api::recharge-order.recharge-order' as any, order.id, {
           data: {
             status: 'completed',
             txHash: txHash,
-            blockNumber: await web3.eth.getTransactionReceipt(txHash).then(receipt => receipt.blockNumber),
-            confirmations: 12,
+            blockNumber: blockNumber,
+            confirmations: CHAIN_CONFIRMATIONS,
             receivedTime: new Date(),
             completedTime: new Date()
           }
