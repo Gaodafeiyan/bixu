@@ -46,21 +46,39 @@ const REWARD_TIERS: RewardTier[] = [
 const VERBOSE = process.env.DEBUG_VERBOSE === '1';
 
 export default ({ strapi }: { strapi: Strapi }) => ({
-  // 获取用户当前最高有效档位（优化版：使用聚合查询）
+  // 获取用户当前最高有效档位（优化版：使用Strapi API）
   async getUserCurrentTier(userId: number): Promise<RewardTier | null> {
     try {
       if (VERBOSE) console.log(`🔍 开始获取用户 ${userId} 的当前档位...`);
       
-      // 使用聚合查询获取最高金额，避免遍历所有订单
-      const result = await strapi.db.connection('dinggou_dingdans')
-        .where({ 
-          user_id: userId, 
-          status: 'running' 
-        })
-        .max('principal as max_principal')
-        .first();
+      // 使用Strapi API获取有效订单
+      const activeOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
+        filters: { 
+          user: { id: userId },
+          status: 'running'
+        },
+        fields: ['principal', 'amount'],
+        sort: { principal: 'desc' }
+      }) as any[];
 
-      const maxPrincipal = result?.max_principal ? Number(result.max_principal) : 0;
+      if (VERBOSE) {
+        console.log(`用户 ${userId} 的有效订单数量: ${activeOrders.length}`);
+      }
+
+      if (!activeOrders || activeOrders.length === 0) {
+        if (VERBOSE) console.log(`用户 ${userId} 没有有效的订单`);
+        return null;
+      }
+
+      // 找到最高金额的订单
+      let maxPrincipal = 0;
+      for (const order of activeOrders) {
+        const orderPrincipal = new Decimal(order.principal || order.amount || 0);
+        const principalValue = orderPrincipal.toNumber();
+        if (principalValue > maxPrincipal) {
+          maxPrincipal = principalValue;
+        }
+      }
 
       if (VERBOSE) {
         console.log(`用户 ${userId} 的最高有效订单金额: ${maxPrincipal}`);

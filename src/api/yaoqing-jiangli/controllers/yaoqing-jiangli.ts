@@ -278,30 +278,37 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
 
       const userId = ctx.state.user.id;
 
-      // 使用聚合查询获取直接推荐人数
-      const directReferralsResult = await strapi.db.connection('users')
-        .where({ invited_by_id: userId })
-        .count('* as count')
-        .first();
-      
-      const directReferralsCount = Number(directReferralsResult?.count || 0);
+      // 使用Strapi API获取直接推荐人数
+      const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
+        filters: { invitedBy: userId },
+        fields: ['id']
+      }) as any[];
 
-      // 使用聚合查询获取间接推荐人数
-      const indirectReferralsResult = await strapi.db.connection('users as u1')
-        .join('users as u2', 'u1.invited_by_id', 'u2.id')
-        .where('u2.invited_by_id', userId)
-        .count('u1.id as count')
-        .first();
-      
-      const indirectReferralsCount = Number(indirectReferralsResult?.count || 0);
+      const directReferralsCount = directReferrals.length;
 
-      // 使用聚合查询获取总收益
-      const totalEarningsResult = await strapi.db.connection('yaoqing_jianglis')
-        .where({ tuijian_ren: userId })
-        .sum('shouyi_usdt as total')
-        .first();
+      // 使用Strapi API获取间接推荐人数
+      const directReferralIds = directReferrals.map(user => user.id);
+      let indirectReferralsCount = 0;
       
-      const totalEarnings = Number(totalEarningsResult?.total || 0);
+      if (directReferralIds.length > 0) {
+        const indirectReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
+          filters: { 
+            invitedBy: { $in: directReferralIds }
+          },
+          fields: ['id']
+        }) as any[];
+        indirectReferralsCount = indirectReferrals.length;
+      }
+
+      // 使用Strapi API获取总收益
+      const totalRewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
+        filters: { tuijianRen: userId },
+        fields: ['shouyiUSDT']
+      }) as any[];
+
+      const totalEarnings = totalRewards.reduce((sum, reward) => {
+        return sum + new Decimal(reward.shouyiUSDT || 0).toNumber();
+      }, 0);
 
       // 获取用户当前档位
       const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
