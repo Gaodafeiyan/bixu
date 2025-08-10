@@ -8,7 +8,7 @@ const JPUSH_AUTH = JPUSH_APP_KEY && JPUSH_MASTER_SECRET
   ? Buffer.from(`${JPUSH_APP_KEY}:${JPUSH_MASTER_SECRET}`).toString('base64')
   : null;
 
-// Firebase配置
+// Firebase配置（备用）
 const FIREBASE_PROJECT_ID = process.env.FIREBASE_PROJECT_ID;
 const FIREBASE_PRIVATE_KEY = process.env.FIREBASE_PRIVATE_KEY;
 const FIREBASE_CLIENT_EMAIL = process.env.FIREBASE_CLIENT_EMAIL;
@@ -21,7 +21,7 @@ export class HybridPushService {
   }
 
   /**
-   * 发送推送通知给指定用户（自动选择推送服务）
+   * 发送推送通知给指定用户（优先使用JPush）
    */
   async sendToUser(userId: number, title: string, body: string, data?: any) {
     try {
@@ -41,19 +41,21 @@ export class HybridPushService {
 
       const results = [];
 
-      // 发送Firebase推送
-      if (firebaseTokens.length > 0) {
-        const firebaseResult = await this.sendFirebasePush(firebaseTokens, title, body, data);
-        results.push({ service: 'firebase', ...firebaseResult });
-      }
-
-      // 发送JPush推送
+      // 优先发送JPush推送
       if (jpushTokens.length > 0) {
+        console.log('🇨🇳 优先使用极光推送发送通知');
         const jpushResult = await this.sendJPushPush(jpushTokens, title, body, data);
         results.push({ service: 'jpush', ...jpushResult });
       }
 
-      console.log(`✅ 混合推送发送完成:`, {
+      // 如果JPush失败或没有JPush token，使用Firebase作为备用
+      if (firebaseTokens.length > 0 && (jpushTokens.length === 0 || results.length === 0)) {
+        console.log('🌍 使用Firebase作为备用推送服务');
+        const firebaseResult = await this.sendFirebasePush(firebaseTokens, title, body, data);
+        results.push({ service: 'firebase', ...firebaseResult });
+      }
+
+      console.log(`✅ 推送发送完成:`, {
         userId,
         results,
       });
@@ -63,13 +65,13 @@ export class HybridPushService {
         results,
       };
     } catch (error) {
-      console.error('❌ 发送混合推送失败:', error);
+      console.error('❌ 发送推送失败:', error);
       return { success: false, error: error.message };
     }
   }
 
   /**
-   * 发送Firebase推送
+   * 发送Firebase推送（备用推送服务）
    */
   async sendFirebasePush(tokens: string[], title: string, body: string, data?: any) {
     try {
@@ -128,7 +130,7 @@ export class HybridPushService {
   }
 
   /**
-   * 发送JPush推送
+   * 发送JPush推送（主要推送服务）
    */
   async sendJPushPush(tokens: string[], title: string, body: string, data?: any) {
     try {
@@ -162,6 +164,8 @@ export class HybridPushService {
           apns_production: process.env.JPUSH_PRODUCTION === 'true',
         },
       };
+
+      console.log('📤 发送JPush推送请求:', JSON.stringify(payload, null, 2));
 
       const response = await axios.post('https://api.jpush.cn/v3/push', payload, {
         headers: { 
