@@ -39,11 +39,11 @@ const LINK_CONTRACT_ADDRESS = '0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd';
 const SHIB_CONTRACT_ADDRESS = '0x2859e4544c4bb03966803b044a93563bd2d0dd4d';
 
 // 小窗口扫描配置
-const SCAN_STEP = 400; // 每次扫描400个区块
+const SCAN_STEP = 50; // 每次扫描400个区块
 let lastProcessedBlock = 0;
 
 // 调试开关
-const VERBOSE = process.env.DEBUG_VERBOSE === '1';
+const VERBOSE = true; // 强制启用详细日志，方便调试
 
 export default ({ strapi }) => {
   let web3: Web3 | null = null;
@@ -183,9 +183,28 @@ export default ({ strapi }) => {
 
             // 检查每个交易
             for (const tx of block.transactions) {
-              if (typeof tx === 'object' && tx.to && activeChannels.some((ch: any) => ch.walletAddress.toLowerCase() === tx.to.toLowerCase())) {
-                if (VERBOSE) console.log(`🎯 发现充值交易: ${tx.hash}`);
-                await this.processIncomingTransaction(tx);
+              if (typeof tx === 'object' && tx.to) {
+                // 检查ETH转账到充值地址
+                if (activeChannels.some((ch: any) => ch.walletAddress.toLowerCase() === tx.to.toLowerCase())) {
+                  if (VERBOSE) console.log(`🎯 发现ETH充值交易: ${tx.hash}`);
+                  await this.processIncomingTransaction(tx);
+                }
+                
+                // 检查USDT代币转账到充值地址
+                if (tx.to.toLowerCase() === USDT_CONTRACT_ADDRESS.toLowerCase() && tx.input && tx.input.length > 10) {
+                  try {
+                    const methodId = tx.input.slice(0, 10);
+                    if (methodId === '0xa9059cbb') { // transfer方法
+                      const toAddress = '0x' + tx.input.slice(10, 74);
+                      if (activeChannels.some((ch: any) => ch.walletAddress.toLowerCase() === toAddress.toLowerCase())) {
+                        if (VERBOSE) console.log(`🎯 发现USDT充值交易: ${tx.hash}, 到地址: ${toAddress}`);
+                        await this.processIncomingTransaction(tx);
+                      }
+                    }
+                  } catch (error) {
+                    if (VERBOSE) console.warn(`⚠️ 解析USDT交易失败: ${error.message}`);
+                  }
+                }
               }
             }
           } catch (blockError) {
