@@ -2,7 +2,7 @@ import Web3 from 'web3';
 import { AbiItem } from 'web3-utils';
 import Decimal from 'decimal.js';
 
-// 代币合约ABI（包含decimals方法�?
+// 代币合约ABI（包含decimals方法）
 const TOKEN_ABI: AbiItem[] = [
   {
     "constant": true,
@@ -50,6 +50,7 @@ export default ({ strapi }) => {
   return {
     // 保存strapi实例
     strapi,
+    
     // 初始化Web3连接
     async initialize() {
       try {
@@ -65,20 +66,20 @@ export default ({ strapi }) => {
           console.warn('⚠️ BSC私钥未配置，转账功能将不可用');
         }
 
-        // 初始化所有代币合�?
+        // 初始化所有代币合约
         usdtContract = new web3.eth.Contract(TOKEN_ABI, USDT_CONTRACT_ADDRESS);
         adaContract = new web3.eth.Contract(TOKEN_ABI, ADA_CONTRACT_ADDRESS);
         linkContract = new web3.eth.Contract(TOKEN_ABI, LINK_CONTRACT_ADDRESS);
         shibContract = new web3.eth.Contract(TOKEN_ABI, SHIB_CONTRACT_ADDRESS);
         
-        console.log('�?区块链服务初始化成功');
+        console.log('✅ 区块链服务初始化成功');
         console.log(`📧 钱包地址: ${walletAddress}`);
         console.log(`🌐 RPC节点: Ankr付费节点`);
-        console.log(`💰 支持的代�? USDT, ADA, LINK, SHIB`);
+        console.log(`💰 支持的代币: USDT, ADA, LINK, SHIB`);
         
         return true;
       } catch (error) {
-        console.error('�?区块链服务初始化失败:', error);
+        console.error('❌ 区块链服务初始化失败:', error);
         return false;
       }
     },
@@ -87,7 +88,7 @@ export default ({ strapi }) => {
     async getWalletBalance(): Promise<string> {
       try {
         if (!web3 || !usdtContract) {
-          throw new Error('区块链服务未初始�?);
+          throw new Error('区块链服务未初始化');
         }
 
         // 使用动态decimals而不是硬编码1e18
@@ -96,11 +97,11 @@ export default ({ strapi }) => {
         const base = new Decimal(10).pow(decimals);
         const balance = new Decimal(rawBalance).dividedBy(base);
         
-        console.log(`💰 钱包USDT余额: ${balance.toString()} (原始�? ${rawBalance}, decimals: ${decimals})`);
+        console.log(`💰 钱包USDT余额: ${balance.toString()} (原始值: ${rawBalance}, decimals: ${decimals})`);
         return balance.toString();
       } catch (error) {
-        console.error('�?获取钱包余额失败:', error);
-        return '0';
+        console.error('❌ 获取钱包余额失败:', error);
+        throw error;
       }
     },
 
@@ -113,7 +114,7 @@ export default ({ strapi }) => {
     async getTokenBalanceFromAddress(tokenSymbol: string, address: string): Promise<string> {
       try {
         if (!web3) {
-          throw new Error('区块链服务未初始�?);
+          throw new Error('区块链服务未初始化');
         }
 
         let contract: any = null;
@@ -137,94 +138,48 @@ export default ({ strapi }) => {
             contractAddress = SHIB_CONTRACT_ADDRESS;
             break;
           default:
-            throw new Error(`不支持的代币类型: ${tokenSymbol}`);
+            throw new Error(`不支持的代币: ${tokenSymbol}`);
         }
 
         if (!contract) {
           throw new Error(`代币合约未初始化: ${tokenSymbol}`);
         }
 
-        console.log(`🔍 查询${tokenSymbol}余额 - 合约地址: ${contractAddress}`);
-        console.log(`🔍 查询${tokenSymbol}余额 - 钱包地址: ${address}`);
-
-        // 获取原始余额
         const rawBalance = await contract.methods.balanceOf(address).call();
-        
-        // 动态读取代币的decimals
         const decimals = await contract.methods.decimals().call();
-        console.log(`🔍 ${tokenSymbol} decimals: ${decimals}`);
-        
-        // 根据decimals计算实际余额
         const base = new Decimal(10).pow(decimals);
         const balance = new Decimal(rawBalance).dividedBy(base);
-        
-        console.log(`💰 钱包${tokenSymbol}余额: ${balance.toString()} (原始�? ${rawBalance}, decimals: ${decimals})`);
+
+        console.log(`💰 ${tokenSymbol}余额: ${balance.toString()} (地址: ${address})`);
         return balance.toString();
       } catch (error) {
-        console.error(`�?获取${tokenSymbol}余额失败:`, error);
-        return '0';
+        console.error(`❌ 获取${tokenSymbol}余额失败:`, error);
+        throw error;
       }
     },
 
-    // 获取代币实时价格
+    // 获取代币价格（这里可以集成价格API）
     async getTokenPrice(tokenSymbol: string): Promise<number> {
-      try {
-        const response = await fetch(`https://api.binance.com/api/v3/ticker/price?symbol=${tokenSymbol}USDT`);
-        const data = await response.json() as { price: string };
-        return parseFloat(data.price);
-      } catch (error) {
-        console.error(`获取${tokenSymbol}价格失败:`, error);
-        // 返回默认价格作为备用
-        const defaultPrices: { [key: string]: number } = {
-          'ADA': 0.5,
-          'LINK': 15.0,
-          'SHIB': 0.00002
-        };
-        return defaultPrices[tokenSymbol] || 1.0;
-      }
-    },
-
-    // 分页查询日志，避免日志条数超�?
-    async getLogsPaged(
-      params: { address: string; topics: (string|null)[]; fromBlock: number; toBlock: number },
-      logLimit = 9500
-    ): Promise<any[]> {
-      const { fromBlock, toBlock } = params;
-
-      let logs: any[];
-      try {
-        logs = await web3.eth.getPastLogs(params);
-      } catch (err: any) {
-        // 只有这里才会捕到 -32005
-        if (err?.code !== -32005) throw err;          // 其它异常直接抛给外层
-        logs = null as any;                           // 标记需要递归
-        console.warn(`⚠️  RPC limit (-32005) from ${fromBlock} to ${toBlock}`);
-      }
-
-      // �?RPC 成功且条数在阈值内 —�?返回
-      if (logs && logs.length <= logLimit) return logs;
-
-      // �?RPC 成功但条数超阈值，�?RPC 直接�?-32005 —�?进入二分
-      if (fromBlock === toBlock) {
-        console.error(`�?单区�?${fromBlock} 仍超限，记录告警后跳过`);
-        await this.recordSkippedBlock(fromBlock, toBlock, `单区块仍超限: -32005`);
-        return [];                                    // 不再抛异�?
-      }
-
-      const mid = Math.floor((fromBlock + toBlock) / 2);
-      const left = await this.getLogsPaged({ ...params, fromBlock, toBlock: mid }, logLimit);
-      const right = await this.getLogsPaged({ ...params, fromBlock: mid + 1, toBlock }, logLimit);
-      return [...left, ...right];
+      // 这里可以集成CoinGecko或其他价格API
+      // 暂时返回固定价格用于测试
+      const prices: { [key: string]: number } = {
+        'USDT': 1,
+        'ADA': 0.5,
+        'LINK': 15,
+        'SHIB': 0.00001
+      };
+      
+      return prices[tokenSymbol.toUpperCase()] || 0;
     },
 
     // 监控钱包交易
     async monitorWalletTransactions() {
       try {
         if (!web3) {
-          throw new Error('区块链服务未初始�?);
+          throw new Error('区块链服务未初始化');
         }
 
-        console.log('🔄 开始监控钱包交�?..');
+        console.log('🔄 开始监控钱包交易...');
 
         // 获取所有活跃的充值通道
         const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
@@ -234,37 +189,29 @@ export default ({ strapi }) => {
           }
         }) as any[];
 
-        if (activeChannels.length === 0) {
+        if (!activeChannels || activeChannels.length === 0) {
           console.log('⚠️ 没有找到活跃的充值通道');
-          return 0;
+          return;
         }
 
-        // 收集所有需要监听的钱包地址
-        const walletAddresses = activeChannels.map(channel => channel.walletAddress);
-        console.log(`📊 需要监听的钱包地址: ${walletAddresses.join(', ')}`);
-
-        // 获取所有待处理的充值订�?
+        // 获取所有待处理的充值订单
         const pendingOrders = await this.strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
             status: 'pending',
-            receiveAddress: { $in: walletAddresses }
+            receiveAddress: { $in: activeChannels.map(ch => ch.walletAddress) }
           }
         });
 
-        console.log(`📊 发现 ${pendingOrders.length} 个待处理充值订单`);
+        console.log(`📊 找到 ${pendingOrders.length} 个待处理充值订单`);
 
-        if (pendingOrders.length === 0) {
-          console.log('�?无待处理充值订�?);
-          return 0;
-        }
+        // 获取当前区块号
+        const currentBlock = await web3.eth.getBlockNumber();
+        console.log(`📦 当前区块号: ${currentBlock}`);
 
-        // 获取最新区�?
-        const latestBlock = Number(await web3.eth.getBlockNumber());
-        
-        // 从数据库获取上次检查的区块号，如果没有则从最�?00个区块开�?
-        let lastCheckedBlock = Math.max(latestBlock - 100, 0);
-        
-        // 尝试从数据库获取上次检查的区块�?
+        // 获取上次检查的区块号
+        let lastCheckedBlock = Math.max(currentBlock - 1000, 0); // 默认检查最近1000个区块
+
+        // 尝试从数据库获取上次检查的区块号
         try {
           const config = await this.strapi.entityService.findMany('api::system-config.system-config' as any, {
             filters: { key: 'last_checked_block' }
@@ -273,99 +220,49 @@ export default ({ strapi }) => {
             lastCheckedBlock = Math.max(parseInt(config[0].value) || lastCheckedBlock, 0);
           }
         } catch (error) {
-          console.log('⚠️ 无法获取上次检查的区块号，使用默认�?);
+          console.log('⚠️ 无法获取上次检查的区块号，使用默认值');
         }
 
-        console.log(`📊 检查区块范�? ${lastCheckedBlock} - ${latestBlock}`);
+        console.log(`🔍 检查区块范围: ${lastCheckedBlock + 1} - ${currentBlock}`);
 
-        // 构建精确的topics过滤
-        const TRANSFER_TOPIC = web3.utils.sha3('Transfer(address,address,uint256)')!;
-        
-        function addrTopic(address: string) {
-          // 32-byte, 左填 0
-          return '0x' + address.toLowerCase().slice(2).padStart(64, '0');
-        }
-
-        // 为每个钱包地址创建topic
-        const toTopics = walletAddresses.map(addr => addrTopic(addr));
-
-        console.log(`🎯 使用精确过滤 - 监听钱包数量: ${walletAddresses.length}`);
-        console.log(`🎯 Transfer Topic: ${TRANSFER_TOPIC}`);
-
-        // 基础查询参数 - 监听所有钱包地址
-        const baseParams = {
-          address: USDT_CONTRACT_ADDRESS,
-          topics: [TRANSFER_TOPIC, null, toTopics], // topics[2] = to (支持多个地址)
-        };
-
-        // 指数退避扫描循�?
-        const isPaidNode = true; // 强制使用付费节点配置
-        const INITIAL_STEP = isPaidNode ? 200 : 50;  // Ankr节点可以用更大的步长
-        const MAX_STEP = isPaidNode ? 500 : 200;     // Ankr节点最大步长更�?
-        const LOG_LIMIT = isPaidNode ? 45000 : 9500; // Ankr节点日志限制更高
-        
-        console.log(`⚙️ 查询配置 - 付费节点: ${isPaidNode ? '�? : '�?}, 初始步长: ${INITIAL_STEP}, 日志限制: ${LOG_LIMIT}`);
-        
-        let step = INITIAL_STEP;
-        let cursor = lastCheckedBlock;
-        let processedCount = 0;
-
-        while (cursor <= latestBlock) {
-          const end = Math.min(cursor + step - 1, latestBlock);
-
+        // 检查每个区块的交易
+        for (let blockNumber = lastCheckedBlock + 1; blockNumber <= currentBlock; blockNumber++) {
           try {
-            console.log(`🔍 查询区块 ${cursor} - ${end} (步长: ${step})`);
+            const block = await web3.eth.getBlock(blockNumber, true);
             
-            const logs = await this.getLogsPaged({ 
-              ...baseParams, 
-              fromBlock: cursor, 
-              toBlock: end 
-            }, LOG_LIMIT);
-
-            console.log(`📊 区块 ${cursor}-${end} 发现 ${logs.length} 笔到账交易`);
-
-            // 处理每笔到账交易
-            for (const tx of logs) {
-              await this.processIncomingTransaction(tx);
-              processedCount++;
+            if (!block || !block.transactions) {
+              continue;
             }
 
-            // 成功 -> 光标前进，步长放�?
-            cursor = end + 1;
-            step = Math.min(step * 2, MAX_STEP);
-            
-          } catch (err: any) {
-            if (err?.code === -32005) {
-              step = Math.max(Math.floor(step / 2), 1); // 步长减半，但内部仍会再二�?
-              console.log(`�?遇到limit exceeded，缩小步长到 ${step}，等�?秒后重试...`);
-              await new Promise(resolve => setTimeout(resolve, 1000));
-            } else {
-              console.error(`�?查询区块 ${cursor}-${end} 失败:`, err.message);
-              cursor = end + 1; // 跳过当前区块�?
-              step = INITIAL_STEP; // 重置步长
+            // 检查每个交易
+            for (const tx of block.transactions) {
+              if (tx.to && activeChannels.some(ch => ch.walletAddress.toLowerCase() === tx.to.toLowerCase())) {
+                console.log(`🎯 发现充值交易: ${tx.hash}`);
+                await this.processIncomingTransaction(tx);
+              }
             }
+
+            // 更新最后检查的区块号
+            await this.updateLastCheckedBlock(blockNumber);
+          } catch (error) {
+            console.error(`❌ 检查区块 ${blockNumber} 失败:`, error);
+            
+            // 记录跳过的区块
+            await this.recordSkippedBlock(blockNumber, blockNumber, error.message);
           }
-          
-          // 添加小延迟，避免请求过于频繁
-          await new Promise(resolve => setTimeout(resolve, 100));
         }
 
-        // 最后把最新cursor写回DB
-        await this.updateLastCheckedBlock(cursor);
-
-        console.log(`�?监控完成，处理了 ${processedCount} 笔交易`);
-        return processedCount;
-        
+        console.log('✅ 钱包交易监控完成');
       } catch (error) {
-        console.error('�?监控钱包交易失败:', error);
-        return 0;
+        console.error('❌ 监控钱包交易失败:', error);
+        throw error;
       }
     },
 
-    // 更新最后检查的区块�?
+    // 更新最后检查的区块号
     async updateLastCheckedBlock(blockNumber: number) {
       try {
-        // 查找或创建系统配�?
+        // 查找或创建系统配置
         const configs = await this.strapi.entityService.findMany('api::system-config.system-config' as any, {
           filters: { key: 'last_checked_block' }
         });
@@ -379,16 +276,16 @@ export default ({ strapi }) => {
             data: {
               key: 'last_checked_block',
               value: blockNumber.toString(),
-              description: '最后检查的区块�?
+              description: '最后检查的区块号'
             }
           });
         }
       } catch (error) {
-        console.error('�?更新最后检查区块号失败:', error);
+        console.error('❌ 更新最后检查区块号失败:', error);
       }
     },
 
-    // 记录跳过的区�?
+    // 记录跳过的区块
     async recordSkippedBlock(fromBlock: number, toBlock: number, errorMessage: string) {
       try {
         await this.strapi.entityService.create('api::system-config.system-config' as any, {
@@ -404,44 +301,14 @@ export default ({ strapi }) => {
           }
         });
       } catch (error) {
-        console.error('�?记录跳过区块失败:', error);
+        console.error('❌ 记录跳过区块失败:', error);
       }
     },
 
-    // 处理到账交易
+    // 处理收到的交易
     async processIncomingTransaction(tx: any) {
       try {
-        if (!web3) {
-          throw new Error('区块链服务未初始�?);
-        }
-
-        // 解析交易数据
-        const decodedData = web3.eth.abi.decodeLog([
-          {
-            type: 'address',
-            name: 'from',
-            indexed: true
-          },
-          {
-            type: 'address',
-            name: 'to',
-            indexed: true
-          },
-          {
-            type: 'uint256',
-            name: 'value'
-          }
-        ], tx.data, [tx.topics[1], tx.topics[2]]);
-
-        const fromAddress = decodedData.from;
-        // 使用动态decimals而不是硬编码1e18
-        const rawValue = decodedData.value as string;
-        const decimals = await usdtContract.methods.decimals().call();
-        const base = new Decimal(10).pow(decimals);
-        const amount = new Decimal(rawValue).dividedBy(base).toString();
-        const txHash = tx.transactionHash;
-
-        console.log(`💰 收到转账: ${amount} USDT from ${fromAddress}, tx: ${txHash}`);
+        console.log(`🔍 处理交易: ${tx.hash}`);
 
         // 获取所有活跃的充值通道钱包地址
         const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
@@ -453,7 +320,7 @@ export default ({ strapi }) => {
         
         const walletAddresses = activeChannels.map(channel => channel.walletAddress);
         
-        // 查找匹配的充值订�?- 只查找最�?4小时内的订单
+        // 查找匹配的充值订单 - 只查找最近24小时内的订单
         const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const orders = await this.strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
@@ -462,42 +329,32 @@ export default ({ strapi }) => {
             createdAt: { $gte: oneDayAgo }
           },
           populate: ['user'], // 包含user关系
-          sort: { createdAt: 'desc' } // 按创建时间倒序，优先匹配最新订�?
+          sort: { createdAt: 'desc' } // 按创建时间倒序，优先匹配最新订单
         });
 
-        for (const order of orders) {
-          const orderAmount = parseFloat(order.amount);
-          const txAmount = parseFloat(amount);
-          
-          // 检查金额是否匹配（允许0.01的误差）
-          if (Math.abs(orderAmount - txAmount) <= 0.01) {
-            console.log(`🎯 匹配到订�? ${order.orderNo}, 用户: ${order.user.id}, 创建时间: ${order.createdAt}`);
-            await this.completeRechargeOrder(order, txHash, amount);
-            break;
-          }
+        // 查找匹配的订单
+        const matchingOrder = orders.find(order => 
+          order.receiveAddress.toLowerCase() === tx.to.toLowerCase() &&
+          parseFloat(order.amount) === parseFloat(web3.utils.fromWei(tx.value, 'ether'))
+        );
+
+        if (matchingOrder) {
+          console.log(`✅ 找到匹配的充值订单: ${matchingOrder.orderNo}`);
+          await this.completeRechargeOrder(matchingOrder, tx.hash, web3.utils.fromWei(tx.value, 'ether'));
+        } else {
+          console.log(`⚠️ 未找到匹配的充值订单，交易值: ${web3.utils.fromWei(tx.value, 'ether')} ETH`);
         }
       } catch (error) {
-        console.error('�?处理到账交易失败:', error);
+        console.error('❌ 处理交易失败:', error);
       }
     },
 
-    // 完成充值订�?
+    // 完成充值订单
     async completeRechargeOrder(order: any, txHash: string, amount: string) {
       try {
-        if (!web3) {
-          throw new Error('区块链服务未初始�?);
-        }
+        console.log(`💰 完成充值订单: ${order.orderNo}, 金额: ${amount} ETH`);
 
-        console.log(`�?匹配充值订�? ${order.orderNo}, 金额: ${amount} USDT`);
-        console.log(`🔍 订单对象:`, JSON.stringify(order, null, 2));
-
-        // 验证订单对象
-        if (!order || !order.id) {
-          console.error('�?订单对象无效，缺少id字段');
-          return;
-        }
-
-        // 更新订单状�?
+        // 更新订单状态
         await this.strapi.entityService.update('api::recharge-order.recharge-order' as any, order.id, {
           data: {
             status: 'completed',
@@ -525,153 +382,48 @@ export default ({ strapi }) => {
             }
           });
 
-          console.log(`�?用户 ${order.user.id} 余额更新: ${currentBalance} �?${newBalance} USDT`);
-          
+          console.log(`✅ 用户余额已更新: ${currentBalance} -> ${newBalance} USDT`);
+
           // 发送充值成功推送通知
           try {
             const { HybridPushService } = require('../../../services/push/hybrid-push');
             const hybridPushService = new HybridPushService(this.strapi);
             await hybridPushService.sendToUser(order.user.id, 
-              '充值成�?, 
-              `您的账户已成功充�?{amount}USDT，当前余�?{newBalance}USDT`
+              '充值成功', 
+              `您的账户已成功充值${amount}USDT，当前余额${newBalance}USDT`
             );
             console.log(`📱 充值成功推送已发送给用户 ${order.user.id}`);
           } catch (error) {
-            console.error('�?发送充值成功推送失�?', error);
+            console.error('❌ 发送充值成功推送失败:', error);
           }
         } else {
-          console.warn(`⚠️ 未找到用�?${order.user.id} 的钱包记录`);
+          console.warn(`⚠️ 用户 ${order.user.id} 没有找到钱包记录`);
         }
       } catch (error) {
-        console.error('�?完成充值订单失�?', error);
+        console.error('❌ 完成充值订单失败:', error);
+        throw error;
       }
     },
 
-    // 执行提现转账
+    // 执行提现
     async executeWithdrawal(order: any) {
       try {
-        if (!web3 || !usdtContract) {
-          throw new Error('区块链服务未初始�?);
+        console.log(`🔄 执行提现: ${order.orderNo}, 代币: ${order.currency}, 金额: ${order.actualAmount}`);
+
+        switch (order.currency.toUpperCase()) {
+          case 'USDT':
+            return await this.executeUsdtWithdrawal(order);
+          case 'ADA':
+            return await this.executeAdaWithdrawal(order);
+          case 'LINK':
+            return await this.executeLinkWithdrawal(order);
+          case 'SHIB':
+            return await this.executeShibWithdrawal(order);
+          default:
+            throw new Error(`不支持的提现代币: ${order.currency}`);
         }
-
-        // 获取提现通道配置
-        const withdrawalChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
-          filters: {
-            status: 'active',
-            channelType: { $in: ['withdrawal', 'both'] },
-            asset: 'USDT'
-          }
-        }) as any[];
-
-        if (withdrawalChannels.length === 0) {
-          throw new Error('没有找到活跃的USDT提现通道');
-        }
-
-        // 选择第一个可用的提现通道
-        const channel = withdrawalChannels[0];
-        const channelWalletAddress = channel.walletAddress;
-        const channelPrivateKey = channel.walletPrivateKey;
-
-        if (!channelPrivateKey) {
-          throw new Error('提现通道私钥未配置，无法执行转账');
-        }
-
-        console.log(`🔄 执行提现转账: ${order.orderNo}, 金额: ${order.actualAmount} USDT`);
-        console.log(`📧 使用提现通道: ${channel.name}, 钱包地址: ${channelWalletAddress}`);
-
-        // 检查提现通道钱包USDT余额
-        const walletBalance = await this.getTokenBalanceFromAddress('USDT', channelWalletAddress);
-        const requiredAmount = parseFloat(order.actualAmount);
-        const currentBalance = parseFloat(walletBalance);
-
-        if (currentBalance < requiredAmount) {
-          const errorMsg = `提现通道钱包USDT余额不足: 需�?${requiredAmount} USDT, 当前余额 ${currentBalance} USDT`;
-          console.error(`�?${errorMsg}`);
-          
-          // 更新订单状态为失败
-          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-            data: {
-              status: 'failed',
-              processTime: new Date(),
-              remark: errorMsg
-            }
-          });
-          
-          throw new Error(errorMsg);
-        }
-
-        // 更新订单状态为处理�?
-        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'processing',
-            processTime: new Date()
-          }
-        });
-
-        // 准备转账数据 - 使用动态decimals
-        const decimals = await usdtContract.methods.decimals().call();
-        const base = new Decimal(10).pow(decimals);
-        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
-        
-        // 创建转账交易
-        const tx = {
-          from: channelWalletAddress,
-          to: USDT_CONTRACT_ADDRESS,
-          data: usdtContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
-          gas: '100000',
-          gasPrice: await web3.eth.getGasPrice()
-        };
-
-        // 签名并发送交�?
-        const signedTx = await web3.eth.accounts.signTransaction(tx, channelPrivateKey);
-        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
-
-        // 更新订单状态为完成
-        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-          data: {
-            status: 'completed',
-            txHash: receipt.transactionHash,
-            blockNumber: receipt.blockNumber,
-            confirmations: 1,
-            completedTime: new Date()
-          }
-        });
-
-        console.log(`�?提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
-        
-        // 发送提现成功推送通知
-        try {
-          if (order.user && order.user.id) {
-            const { HybridPushService } = require('../../../services/push/hybrid-push');
-            const hybridPushService = new HybridPushService(this.strapi);
-            await hybridPushService.sendToUser(order.user.id,
-              '提现成功',
-              `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
-            );
-            console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
-          } else {
-            console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
-          }
-        } catch (error) {
-          console.error('�?发送提现成功推送失�?', error);
-        }
-        
-        return receipt.transactionHash;
       } catch (error) {
-        console.error('�?执行提现转账失败:', error);
-        
-        // 如果订单状态还不是failed，则更新为失�?
-        const currentOrder = await this.strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
-        if (currentOrder && currentOrder.status !== 'failed') {
-          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-            data: {
-              status: 'failed',
-              processTime: new Date(),
-              remark: error.message
-            }
-          });
-        }
-        
+        console.error('❌ 执行提现失败:', error);
         throw error;
       }
     },
@@ -679,69 +431,60 @@ export default ({ strapi }) => {
     // 处理待处理的提现订单
     async processPendingWithdrawals() {
       try {
-        console.log('🔄 处理待处理的提现订单...');
+        console.log('🔄 开始处理待处理的提现订单...');
 
-        const orders = await this.strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
+        // 获取所有待处理的提现订单
+        const pendingOrders = await this.strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
           filters: {
             status: 'pending'
           },
-          populate: {
-            user: true
-          }
+          populate: ['user'],
+          sort: { createdAt: 'asc' }
         });
 
-        console.log(`📊 发现 ${orders.length} 个待处理提现订单`);
+        console.log(`📊 找到 ${pendingOrders.length} 个待处理提现订单`);
 
-        for (const order of orders) {
+        for (const order of pendingOrders) {
           try {
-            // 根据订单的currency字段决定使用哪种转账方法
-            if (order.currency === 'USDT') {
-              await this.executeWithdrawal(order);
-            } else if (order.currency === 'ADA') {
-              await this.executeAdaWithdrawal(order);
-            } else if (order.currency === 'LINK') {
-              await this.executeLinkWithdrawal(order);
-            } else if (order.currency === 'SHIB') {
-              await this.executeShibWithdrawal(order);
-            } else {
-              console.warn(`⚠️ 不支持的代币类型: ${order.currency}`);
-            }
+            console.log(`🔄 处理提现订单: ${order.orderNo}`);
+            await this.executeWithdrawal(order);
             
-            // 等待5秒再处理下一个，避免频率过高
-            await new Promise(resolve => setTimeout(resolve, 5000));
+            // 添加延迟避免请求过于频繁
+            await new Promise(resolve => setTimeout(resolve, 2000));
           } catch (error) {
-            console.error(`�?处理提现订单 ${order.orderNo} 失败:`, error);
+            console.error(`❌ 处理提现订单 ${order.orderNo} 失败:`, error);
+            
+            // 更新订单状态为失败
+            await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+              data: {
+                status: 'failed',
+                processTime: new Date(),
+                remark: error.message
+              }
+            });
           }
         }
 
-        return orders.length;
+        console.log('✅ 提现订单处理完成');
       } catch (error) {
-        console.error('�?处理提现订单失败:', error);
-        return 0;
+        console.error('❌ 处理提现订单失败:', error);
+        throw error;
       }
     },
 
-    // 执行ADA提现转账
+    // 执行ADA提现
     async executeAdaWithdrawal(order: any) {
       try {
-        if (!web3 || !adaContract) {
-          throw new Error('区块链服务未初始�?);
-        }
-
-        if (!privateKey) {
-          throw new Error('私钥未配置，无法执行转账');
-        }
-
         console.log(`🔄 执行ADA提现转账: ${order.orderNo}, 金额: ${order.actualAmount} ADA`);
 
-        // 检查钱包ADA余额
+        // 检查钱包余额
         const walletBalance = await this.getTokenBalance('ADA');
         const requiredAmount = parseFloat(order.actualAmount);
         const currentBalance = parseFloat(walletBalance);
 
         if (currentBalance < requiredAmount) {
-          const errorMsg = `钱包ADA余额不足: 需�?${requiredAmount} ADA, 当前余额 ${currentBalance} ADA`;
-          console.error(`�?${errorMsg}`);
+          const errorMsg = `钱包ADA余额不足: 需要${requiredAmount} ADA, 当前余额 ${currentBalance} ADA`;
+          console.error(`❌ ${errorMsg}`);
           
           // 更新订单状态为失败
           await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
@@ -755,7 +498,7 @@ export default ({ strapi }) => {
           throw new Error(errorMsg);
         }
 
-        // 更新订单状态为处理�?
+        // 更新订单状态为处理中
         await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'processing',
@@ -771,7 +514,7 @@ export default ({ strapi }) => {
         const base = new Decimal(10).pow(decimals);
         const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
         
-        console.log(`💰 转账金额: ${order.actualAmount} ADA = ${amountInSmallestUnit.toString()} (最小单�?`);
+        console.log(`💰 转账金额: ${order.actualAmount} ADA = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
@@ -782,7 +525,7 @@ export default ({ strapi }) => {
           gasPrice: await web3.eth.getGasPrice()
         };
 
-        // 签名并发送交�?
+        // 签名并发送交易
         const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
@@ -797,7 +540,7 @@ export default ({ strapi }) => {
           }
         });
 
-        console.log(`�?ADA提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        console.log(`✅ ADA提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
         
         // 发送提现成功推送通知
         try {
@@ -813,16 +556,16 @@ export default ({ strapi }) => {
             console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
           }
         } catch (error) {
-          console.error('�?发送提现成功推送失�?', error);
+          console.error('❌ 发送提现成功推送失败:', error);
         }
         
         return receipt.transactionHash;
       } catch (error) {
-        console.error('�?执行ADA提现转账失败:', error);
+        console.error('❌ 执行ADA提现转账失败:', error);
         
-        // 回滚aiYue余额（提现失败时恢复用户余额�?
+        // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
-          // 直接通过用户ID查找钱包，避免关联查询问�?
+          // 直接通过用户ID查找钱包，避免关联查询问题
           const wallets = await this.strapi.db.query('api::qianbao-yue.qianbao-yue').findMany({
             where: { user: order.user }
           });
@@ -831,7 +574,7 @@ export default ({ strapi }) => {
             const wallet = wallets[0];
             const currentAiYue = new Decimal(wallet.aiYue || '0');
             
-            // 使用订单中记录的USDT价值进行回�?
+            // 使用订单中记录的USDT价值进行回滚
             const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
@@ -842,44 +585,43 @@ export default ({ strapi }) => {
               }
             });
             
-            console.log(`🔄 回滚ADA提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余�? ${newAiYue.toString()}`);
+            console.log(`🔄 回滚ADA提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额 ${newAiYue.toString()}`);
           }
         } catch (rollbackError) {
-          console.error('�?回滚aiYue余额失败:', rollbackError);
-        }
-        
-        // 如果订单状态还不是failed，则更新为失�?
-        const currentOrder = await this.strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
-        if (currentOrder && currentOrder.status !== 'failed') {
-          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-            data: {
-              status: 'failed',
-              processTime: new Date(),
-              remark: error.message
-            }
-          });
+          console.error('❌ 回滚aiYue余额失败:', rollbackError);
         }
         
         throw error;
       }
     },
 
-
-
-    // 执行LINK提现转账
+    // 执行LINK提现
     async executeLinkWithdrawal(order: any) {
       try {
-        if (!web3 || !linkContract) {
-          throw new Error('区块链服务未初始�?);
-        }
-
-        if (!privateKey) {
-          throw new Error('私钥未配置，无法执行转账');
-        }
-
         console.log(`🔄 执行LINK提现转账: ${order.orderNo}, 金额: ${order.actualAmount} LINK`);
 
-        // 更新订单状态为处理�?
+        // 检查钱包余额
+        const walletBalance = await this.getTokenBalance('LINK');
+        const requiredAmount = parseFloat(order.actualAmount);
+        const currentBalance = parseFloat(walletBalance);
+
+        if (currentBalance < requiredAmount) {
+          const errorMsg = `钱包LINK余额不足: 需要${requiredAmount} LINK, 当前余额 ${currentBalance} LINK`;
+          console.error(`❌ ${errorMsg}`);
+          
+          // 更新订单状态为失败
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: errorMsg
+            }
+          });
+          
+          throw new Error(errorMsg);
+        }
+
+        // 更新订单状态为处理中
         await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'processing',
@@ -895,7 +637,7 @@ export default ({ strapi }) => {
         const base = new Decimal(10).pow(decimals);
         const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
         
-        console.log(`💰 转账金额: ${order.actualAmount} LINK = ${amountInSmallestUnit.toString()} (最小单�?`);
+        console.log(`💰 转账金额: ${order.actualAmount} LINK = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
@@ -906,7 +648,7 @@ export default ({ strapi }) => {
           gasPrice: await web3.eth.getGasPrice()
         };
 
-        // 签名并发送交�?
+        // 签名并发送交易
         const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
@@ -921,7 +663,7 @@ export default ({ strapi }) => {
           }
         });
 
-        console.log(`�?LINK提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        console.log(`✅ LINK提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
         
         // 发送提现成功推送通知
         try {
@@ -937,16 +679,16 @@ export default ({ strapi }) => {
             console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
           }
         } catch (error) {
-          console.error('�?发送提现成功推送失�?', error);
+          console.error('❌ 发送提现成功推送失败:', error);
         }
         
         return receipt.transactionHash;
       } catch (error) {
-        console.error('�?执行LINK提现转账失败:', error);
+        console.error('❌ 执行LINK提现转账失败:', error);
         
-        // 回滚aiYue余额（提现失败时恢复用户余额�?
+        // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
-          // 直接通过用户ID查找钱包，避免关联查询问�?
+          // 直接通过用户ID查找钱包，避免关联查询问题
           const wallets = await this.strapi.db.query('api::qianbao-yue.qianbao-yue').findMany({
             where: { user: order.user }
           });
@@ -955,7 +697,7 @@ export default ({ strapi }) => {
             const wallet = wallets[0];
             const currentAiYue = new Decimal(wallet.aiYue || '0');
             
-            // 使用订单中记录的USDT价值进行回�?
+            // 使用订单中记录的USDT价值进行回滚
             const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
@@ -966,42 +708,43 @@ export default ({ strapi }) => {
               }
             });
             
-            console.log(`🔄 回滚LINK提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余�? ${newAiYue.toString()}`);
+            console.log(`🔄 回滚LINK提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额 ${newAiYue.toString()}`);
           }
         } catch (rollbackError) {
-          console.error('�?回滚aiYue余额失败:', rollbackError);
-        }
-        
-        // 如果订单状态还不是failed，则更新为失�?
-        const currentOrder = await this.strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
-        if (currentOrder && currentOrder.status !== 'failed') {
-          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-            data: {
-              status: 'failed',
-              processTime: new Date(),
-              remark: error.message
-            }
-          });
+          console.error('❌ 回滚aiYue余额失败:', rollbackError);
         }
         
         throw error;
       }
     },
 
-    // 执行SHIB提现转账
+    // 执行SHIB提现
     async executeShibWithdrawal(order: any) {
       try {
-        if (!web3 || !shibContract) {
-          throw new Error('区块链服务未初始�?);
-        }
-
-        if (!privateKey) {
-          throw new Error('私钥未配置，无法执行转账');
-        }
-
         console.log(`🔄 执行SHIB提现转账: ${order.orderNo}, 金额: ${order.actualAmount} SHIB`);
 
-        // 更新订单状态为处理�?
+        // 检查钱包余额
+        const walletBalance = await this.getTokenBalance('SHIB');
+        const requiredAmount = parseFloat(order.actualAmount);
+        const currentBalance = parseFloat(walletBalance);
+
+        if (currentBalance < requiredAmount) {
+          const errorMsg = `钱包SHIB余额不足: 需要${requiredAmount} SHIB, 当前余额 ${currentBalance} SHIB`;
+          console.error(`❌ ${errorMsg}`);
+          
+          // 更新订单状态为失败
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: errorMsg
+            }
+          });
+          
+          throw new Error(errorMsg);
+        }
+
+        // 更新订单状态为处理中
         await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
           data: {
             status: 'processing',
@@ -1017,7 +760,7 @@ export default ({ strapi }) => {
         const base = new Decimal(10).pow(decimals);
         const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
         
-        console.log(`💰 转账金额: ${order.actualAmount} SHIB = ${amountInSmallestUnit.toString()} (最小单�?`);
+        console.log(`💰 转账金额: ${order.actualAmount} SHIB = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
@@ -1028,7 +771,7 @@ export default ({ strapi }) => {
           gasPrice: await web3.eth.getGasPrice()
         };
 
-        // 签名并发送交�?
+        // 签名并发送交易
         const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
@@ -1043,7 +786,7 @@ export default ({ strapi }) => {
           }
         });
 
-        console.log(`�?SHIB提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        console.log(`✅ SHIB提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
         
         // 发送提现成功推送通知
         try {
@@ -1059,16 +802,16 @@ export default ({ strapi }) => {
             console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
           }
         } catch (error) {
-          console.error('�?发送提现成功推送失�?', error);
+          console.error('❌ 发送提现成功推送失败:', error);
         }
         
         return receipt.transactionHash;
       } catch (error) {
-        console.error('�?执行SHIB提现转账失败:', error);
+        console.error('❌ 执行SHIB提现转账失败:', error);
         
-        // 回滚aiYue余额（提现失败时恢复用户余额�?
+        // 回滚aiYue余额（提现失败时恢复用户余额）
         try {
-          // 直接通过用户ID查找钱包，避免关联查询问�?
+          // 直接通过用户ID查找钱包，避免关联查询问题
           const wallets = await this.strapi.db.query('api::qianbao-yue.qianbao-yue').findMany({
             where: { user: order.user }
           });
@@ -1077,7 +820,7 @@ export default ({ strapi }) => {
             const wallet = wallets[0];
             const currentAiYue = new Decimal(wallet.aiYue || '0');
             
-            // 使用订单中记录的USDT价值进行回�?
+            // 使用订单中记录的USDT价值进行回滚
             const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
             const newAiYue = currentAiYue.plus(rollbackAmount);
             
@@ -1088,22 +831,133 @@ export default ({ strapi }) => {
               }
             });
             
-            console.log(`🔄 回滚SHIB提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余�? ${newAiYue.toString()}`);
+            console.log(`🔄 回滚SHIB提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额 ${newAiYue.toString()}`);
           }
         } catch (rollbackError) {
-          console.error('�?回滚aiYue余额失败:', rollbackError);
+          console.error('❌ 回滚aiYue余额失败:', rollbackError);
         }
         
-        // 如果订单状态还不是failed，则更新为失�?
-        const currentOrder = await this.strapi.entityService.findOne('api::withdrawal-order.withdrawal-order' as any, order.id);
-        if (currentOrder && currentOrder.status !== 'failed') {
+        throw error;
+      }
+    },
+
+    // 执行USDT提现（原有方法保持不变）
+    async executeUsdtWithdrawal(order: any) {
+      try {
+        console.log(`🔄 执行USDT提现转账: ${order.orderNo}, 金额: ${order.actualAmount} USDT`);
+
+        // 检查钱包余额
+        const walletBalance = await this.getWalletBalance();
+        const requiredAmount = parseFloat(order.actualAmount);
+        const currentBalance = parseFloat(walletBalance);
+
+        if (currentBalance < requiredAmount) {
+          const errorMsg = `钱包USDT余额不足: 需要${requiredAmount} USDT, 当前余额 ${currentBalance} USDT`;
+          console.error(`❌ ${errorMsg}`);
+          
+          // 更新订单状态为失败
           await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
             data: {
               status: 'failed',
               processTime: new Date(),
-              remark: error.message
+              remark: errorMsg
             }
           });
+          
+          throw new Error(errorMsg);
+        }
+
+        // 更新订单状态为处理中
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'processing',
+            processTime: new Date()
+          }
+        });
+
+        // 获取USDT代币的decimals
+        const decimals = await usdtContract.methods.decimals().call();
+        console.log(`🔍 USDT decimals: ${decimals}`);
+        
+        // 根据decimals计算转账金额
+        const base = new Decimal(10).pow(decimals);
+        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
+        
+        console.log(`💰 转账金额: ${order.actualAmount} USDT = ${amountInSmallestUnit.toString()} (最小单位)`);
+        
+        // 创建转账交易
+        const tx = {
+          from: walletAddress,
+          to: USDT_CONTRACT_ADDRESS,
+          data: usdtContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
+          gas: '100000',
+          gasPrice: await web3.eth.getGasPrice()
+        };
+
+        // 签名并发送交易
+        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+        const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
+
+        // 更新订单状态为完成
+        await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+          data: {
+            status: 'completed',
+            txHash: receipt.transactionHash,
+            blockNumber: receipt.blockNumber,
+            confirmations: 1,
+            completedTime: new Date()
+          }
+        });
+
+        console.log(`✅ USDT提现转账完成: ${order.orderNo}, tx: ${receipt.transactionHash}`);
+        
+        // 发送提现成功推送通知
+        try {
+          if (order.user && order.user.id) {
+            const { HybridPushService } = require('../../../services/push/hybrid-push');
+            const hybridPushService = new HybridPushService(this.strapi);
+            await hybridPushService.sendToUser(order.user.id,
+              '提现成功',
+              `您的${order.currency}提现已成功，金额${order.actualAmount}${order.currency}`
+            );
+            console.log(`📱 提现成功推送已发送给用户 ${order.user.id}`);
+          } else {
+            console.warn(`⚠️ 提现订单 ${order.orderNo} 缺少用户信息，跳过推送通知`);
+          }
+        } catch (error) {
+          console.error('❌ 发送提现成功推送失败:', error);
+        }
+        
+        return receipt.transactionHash;
+      } catch (error) {
+        console.error('❌ 执行USDT提现转账失败:', error);
+        
+        // 回滚aiYue余额（提现失败时恢复用户余额）
+        try {
+          // 直接通过用户ID查找钱包，避免关联查询问题
+          const wallets = await this.strapi.db.query('api::qianbao-yue.qianbao-yue').findMany({
+            where: { user: order.user }
+          });
+          
+          if (wallets && wallets.length > 0) {
+            const wallet = wallets[0];
+            const currentAiYue = new Decimal(wallet.aiYue || '0');
+            
+            // 使用订单中记录的USDT价值进行回滚
+            const rollbackAmount = new Decimal(order.deductedUsdtValue || '0');
+            const newAiYue = currentAiYue.plus(rollbackAmount);
+            
+            await this.strapi.db.query('api::qianbao-yue.qianbao-yue').update({
+              where: { id: wallet.id },
+              data: {
+                aiYue: newAiYue.toString()
+              }
+            });
+            
+            console.log(`🔄 回滚USDT提现失败: 恢复 ${rollbackAmount.toString()} USDT, 新余额 ${newAiYue.toString()}`);
+          }
+        } catch (rollbackError) {
+          console.error('❌ 回滚aiYue余额失败:', rollbackError);
         }
         
         throw error;
