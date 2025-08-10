@@ -209,7 +209,7 @@ export default ({ strapi }) => {
         console.log(`📦 当前区块号: ${currentBlock}`);
 
         // 获取上次检查的区块号
-        let lastCheckedBlock = Math.max(currentBlock - 1000, 0); // 默认检查最近1000个区块
+        let lastCheckedBlock = Math.max(Number(currentBlock) - 1000, 0); // 默认检查最近1000个区块
 
         // 尝试从数据库获取上次检查的区块号
         try {
@@ -236,7 +236,8 @@ export default ({ strapi }) => {
 
             // 检查每个交易
             for (const tx of block.transactions) {
-              if (tx.to && activeChannels.some(ch => ch.walletAddress.toLowerCase() === tx.to.toLowerCase())) {
+              // 确保tx是交易对象而不是字符串
+              if (typeof tx === 'object' && tx.to && activeChannels.some(ch => ch.walletAddress.toLowerCase() === tx.to.toLowerCase())) {
                 console.log(`🎯 发现充值交易: ${tx.hash}`);
                 await this.processIncomingTransaction(tx);
               }
@@ -335,14 +336,14 @@ export default ({ strapi }) => {
         // 查找匹配的订单
         const matchingOrder = orders.find(order => 
           order.receiveAddress.toLowerCase() === tx.to.toLowerCase() &&
-          parseFloat(order.amount) === parseFloat(web3.utils.fromWei(tx.value, 'ether'))
+          parseFloat(order.amount) === parseFloat(web3.utils.fromWei(tx.value || '0', 'ether'))
         );
 
         if (matchingOrder) {
           console.log(`✅ 找到匹配的充值订单: ${matchingOrder.orderNo}`);
-          await this.completeRechargeOrder(matchingOrder, tx.hash, web3.utils.fromWei(tx.value, 'ether'));
+          await this.completeRechargeOrder(matchingOrder, tx.hash, web3.utils.fromWei(tx.value || '0', 'ether'));
         } else {
-          console.log(`⚠️ 未找到匹配的充值订单，交易值: ${web3.utils.fromWei(tx.value, 'ether')} ETH`);
+          console.log(`⚠️ 未找到匹配的充值订单，交易值: ${web3.utils.fromWei(tx.value || '0', 'ether')} ETH`);
         }
       } catch (error) {
         console.error('❌ 处理交易失败:', error);
