@@ -291,9 +291,10 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
       let indirectReferralsCount = 0;
       
       if (directReferralIds.length > 0) {
+        // 使用 $or 操作符替代 $in
         const indirectReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
           filters: { 
-            invitedBy: { $in: directReferralIds }
+            $or: directReferralIds.map(id => ({ invitedBy: id }))
           },
           fields: ['id']
         }) as any[];
