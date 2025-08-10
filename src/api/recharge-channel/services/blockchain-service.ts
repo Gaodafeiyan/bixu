@@ -489,7 +489,7 @@ export default ({ strapi }) => {
                 // 动态获取合约decimals，避免配置错误
                 const erc = new web3.eth.Contract(TOKEN_ABI, channel.contractAddress);
                 const decimals = await erc.methods.decimals().call();
-                const tokenAmount = new Decimal(rawAmount).dividedBy(new Decimal(10).pow(decimals));
+                const tokenAmount = new Decimal(rawAmount).dividedBy(new Decimal(10).pow(Number(decimals)));
 
                 console.log(`🔍 检测到${channel.asset}转账: 到地址 ${toAddress}, 金额 ${tokenAmount.toString()} ${channel.asset}, decimals: ${decimals}`);
 
