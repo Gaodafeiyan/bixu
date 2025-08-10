@@ -4,7 +4,7 @@ export default {
     {
       method: 'POST',
       path: '/user-push-token/register',
-      handler: 'user-push-token.registerToken',
+      handler: 'user-push-token.register',
       config: {
         type: 'content-api',
         auth: {},
@@ -15,7 +15,7 @@ export default {
     {
       method: 'POST',
       path: '/user-push-token/unregister',
-      handler: 'user-push-token.unregisterToken',
+      handler: 'user-push-token.unregister',
       config: {
         type: 'content-api',
         auth: {},
