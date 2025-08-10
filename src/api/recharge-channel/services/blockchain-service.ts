@@ -412,7 +412,7 @@ export default ({ strapi }) => {
       try {
         console.log(`🔍 处理交易: ${tx.hash}`);
 
-        // 获取所有活跃的充值通道钱包地址
+        // 获取所有活跃的充值通道钱包地址，统一为小写
         const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
           filters: {
             status: 'active',
@@ -420,18 +420,23 @@ export default ({ strapi }) => {
           }
         }) as any[];
         
-        const walletAddresses = activeChannels.map(channel => channel.walletAddress);
+        // 创建小写地址集合，避免大小写匹配问题
+        const addrSet = new Set(activeChannels.map(ch => String(ch.walletAddress).toLowerCase()));
         
-        // 查找匹配的充值订单 - 扩展搜索范围到7天，包含所有状态
+        // 查找匹配的充值订单 - 不在DB层面过滤地址，避免大小写问题
         const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
-        const orders = await this.strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
+        const ordersAll = await this.strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
           filters: {
-            receiveAddress: { $in: walletAddresses },
             createdAt: { $gte: sevenDaysAgo }
           },
           populate: ['user'], // 包含user关系
           sort: { createdAt: 'desc' } // 按创建时间倒序，优先匹配最新订单
         });
+        
+        // 在内存中过滤匹配的订单，避免大小写问题
+        const orders = ordersAll.filter(o => 
+          o.receiveAddress && addrSet.has(String(o.receiveAddress).toLowerCase())
+        );
 
         console.log(`📊 找到 ${orders.length} 个相关订单`);
 
@@ -473,27 +478,29 @@ export default ({ strapi }) => {
               // 解析代币转账数据
               const methodId = tx.input.slice(0, 10);
               if (methodId === '0xa9059cbb') { // transfer方法
-                // 修复地址解析：64位参数中真正的地址在最后40位
-                const toAddress = '0x' + tx.input.slice(26, 66);
+                // 使用Web3 ABI解码器，更稳定可靠
+                const decoded = web3.eth.abi.decodeParameters(
+                  ['address', 'uint256'],
+                  '0x' + tx.input.slice(10)
+                );
+                const toAddress = String(decoded[0]).toLowerCase(); // 统一为小写
+                const rawAmount = String(decoded[1]); // 十进制字符串
                 
-                // 修复金额解析：使用Web3的ABI解码器
-                const amountHex = '0x' + tx.input.slice(66);
-                const amountWei = web3.utils.hexToNumberString(amountHex);
-                
-                // 使用后台配置的decimals
-                const decimals = channel.decimals || 18;
-                const tokenAmount = new Decimal(amountWei).dividedBy(new Decimal(10).pow(decimals));
+                // 动态获取合约decimals，避免配置错误
+                const erc = new web3.eth.Contract(TOKEN_ABI, channel.contractAddress);
+                const decimals = await erc.methods.decimals().call();
+                const tokenAmount = new Decimal(rawAmount).dividedBy(new Decimal(10).pow(decimals));
 
-                console.log(`🔍 检测到${channel.asset}转账: 到地址 ${toAddress}, 金额 ${tokenAmount.toString()} ${channel.asset}`);
+                console.log(`🔍 检测到${channel.asset}转账: 到地址 ${toAddress}, 金额 ${tokenAmount.toString()} ${channel.asset}, decimals: ${decimals}`);
 
                 // 查找匹配的充值订单 - 允许一定的金额误差
                 let matchingOrder = orders.find(order => {
                   const orderAmount = new Decimal(order.amount);
                   const difference = orderAmount.minus(tokenAmount).abs();
-                  const tolerance = new Decimal(0.1); // 增加容差到0.1
+                  const tolerance = new Decimal(0.01); // 减少容差到0.01，提高匹配精度
                   
                   return order.status === 'pending' &&
-                         order.receiveAddress.toLowerCase() === toAddress.toLowerCase() && 
+                         order.receiveAddress.toLowerCase() === toAddress && 
                          difference.lessThanOrEqualTo(tolerance);
                 });
 
@@ -502,9 +509,9 @@ export default ({ strapi }) => {
                   matchingOrder = orders.find(order => {
                     const orderAmount = new Decimal(order.amount);
                     const difference = orderAmount.minus(tokenAmount).abs();
-                    const tolerance = new Decimal(0.1);
+                    const tolerance = new Decimal(0.01);
                     
-                    return order.receiveAddress.toLowerCase() === toAddress.toLowerCase() && 
+                    return order.receiveAddress.toLowerCase() === toAddress && 
                            difference.lessThanOrEqualTo(tolerance) &&
                            order.txHash !== tx.hash; // 避免重复处理
                   });

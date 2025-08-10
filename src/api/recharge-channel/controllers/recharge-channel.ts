@@ -461,8 +461,8 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         return ctx.badRequest(`充值金额不能超过 ${selectedChannel.maxAmount} ${selectedChannel.asset}`);
       }
 
-      // 使用通道配置的钱包地址
-      const receiveAddress = selectedChannel.walletAddress;
+      // 使用通道配置的钱包地址，统一为小写避免大小写匹配问题
+      const receiveAddress = selectedChannel.walletAddress.toLowerCase();
       
       if (!receiveAddress) {
         return ctx.badRequest('充值通道未配置钱包地址');
