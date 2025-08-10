@@ -536,7 +536,8 @@ export class UserPushService {
         await this.sendSubscriptionReminderPush(
           subscription.user.id,
           subscription.jihua?.name || '未知计划',
-          daysLeft
+          daysLeft,
+          subscription.jihua?.id || 0
         );
         
         // 避免发送过快
