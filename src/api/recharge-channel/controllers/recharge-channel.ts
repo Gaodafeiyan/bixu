@@ -117,6 +117,8 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         .createRechargeOrder(userId, amount, channelId);
 
       console.log(`✅ 充值订单创建成功 - 订单号: ${rechargeOrder.orderNo}, 用户ID: ${userId}`);
+      console.log(`📍 充值地址: ${rechargeOrder.receiveAddress}`);
+      console.log(`💰 充值金额: ${rechargeOrder.amount} ${rechargeOrder.currency}`);
 
       ctx.body = {
         success: true,
@@ -485,14 +487,22 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         } as any as any
       });
 
+      console.log(`✅ 充值订单创建成功 - 订单号: ${rechargeOrder.orderNo}, 用户ID: ${userId}`);
+      console.log(`📍 充值地址: ${rechargeOrder.receiveAddress}`);
+      console.log(`💰 充值金额: ${rechargeOrder.amount} ${rechargeOrder.currency}`);
+
       ctx.body = {
         success: true,
         data: {
+          id: rechargeOrder.id,
           orderNo: rechargeOrder.orderNo,
           amount: rechargeOrder.amount,
-          receiveAddress: receiveAddress,
-          expectedTime: rechargeOrder.expectedTime,
+          currency: rechargeOrder.currency,
           status: rechargeOrder.status,
+          receiveAddress: rechargeOrder.receiveAddress,
+          expectedTime: rechargeOrder.expectedTime,
+          createdAt: rechargeOrder.createdAt,
+          updatedAt: rechargeOrder.updatedAt,
           channelName: selectedChannel.name,
           network: selectedChannel.network,
           message: "请向以下地址转账USDT，到账后自动放行"
@@ -783,6 +793,39 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
     } catch (error) {
       console.error('获取钱包状态失败:', error);
       ctx.throw(500, `获取钱包状态失败: ${error.message}`);
+    }
+  },
+
+  // 检查充值通道配置
+  async checkRechargeChannels(ctx) {
+    try {
+      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        filters: { status: 'active' },
+        populate: ['rechargeOrders']
+      });
+
+      ctx.body = {
+        success: true,
+        data: channels.map(channel => ({
+          id: channel.id,
+          name: channel.name,
+          status: channel.status,
+          channelType: channel.channelType,
+          asset: channel.asset,
+          network: channel.network,
+          walletAddress: channel.walletAddress,
+          contractAddress: channel.contractAddress,
+          decimals: channel.decimals,
+          minAmount: channel.minAmount,
+          maxAmount: channel.maxAmount,
+          hasPrivateKey: !!channel.walletPrivateKey,
+          orderCount: channel.rechargeOrders?.length || 0
+        })),
+        message: '获取充值通道配置成功'
+      };
+    } catch (error) {
+      console.error('检查充值通道配置失败:', error);
+      ctx.throw(500, `检查充值通道配置失败: ${error.message}`);
     }
   },
 

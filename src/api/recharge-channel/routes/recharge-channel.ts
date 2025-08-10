@@ -209,6 +209,19 @@ export default {
       },
     },
 
+    // 检查充值通道配置
+    {
+      method: 'GET',
+      path: '/recharge-channels/check-channels',
+      handler: 'recharge-channel.checkRechargeChannels',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+
     // 调试充值状态
     {
       method: 'GET',
