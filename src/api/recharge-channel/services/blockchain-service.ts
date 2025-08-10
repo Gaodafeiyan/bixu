@@ -547,7 +547,7 @@ export default ({ strapi }) => {
         let blockNumber = 0;
         try {
           const receipt = await web3.eth.getTransactionReceipt(txHash);
-          blockNumber = receipt.blockNumber;
+          blockNumber = Number(receipt.blockNumber); // 修复：将bigint转换为number
         } catch (receiptError) {
           console.warn(`⚠️ 获取交易收据失败: ${receiptError.message}`);
         }
