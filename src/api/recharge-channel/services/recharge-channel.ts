@@ -634,38 +634,16 @@ export default ({ strapi }) => ({
     }
   },
 
-  // 监控钱包交易
+  // 监控钱包交易 - 已废弃，使用 blockchain-service 的 scanNextWindow 方法
   async monitorWalletTransactions() {
-    try {
-      // 获取所有活跃的充值通道
-      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
-        filters: {
-          status: 'active',
-          channelType: { $in: ['recharge', 'both'] }
-        }
-      });
-
-      const channelList = Array.isArray(channels) ? channels : [channels];
-      for (const channel of channelList) {
-        await this.processChannelTransactions(channel, strapi);
-      }
-    } catch (error) {
-      console.error('监控钱包交易失败:', error);
-    }
+    console.log('⚠️ monitorWalletTransactions已废弃，请使用 blockchain-service 的 scanNextWindow 方法');
+    return;
   },
 
-  // 处理通道交易
+  // 处理通道交易 - 已废弃，使用 blockchain-service 的 processIncomingTransaction 方法
   async processChannelTransactions(channel: any, strapi: any) {
-    try {
-      // 获取钱包交易记录
-      const transactions = await getWalletTransactions(channel.walletAddress, channel.network);
-      
-      for (const transaction of transactions) {
-        await processTransaction(channel, transaction, strapi);
-      }
-    } catch (error) {
-      console.error(`处理通道 ${channel.id} 交易失败:`, error);
-    }
+    console.log('⚠️ processChannelTransactions已废弃，请使用 blockchain-service 的 processIncomingTransaction 方法');
+    return;
   },
 
 
