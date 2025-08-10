@@ -149,9 +149,10 @@ export default ({ strapi }) => {
         const currentBlock = await web3.eth.getBlockNumber();
         const tip = Number(currentBlock);
         
-        // 计算扫描范围
-        const fromBlock = Math.max(lastProcessedBlock + 1, tip - SCAN_BACK_RANGE - CHAIN_CONFIRMATIONS);
-        const toBlock = tip - CHAIN_CONFIRMATIONS;
+        // 计算扫描范围 - 从通道配置读取确认数
+        const confirmations = channel?.confirmations || 12; // 默认12个确认
+        const fromBlock = Math.max(lastProcessedBlock + 1, tip - SCAN_BACK_RANGE - confirmations);
+        const toBlock = tip - confirmations;
 
         if (fromBlock > toBlock) {
           if (VERBOSE) console.log('📊 没有新区块需要扫描');
@@ -160,7 +161,7 @@ export default ({ strapi }) => {
 
         if (VERBOSE) {
           console.log(`🔍 扫描区块范围: ${fromBlock} - ${toBlock} (共${toBlock - fromBlock + 1}个区块)`);
-          console.log(`📊 当前区块: ${tip}, 确认数: ${CHAIN_CONFIRMATIONS}`);
+          console.log(`📊 当前区块: ${tip}, 确认数: ${confirmations}`);
         }
         
         await this.scanRange(fromBlock, toBlock);
@@ -576,7 +577,7 @@ export default ({ strapi }) => {
             status: 'completed',
             txHash: txHash,
             blockNumber: blockNumber,
-            confirmations: CHAIN_CONFIRMATIONS,
+            confirmations: 12, // 使用默认确认数
             receivedTime: new Date(),
             completedTime: new Date()
           }
