@@ -122,7 +122,7 @@ export default ({ strapi }) => {
         if (lastProcessedBlock === 0) {
           // 如果没有检查点，从当前区块减去扫描步长开始
           const currentBlock = await web3.eth.getBlockNumber();
-          lastProcessedBlock = Math.max(0, currentBlock - SCAN_STEP);
+          lastProcessedBlock = Math.max(0, Number(currentBlock) - SCAN_STEP);
         }
         
         console.log('✅ 区块链服务初始化成功');
@@ -147,12 +147,12 @@ export default ({ strapi }) => {
         }
 
         const currentBlock = await web3.eth.getBlockNumber();
-        if (lastProcessedBlock >= currentBlock) {
+        if (lastProcessedBlock >= Number(currentBlock)) {
           return; // 没有新区块
         }
 
         const fromBlock = lastProcessedBlock + 1;
-        const toBlock = Math.min(currentBlock, fromBlock + SCAN_STEP - 1);
+        const toBlock = Math.min(Number(currentBlock), fromBlock + SCAN_STEP - 1);
 
         if (VERBOSE) {
           console.log(`🔍 扫描区块范围: ${fromBlock} - ${toBlock} (共${toBlock - fromBlock + 1}个区块)`);

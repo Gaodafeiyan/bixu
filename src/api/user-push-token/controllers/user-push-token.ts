@@ -32,7 +32,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         },
         fields: ['id'],
         limit: 1
-      });
+      }) as any[];
 
       // 如果已存在，直接返回成功
       if (existingToken && existingToken.length > 0) {
@@ -96,7 +96,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         },
         fields: ['id'],
         limit: 1
-      });
+      }) as any[];
 
       if (existingToken && existingToken.length > 0) {
         await strapi.entityService.delete('api::user-push-token.user-push-token' as any, existingToken[0].id);
