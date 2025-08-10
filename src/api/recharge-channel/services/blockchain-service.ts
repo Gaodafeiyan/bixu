@@ -30,8 +30,8 @@ const TOKEN_ABI: AbiItem[] = [
   }
 ];
 
-// BSC USDT合约地址
-const USDT_CONTRACT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
+// BSC USDT合约地址 - 将从后台配置动态获取
+const DEFAULT_USDT_CONTRACT_ADDRESS = '0x55d398326f99059fF775485246999027B3197955';
 
 // 添加其他代币合约地址
 const ADA_CONTRACT_ADDRESS = '0x3ee2200efb3400fabb9aacf31297cbdd1d435d47';
@@ -190,19 +190,21 @@ export default ({ strapi }) => {
                   await this.processIncomingTransaction(tx);
                 }
                 
-                // 检查USDT代币转账到充值地址
-                if (tx.to.toLowerCase() === USDT_CONTRACT_ADDRESS.toLowerCase() && tx.input && tx.input.length > 10) {
-                  try {
-                    const methodId = tx.input.slice(0, 10);
-                    if (methodId === '0xa9059cbb') { // transfer方法
-                      const toAddress = '0x' + tx.input.slice(10, 74);
-                      if (activeChannels.some((ch: any) => ch.walletAddress.toLowerCase() === toAddress.toLowerCase())) {
-                        if (VERBOSE) console.log(`🎯 发现USDT充值交易: ${tx.hash}, 到地址: ${toAddress}`);
-                        await this.processIncomingTransaction(tx);
+                // 检查代币转账到充值地址 - 基于后台配置
+                for (const channel of activeChannels) {
+                  if (channel.contractAddress && tx.to.toLowerCase() === channel.contractAddress.toLowerCase() && tx.input && tx.input.length > 10) {
+                    try {
+                      const methodId = tx.input.slice(0, 10);
+                      if (methodId === '0xa9059cbb') { // transfer方法
+                        const toAddress = '0x' + tx.input.slice(10, 74);
+                        if (channel.walletAddress.toLowerCase() === toAddress.toLowerCase()) {
+                          if (VERBOSE) console.log(`🎯 发现${channel.asset}充值交易: ${tx.hash}, 到地址: ${toAddress}, 通道: ${channel.name}`);
+                          await this.processIncomingTransaction(tx);
+                        }
                       }
+                    } catch (error) {
+                      if (VERBOSE) console.warn(`⚠️ 解析${channel.asset}交易失败: ${error.message}`);
                     }
-                  } catch (error) {
-                    if (VERBOSE) console.warn(`⚠️ 解析USDT交易失败: ${error.message}`);
                   }
                 }
               }
@@ -439,39 +441,42 @@ export default ({ strapi }) => {
           }
         }
 
-        // 检查是否是USDT代币转账
-        if (tx.to && tx.to.toLowerCase() === USDT_CONTRACT_ADDRESS.toLowerCase() && tx.input && tx.input.length > 10) {
-          try {
-            // 解析USDT转账数据 - 修复解析逻辑
-            const methodId = tx.input.slice(0, 10);
-            if (methodId === '0xa9059cbb') { // transfer方法的签名
-              const toAddress = '0x' + tx.input.slice(10, 74);
-              const amountHex = '0x' + tx.input.slice(74);
-              
-              // USDT有18位小数，需要除以10^18
-              const amountWei = new Decimal(amountHex);
-              const usdtAmount = amountWei.dividedBy(new Decimal(10).pow(18));
-
-              console.log(`🔍 检测到USDT转账: 到地址 ${toAddress}, 金额 ${usdtAmount.toString()} USDT`);
-
-              // 查找匹配的充值订单 - 允许一定的金额误差
-              const matchingOrder = orders.find(order => {
-                const orderAmount = new Decimal(order.amount);
-                const difference = orderAmount.minus(usdtAmount).abs();
-                const tolerance = new Decimal(0.01); // 允许0.01 USDT的误差
+        // 检查代币转账 - 基于后台配置
+        for (const channel of activeChannels) {
+          if (channel.contractAddress && tx.to && tx.to.toLowerCase() === channel.contractAddress.toLowerCase() && tx.input && tx.input.length > 10) {
+            try {
+              // 解析代币转账数据
+              const methodId = tx.input.slice(0, 10);
+              if (methodId === '0xa9059cbb') { // transfer方法
+                const toAddress = '0x' + tx.input.slice(10, 74);
+                const amountHex = '0x' + tx.input.slice(74);
                 
-                return order.receiveAddress.toLowerCase() === toAddress.toLowerCase() && 
-                       difference.lessThanOrEqualTo(tolerance);
-              });
+                // 使用后台配置的decimals
+                const decimals = channel.decimals || 18;
+                const amountWei = new Decimal(amountHex);
+                const tokenAmount = amountWei.dividedBy(new Decimal(10).pow(decimals));
 
-              if (matchingOrder) {
-                console.log(`✅ 找到匹配的USDT充值订单: ${matchingOrder.orderNo}`);
-                await this.completeRechargeOrder(matchingOrder, tx.hash, usdtAmount.toString());
-                return;
+                console.log(`🔍 检测到${channel.asset}转账: 到地址 ${toAddress}, 金额 ${tokenAmount.toString()} ${channel.asset}`);
+
+                // 查找匹配的充值订单 - 允许一定的金额误差
+                const matchingOrder = orders.find(order => {
+                  const orderAmount = new Decimal(order.amount);
+                  const difference = orderAmount.minus(tokenAmount).abs();
+                  const tolerance = new Decimal(0.01); // 允许0.01的误差
+                  
+                  return order.receiveAddress.toLowerCase() === toAddress.toLowerCase() && 
+                         difference.lessThanOrEqualTo(tolerance);
+                });
+
+                if (matchingOrder) {
+                  console.log(`✅ 找到匹配的${channel.asset}充值订单: ${matchingOrder.orderNo}`);
+                  await this.completeRechargeOrder(matchingOrder, tx.hash, tokenAmount.toString());
+                  return;
+                }
               }
+            } catch (decodeError) {
+              console.log(`⚠️ 解析${channel.asset}转账数据失败: ${decodeError.message}`);
             }
-          } catch (decodeError) {
-            console.log(`⚠️ 解析USDT转账数据失败: ${decodeError.message}`);
           }
         }
 
