@@ -26,32 +26,32 @@ export default {
     // 收货人信息
     receiverName: {
       type: 'string',
-      required: true,
+      required: false,
       maxLength: 50,
     },
     mobile: {
       type: 'string',
-      required: true,
+      required: false,
       maxLength: 20,
     },
     province: {
       type: 'string',
-      required: true,
+      required: false,
       maxLength: 50,
     },
     city: {
       type: 'string',
-      required: true,
+      required: false,
       maxLength: 50,
     },
     district: {
       type: 'string',
-      required: true,
+      required: false,
       maxLength: 50,
     },
     address: {
       type: 'text',
-      required: true,
+      required: false,
       maxLength: 200,
     },
     zipCode: {
