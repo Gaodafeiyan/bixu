@@ -51,13 +51,13 @@ export default ({ strapi }: { strapi: Strapi }) => ({
     try {
       if (VERBOSE) console.log(`🔍 开始获取用户 ${userId} 的当前档位...`);
       
-      // 使用Strapi API获取有效订单
+      // 使用Strapi API获取有效订单（包含 running/redeemable/finished）
       const activeOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { 
           user: { id: userId },
-          status: 'running'
+          status: { $in: ['running', 'redeemable', 'finished'] }
         },
-        fields: ['principal', 'amount'],
+        fields: ['principal', 'amount', 'status'],
         sort: { principal: 'desc' }
       }) as any[];
 
