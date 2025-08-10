@@ -786,6 +786,93 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
     }
   },
 
+  // 调试充值状态
+  async debugRechargeStatus(ctx) {
+    try {
+      const { orderNo } = ctx.query;
+      
+      if (!orderNo) {
+        return ctx.badRequest('缺少订单号');
+      }
+
+      // 查找充值订单
+      const order = await strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
+        filters: { orderNo: orderNo },
+        populate: ['user', 'channel']
+      });
+
+      if (!order || order.length === 0) {
+        return ctx.notFound('订单不存在');
+      }
+
+      const rechargeOrder = order[0];
+      
+      // 获取区块链服务
+      const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
+      
+      // 检查钱包余额
+      let walletBalance = '0';
+      if (rechargeOrder.receiveAddress) {
+        try {
+          walletBalance = await blockchainService.getTokenBalanceFromAddress('USDT', rechargeOrder.receiveAddress);
+        } catch (error) {
+          console.warn('获取钱包余额失败:', error);
+        }
+      }
+
+      // 获取最近的交易
+      let recentTransactions = [];
+      if (rechargeOrder.receiveAddress) {
+        try {
+          const web3 = blockchainService.web3;
+          if (web3) {
+            const currentBlock = await web3.eth.getBlockNumber();
+            const fromBlock = Math.max(0, currentBlock - 1000); // 最近1000个区块
+            
+            // 这里可以添加获取最近交易的逻辑
+            // 由于Web3的限制，这里只是示例
+          }
+        } catch (error) {
+          console.warn('获取最近交易失败:', error);
+        }
+      }
+
+      ctx.body = {
+        success: true,
+        data: {
+          order: {
+            orderNo: rechargeOrder.orderNo,
+            amount: rechargeOrder.amount,
+            status: rechargeOrder.status,
+            receiveAddress: rechargeOrder.receiveAddress,
+            createdAt: rechargeOrder.createdAt,
+            expectedTime: rechargeOrder.expectedTime,
+            txHash: rechargeOrder.txHash,
+            completedTime: rechargeOrder.completedTime
+          },
+          wallet: {
+            address: rechargeOrder.receiveAddress,
+            balance: walletBalance
+          },
+          blockchain: {
+            lastProcessedBlock: blockchainService.lastProcessedBlock || 0,
+            scanning: blockchainService.scanning || false
+          },
+          debug: {
+            orderExists: true,
+            orderStatus: rechargeOrder.status,
+            isExpired: new Date() > new Date(rechargeOrder.expectedTime),
+            timeRemaining: Math.max(0, new Date(rechargeOrder.expectedTime).getTime() - Date.now())
+          }
+        },
+        message: '充值状态查询成功'
+      };
+    } catch (error) {
+      console.error('查询充值状态失败:', error);
+      ctx.throw(500, `查询充值状态失败: ${error.message}`);
+    }
+  },
+
   // 快速配置钱包
   async quickSetupWallet(ctx) {
     try {

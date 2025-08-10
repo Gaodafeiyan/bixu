@@ -209,6 +209,19 @@ export default {
       },
     },
 
+    // 调试充值状态
+    {
+      method: 'GET',
+      path: '/recharge-channels/debug-recharge-status',
+      handler: 'recharge-channel.debugRechargeStatus',
+      config: {
+        type: 'content-api',
+        auth: false,
+        policies: [],
+        middlewares: [],
+      },
+    },
+
     // 默认CRUD路由
     {
       method: 'GET',

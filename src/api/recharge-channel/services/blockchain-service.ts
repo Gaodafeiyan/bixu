@@ -109,12 +109,15 @@ export default ({ strapi }) => {
         linkContract = new web3.eth.Contract(TOKEN_ABI, LINK_CONTRACT_ADDRESS);
         shibContract = new web3.eth.Contract(TOKEN_ABI, SHIB_CONTRACT_ADDRESS);
         
-        // 从数据库恢复检查点
+        // 加载上次处理的区块号
         lastProcessedBlock = await this._loadCheckpoint();
+        console.log(`📍 加载检查点: 上次处理区块 ${lastProcessedBlock}`);
+        
+        // 如果检查点为0，从当前区块开始
         if (lastProcessedBlock === 0) {
-          // 如果没有检查点，从当前区块减去扫描步长开始
           const currentBlock = await web3.eth.getBlockNumber();
-          lastProcessedBlock = Math.max(0, Number(currentBlock) - SCAN_STEP);
+          lastProcessedBlock = Math.max(0, Number(currentBlock) - 100); // 从100个区块前开始
+          console.log(`🔄 检查点为0，从区块 ${lastProcessedBlock} 开始扫描`);
         }
         
         console.log('✅ 区块链服务初始化成功');
@@ -164,7 +167,7 @@ export default ({ strapi }) => {
       try {
         // 获取活跃的充值渠道
         const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
-          filters: { isActive: true }
+          filters: { status: 'active' }
         });
 
         if (!activeChannels || !Array.isArray(activeChannels) || activeChannels.length === 0) {
@@ -420,19 +423,27 @@ export default ({ strapi }) => {
         // 检查是否是USDT代币转账
         if (tx.to && tx.to.toLowerCase() === USDT_CONTRACT_ADDRESS.toLowerCase() && tx.input && tx.input.length > 10) {
           try {
-            // 解析USDT转账数据
-            const decodedData = usdtContract.methods.transfer.getData(tx.input);
-            if (decodedData) {
+            // 解析USDT转账数据 - 修复解析逻辑
+            const methodId = tx.input.slice(0, 10);
+            if (methodId === '0xa9059cbb') { // transfer方法的签名
               const toAddress = '0x' + tx.input.slice(10, 74);
-              const amount = '0x' + tx.input.slice(74);
-              const usdtAmount = parseFloat(web3.utils.fromWei(amount, 'ether'));
+              const amountHex = '0x' + tx.input.slice(74);
+              
+              // USDT有18位小数，需要除以10^18
+              const amountWei = new Decimal(amountHex);
+              const usdtAmount = amountWei.dividedBy(new Decimal(10).pow(18));
 
-              console.log(`🔍 检测到USDT转账: 到地址 ${toAddress}, 金额 ${usdtAmount} USDT`);
+              console.log(`🔍 检测到USDT转账: 到地址 ${toAddress}, 金额 ${usdtAmount.toString()} USDT`);
 
-              const matchingOrder = orders.find(order => 
-                order.receiveAddress.toLowerCase() === toAddress.toLowerCase() &&
-                parseFloat(order.amount) === usdtAmount
-              );
+              // 查找匹配的充值订单 - 允许一定的金额误差
+              const matchingOrder = orders.find(order => {
+                const orderAmount = new Decimal(order.amount);
+                const difference = orderAmount.minus(usdtAmount).abs();
+                const tolerance = new Decimal(0.01); // 允许0.01 USDT的误差
+                
+                return order.receiveAddress.toLowerCase() === toAddress.toLowerCase() && 
+                       difference.lessThanOrEqualTo(tolerance);
+              });
 
               if (matchingOrder) {
                 console.log(`✅ 找到匹配的USDT充值订单: ${matchingOrder.orderNo}`);
