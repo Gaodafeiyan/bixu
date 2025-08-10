@@ -13,4 +13,6 @@ export default ({ env }) => ({
     path: '/public',
     directory: './public',
   },
+  // 启用定时任务
+  cron: { enabled: true },
 });

@@ -5,12 +5,14 @@
  * 运行方式: node scripts/create-missing-wallets.js
  */
 
-const { Strapi } = require('@strapi/strapi');
 const path = require('path');
 
 async function createMissingWallets() {
   try {
     console.log('🚀 开始为现有用户创建缺失的钱包...');
+    
+    // 使用正确的Strapi导入方式
+    const { default: Strapi } = await import('@strapi/strapi');
     
     // 初始化Strapi
     const strapi = await Strapi({

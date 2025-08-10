@@ -41,7 +41,7 @@ const SHIB_CONTRACT_ADDRESS = '0x2859e4544c4bb03966803b044a93563bd2d0dd4d';
 // 小窗口扫描配置
 const SCAN_STEP = 100; // 每次扫描100个区块，平衡性能和及时性
 const SCAN_BACK_RANGE = 3000; // 回扫范围：3000个区块
-const CHAIN_CONFIRMATIONS = 3; // BSC/Polygon确认数：3个
+// 移除硬编码的确认数，改为从通道配置动态读取
 const SCAN_ALWAYS = true; // 总是回扫，不管有没有pending订单
 let lastProcessedBlock = 0;
 
@@ -61,11 +61,12 @@ export default ({ strapi }) => {
     // 保存strapi实例
     strapi,
     
-    // 加载检查点
-    async _loadCheckpoint(): Promise<number> {
+    // 加载检查点 - 改为每通道独立
+    async _loadCheckpoint(network: string = 'BSC', asset: string = 'USDT'): Promise<number> {
       try {
+        const key = `last_processed_block_${network.toLowerCase()}_${asset.toLowerCase()}`;
         const config = await strapi.entityService.findMany('api::system-config.system-config' as any, {
-          filters: { key: 'last_processed_block' },
+          filters: { key },
           fields: ['value'],
           limit: 1
         });
@@ -76,11 +77,12 @@ export default ({ strapi }) => {
       }
     },
 
-    // 保存检查点
-    async _saveCheckpoint(blockNumber: number): Promise<void> {
+    // 保存检查点 - 改为每通道独立
+    async _saveCheckpoint(blockNumber: number, network: string = 'BSC', asset: string = 'USDT'): Promise<void> {
       try {
+        const key = `last_processed_block_${network.toLowerCase()}_${asset.toLowerCase()}`;
         const existing = await strapi.entityService.findMany('api::system-config.system-config' as any, {
-          filters: { key: 'last_processed_block' },
+          filters: { key },
           fields: ['id'],
           limit: 1
         });
@@ -91,7 +93,7 @@ export default ({ strapi }) => {
           });
         } else {
           await strapi.entityService.create('api::system-config.system-config' as any, {
-            data: { key: 'last_processed_block', value: blockNumber.toString() }
+            data: { key, value: blockNumber.toString() }
           });
         }
       } catch (error) {
@@ -204,10 +206,16 @@ export default ({ strapi }) => {
                     try {
                       const methodId = tx.input.slice(0, 10);
                       if (methodId === '0xa9059cbb') { // transfer方法
-                        const toAddress = '0x' + tx.input.slice(10, 74);
-                        if (channel.walletAddress.toLowerCase() === toAddress.toLowerCase()) {
-                          if (VERBOSE) console.log(`🎯 发现${channel.asset}充值交易: ${tx.hash}, 到地址: ${toAddress}, 通道: ${channel.name}`);
-                          await this.processIncomingTransaction(tx);
+                        // 修复：使用ABI解码而不是字符串切片，避免32字节左填零问题
+                        try {
+                          const decoded = web3!.eth.abi.decodeParameters(['address', 'uint256'], '0x' + tx.input.slice(10));
+                          const toAddress = String(decoded[0]).toLowerCase();
+                          if (channel.walletAddress.toLowerCase() === toAddress) {
+                            if (VERBOSE) console.log(`🎯 发现${channel.asset}充值交易: ${tx.hash}, 到地址: ${toAddress}, 通道: ${channel.name}`);
+                            await this.processIncomingTransaction(tx);
+                          }
+                        } catch (decodeError) {
+                          if (VERBOSE) console.warn(`⚠️ ABI解码${channel.asset}交易失败: ${decodeError.message}`);
                         }
                       }
                     } catch (error) {

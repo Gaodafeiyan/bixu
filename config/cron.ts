@@ -4,6 +4,13 @@ export default ({ env }) => ({
   
   // 定时任务配置
   tasks: {
+    // 充值扫描窗口 - 每15秒执行一次（关键修复）
+    'recharge-scan-window': {
+      cron: '*/15 * * * * *',
+      handler: 'src/crons/recharge-scan-window',
+      enabled: true,
+    },
+    
     // 监控钱包交易 - 每30秒执行一次
     'monitor-wallet-transactions': {
       cron: '*/30 * * * * *',
