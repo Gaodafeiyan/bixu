@@ -149,8 +149,13 @@ export default ({ strapi }) => {
         const currentBlock = await web3.eth.getBlockNumber();
         const tip = Number(currentBlock);
         
-        // 计算扫描范围 - 从通道配置读取确认数
-        const confirmations = channel?.confirmations || 12; // 默认12个确认
+        // 获取活跃的充值渠道配置来读取确认数
+        const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+          filters: { status: 'active' }
+        });
+        
+        // 使用第一个活跃渠道的确认数，如果没有则使用默认值
+        const confirmations = activeChannels && activeChannels.length > 0 ? (activeChannels[0].confirmations || 12) : 12;
         const fromBlock = Math.max(lastProcessedBlock + 1, tip - SCAN_BACK_RANGE - confirmations);
         const toBlock = tip - confirmations;
 
