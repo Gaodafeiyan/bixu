@@ -183,6 +183,32 @@ export default {
       },
     },
 
+    // 获取钱包配置状态
+    {
+      method: 'GET',
+      path: '/recharge-channels/wallet-status',
+      handler: 'recharge-channel.getWalletStatus',
+      config: {
+        type: 'content-api',
+        auth: {},
+        policies: [],
+        middlewares: [],
+      },
+    },
+
+    // 快速配置钱包
+    {
+      method: 'POST',
+      path: '/recharge-channels/quick-setup-wallet',
+      handler: 'recharge-channel.quickSetupWallet',
+      config: {
+        type: 'content-api',
+        auth: {},
+        policies: [],
+        middlewares: [],
+      },
+    },
+
     // 默认CRUD路由
     {
       method: 'GET',

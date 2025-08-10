@@ -103,14 +103,6 @@ export default ({ strapi }) => {
         const rpcUrl = 'https://rpc.ankr.com/bsc/0cc28cc1d2308734e5535767191f325256d627fee791f33b30b8a9e9f53d02fb';
         web3 = new Web3(rpcUrl);
         
-        // 设置钱包地址和私钥（从环境变量获取）
-        walletAddress = process.env.BSC_WALLET_ADDRESS || '0xe3353f75d68f9096aC4A49b4968e56b5DFbd2697';
-        privateKey = process.env.BSC_PRIVATE_KEY || '';
-        
-        if (!privateKey) {
-          console.warn('⚠️ BSC私钥未配置，转账功能将不可用');
-        }
-
         // 初始化所有代币合约
         usdtContract = new web3.eth.Contract(TOKEN_ABI, USDT_CONTRACT_ADDRESS);
         adaContract = new web3.eth.Contract(TOKEN_ABI, ADA_CONTRACT_ADDRESS);
@@ -126,10 +118,10 @@ export default ({ strapi }) => {
         }
         
         console.log('✅ 区块链服务初始化成功');
-        console.log(`📧 钱包地址: ${walletAddress}`);
         console.log(`🌐 RPC节点: Ankr付费节点`);
         console.log(`💰 支持的代币: USDT, ADA, LINK, SHIB`);
         console.log(`🔍 扫描起始区块: ${lastProcessedBlock}`);
+        console.log(`🔄 钱包配置将从数据库动态获取`);
         
         return true;
       } catch (error) {
@@ -203,6 +195,40 @@ export default ({ strapi }) => {
       }
     },
 
+    // 动态获取钱包配置
+    async getWalletConfig(channelType: 'recharge' | 'withdrawal' | 'both', asset: string = 'USDT'): Promise<{address: string, privateKey: string} | null> {
+      try {
+        const channels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+          filters: {
+            status: 'active',
+            channelType: { $in: [channelType, 'both'] },
+            asset: asset
+          },
+          fields: ['walletAddress', 'walletPrivateKey'],
+          limit: 1
+        });
+
+        if (!channels || channels.length === 0) {
+          console.warn(`⚠️ 未找到${asset}的${channelType}通道配置`);
+          return null;
+        }
+
+        const channel = channels[0];
+        if (!channel.walletAddress || !channel.walletPrivateKey) {
+          console.warn(`⚠️ ${asset}的${channelType}通道配置不完整`);
+          return null;
+        }
+
+        return {
+          address: channel.walletAddress,
+          privateKey: channel.walletPrivateKey
+        };
+      } catch (error) {
+        console.error(`❌ 获取${asset}的${channelType}钱包配置失败:`, error);
+        return null;
+      }
+    },
+
     // 获取钱包USDT余额
     async getWalletBalance(): Promise<string> {
       try {
@@ -210,13 +236,19 @@ export default ({ strapi }) => {
           throw new Error('区块链服务未初始化');
         }
 
+        // 动态获取提现钱包配置
+        const walletConfig = await this.getWalletConfig('withdrawal', 'USDT');
+        if (!walletConfig) {
+          throw new Error('未找到USDT提现钱包配置');
+        }
+
         // 使用动态decimals而不是硬编码1e18
-        const rawBalance = await usdtContract.methods.balanceOf(walletAddress).call();
+        const rawBalance = await usdtContract.methods.balanceOf(walletConfig.address).call();
         const decimals = await usdtContract.methods.decimals().call();
         const base = new Decimal(10).pow(decimals);
         const balance = new Decimal(rawBalance).dividedBy(base);
         
-        console.log(`💰 钱包USDT余额: ${balance.toString()} (原始值: ${rawBalance}, decimals: ${decimals})`);
+        console.log(`💰 钱包USDT余额: ${balance.toString()} (地址: ${walletConfig.address}, 原始值: ${rawBalance}, decimals: ${decimals})`);
         return balance.toString();
       } catch (error) {
         console.error('❌ 获取钱包余额失败:', error);
@@ -370,18 +402,50 @@ export default ({ strapi }) => {
           sort: { createdAt: 'desc' } // 按创建时间倒序，优先匹配最新订单
         });
 
-        // 查找匹配的订单
-        const matchingOrder = orders.find(order => 
-          order.receiveAddress.toLowerCase() === tx.to.toLowerCase() &&
-          parseFloat(order.amount) === parseFloat(web3.utils.fromWei(tx.value || '0', 'ether'))
-        );
+        // 检查是否是ETH转账
+        if (tx.value && tx.value !== '0x0') {
+          const ethAmount = parseFloat(web3.utils.fromWei(tx.value, 'ether'));
+          const matchingOrder = orders.find(order => 
+            order.receiveAddress.toLowerCase() === tx.to.toLowerCase() &&
+            parseFloat(order.amount) === ethAmount
+          );
 
-        if (matchingOrder) {
-          console.log(`✅ 找到匹配的充值订单: ${matchingOrder.orderNo}`);
-          await this.completeRechargeOrder(matchingOrder, tx.hash, web3.utils.fromWei(tx.value || '0', 'ether'));
-        } else {
-          console.log(`⚠️ 未找到匹配的充值订单，交易值: ${web3.utils.fromWei(tx.value || '0', 'ether')} ETH`);
+          if (matchingOrder) {
+            console.log(`✅ 找到匹配的ETH充值订单: ${matchingOrder.orderNo}`);
+            await this.completeRechargeOrder(matchingOrder, tx.hash, ethAmount.toString());
+            return;
+          }
         }
+
+        // 检查是否是USDT代币转账
+        if (tx.to && tx.to.toLowerCase() === USDT_CONTRACT_ADDRESS.toLowerCase() && tx.input && tx.input.length > 10) {
+          try {
+            // 解析USDT转账数据
+            const decodedData = usdtContract.methods.transfer.getData(tx.input);
+            if (decodedData) {
+              const toAddress = '0x' + tx.input.slice(10, 74);
+              const amount = '0x' + tx.input.slice(74);
+              const usdtAmount = parseFloat(web3.utils.fromWei(amount, 'ether'));
+
+              console.log(`🔍 检测到USDT转账: 到地址 ${toAddress}, 金额 ${usdtAmount} USDT`);
+
+              const matchingOrder = orders.find(order => 
+                order.receiveAddress.toLowerCase() === toAddress.toLowerCase() &&
+                parseFloat(order.amount) === usdtAmount
+              );
+
+              if (matchingOrder) {
+                console.log(`✅ 找到匹配的USDT充值订单: ${matchingOrder.orderNo}`);
+                await this.completeRechargeOrder(matchingOrder, tx.hash, usdtAmount.toString());
+                return;
+              }
+            }
+          } catch (decodeError) {
+            console.log(`⚠️ 解析USDT转账数据失败: ${decodeError.message}`);
+          }
+        }
+
+        console.log(`⚠️ 未找到匹配的充值订单，交易哈希: ${tx.hash}`);
       } catch (error) {
         console.error('❌ 处理交易失败:', error);
       }
@@ -875,13 +939,34 @@ export default ({ strapi }) => {
       try {
         console.log(`🔄 执行USDT提现转账: ${order.orderNo}, 金额: ${order.actualAmount} USDT`);
 
-        // 检查钱包余额
-        const walletBalance = await this.getWalletBalance();
-        const requiredAmount = parseFloat(order.actualAmount);
-        const currentBalance = parseFloat(walletBalance);
+        // 动态获取提现钱包配置
+        const walletConfig = await this.getWalletConfig('withdrawal', 'USDT');
+        if (!walletConfig) {
+          const errorMsg = '未找到USDT提现钱包配置';
+          console.error(`❌ ${errorMsg}`);
+          
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: {
+              status: 'failed',
+              processTime: new Date(),
+              remark: errorMsg
+            }
+          });
+          
+          throw new Error(errorMsg);
+        }
 
-        if (currentBalance < requiredAmount) {
-          const errorMsg = `钱包USDT余额不足: 需要${requiredAmount} USDT, 当前余额 ${currentBalance} USDT`;
+        // 检查钱包余额
+        const rawBalance = await usdtContract.methods.balanceOf(walletConfig.address).call();
+        const decimals = await usdtContract.methods.decimals().call();
+        const base = new Decimal(10).pow(decimals);
+        const currentBalance = new Decimal(rawBalance).dividedBy(base);
+        const requiredAmount = new Decimal(order.actualAmount);
+
+        console.log(`💰 提现钱包USDT余额: ${currentBalance.toString()} (地址: ${walletConfig.address})`);
+
+        if (currentBalance.lessThan(requiredAmount)) {
+          const errorMsg = `钱包USDT余额不足: 需要${requiredAmount.toString()} USDT, 当前余额 ${currentBalance.toString()} USDT`;
           console.error(`❌ ${errorMsg}`);
           
           // 更新订单状态为失败
@@ -904,19 +989,16 @@ export default ({ strapi }) => {
           }
         });
 
-        // 获取USDT代币的decimals
-        const decimals = await usdtContract.methods.decimals().call();
         console.log(`🔍 USDT decimals: ${decimals}`);
         
         // 根据decimals计算转账金额
-        const base = new Decimal(10).pow(decimals);
-        const amountInSmallestUnit = new Decimal(order.actualAmount).mul(base);
+        const amountInSmallestUnit = requiredAmount.mul(base);
         
         console.log(`💰 转账金额: ${order.actualAmount} USDT = ${amountInSmallestUnit.toString()} (最小单位)`);
         
         // 创建转账交易
         const tx = {
-          from: walletAddress,
+          from: walletConfig.address,
           to: USDT_CONTRACT_ADDRESS,
           data: usdtContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
@@ -924,7 +1006,7 @@ export default ({ strapi }) => {
         };
 
         // 签名并发送交易
-        const signedTx = await web3.eth.accounts.signTransaction(tx, privateKey);
+        const signedTx = await web3.eth.accounts.signTransaction(tx, walletConfig.privateKey);
         const receipt = await web3.eth.sendSignedTransaction(signedTx.rawTransaction!);
 
         // 更新订单状态为完成

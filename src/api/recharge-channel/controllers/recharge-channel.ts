@@ -437,13 +437,14 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
         filters: {
           status: 'active',
-          channelType: { $in: ['recharge', 'both'] }
+          channelType: { $in: ['recharge', 'both'] },
+          asset: 'USDT' // 只获取USDT充值通道
         },
         fields: ['id', 'name', 'walletAddress', 'network', 'asset', 'minAmount', 'maxAmount']
       });
 
       if (!channels || !Array.isArray(channels) || channels.length === 0) {
-        return ctx.badRequest('没有可用的充值通道');
+        return ctx.badRequest('没有可用的USDT充值通道，请在后台配置USDT充值通道');
       }
 
       // 选择第一个可用的通道
@@ -539,6 +540,40 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
 
       if (walletBalance.lessThan(withdrawalAmount)) {
         return ctx.badRequest('余额不足');
+      }
+
+      // 检查是否有可用的提现通道
+      const channels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        filters: {
+          status: 'active',
+          channelType: { $in: ['withdrawal', 'both'] },
+          asset: 'USDT'
+        },
+        fields: ['id', 'name', 'walletAddress', 'walletPrivateKey']
+      });
+
+      if (!channels || channels.length === 0) {
+        return ctx.badRequest('没有可用的USDT提现通道，请在后台配置USDT提现通道');
+      }
+
+      // 检查提现钱包是否有足够余额
+      const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
+      if (blockchainService) {
+        try {
+          const walletConfig = await blockchainService.getWalletConfig('withdrawal', 'USDT');
+          if (walletConfig) {
+            const rawBalance = await strapi.service('api::recharge-channel.blockchain-service').usdtContract.methods.balanceOf(walletConfig.address).call();
+            const decimals = await strapi.service('api::recharge-channel.blockchain-service').usdtContract.methods.decimals().call();
+            const base = new Decimal(10).pow(decimals);
+            const systemBalance = new Decimal(rawBalance).dividedBy(base);
+            
+            if (systemBalance.lessThan(withdrawalAmount)) {
+              return ctx.badRequest(`系统提现钱包余额不足，当前余额: ${systemBalance.toString()} USDT`);
+            }
+          }
+        } catch (error) {
+          console.warn('检查系统钱包余额失败:', error);
+        }
       }
 
       // 生成订单号
@@ -669,7 +704,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
       
       // 初始化服务
-      const initialized = await blockchainService.initialize();
+      const initialized = await blockchainService.init();
       
       if (!initialized) {
         return ctx.throw(500, '区块链服务初始化失败');
@@ -682,9 +717,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         success: true,
         data: {
           initialized: true,
-          walletAddress: process.env.BSC_WALLET_ADDRESS || '0x742d35Cc6634C0532925a3b8D4C9db96C4b4d8b6',
           usdtBalance: balance,
-          hasPrivateKey: !!process.env.BSC_PRIVATE_KEY,
           message: '区块链服务连接正常'
         },
         message: '区块链服务测试成功'
@@ -692,6 +725,140 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
     } catch (error) {
       console.error('区块链服务测试失败:', error);
       ctx.throw(500, `区块链服务测试失败: ${error.message}`);
+    }
+  },
+
+  // 获取钱包配置状态
+  async getWalletStatus(ctx) {
+    try {
+      const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
+      
+      // 获取充值钱包配置
+      const rechargeConfig = await blockchainService.getWalletConfig('recharge', 'USDT');
+      const withdrawalConfig = await blockchainService.getWalletConfig('withdrawal', 'USDT');
+      
+      let rechargeBalance = '0';
+      let withdrawalBalance = '0';
+      
+      if (rechargeConfig) {
+        try {
+          const rawBalance = await blockchainService.usdtContract.methods.balanceOf(rechargeConfig.address).call();
+          const decimals = await blockchainService.usdtContract.methods.decimals().call();
+          const base = new Decimal(10).pow(decimals);
+          rechargeBalance = new Decimal(rawBalance).dividedBy(base).toString();
+        } catch (error) {
+          console.warn('获取充值钱包余额失败:', error);
+        }
+      }
+      
+      if (withdrawalConfig) {
+        try {
+          const rawBalance = await blockchainService.usdtContract.methods.balanceOf(withdrawalConfig.address).call();
+          const decimals = await blockchainService.usdtContract.methods.decimals().call();
+          const base = new Decimal(10).pow(decimals);
+          withdrawalBalance = new Decimal(rawBalance).dividedBy(base).toString();
+        } catch (error) {
+          console.warn('获取提现钱包余额失败:', error);
+        }
+      }
+      
+      ctx.body = {
+        success: true,
+        data: {
+          recharge: {
+            configured: !!rechargeConfig,
+            address: rechargeConfig?.address || null,
+            balance: rechargeBalance,
+            hasPrivateKey: !!rechargeConfig?.privateKey
+          },
+          withdrawal: {
+            configured: !!withdrawalConfig,
+            address: withdrawalConfig?.address || null,
+            balance: withdrawalBalance,
+            hasPrivateKey: !!withdrawalConfig?.privateKey
+          }
+        },
+        message: '获取钱包状态成功'
+      };
+    } catch (error) {
+      console.error('获取钱包状态失败:', error);
+      ctx.throw(500, `获取钱包状态失败: ${error.message}`);
+    }
+  },
+
+  // 快速配置钱包
+  async quickSetupWallet(ctx) {
+    try {
+      const { type, address, privateKey, asset = 'USDT' } = ctx.request.body;
+      
+      if (!type || !address || !privateKey) {
+        return ctx.badRequest('缺少必要参数');
+      }
+      
+      if (!['recharge', 'withdrawal', 'both'].includes(type)) {
+        return ctx.badRequest('类型必须是 recharge、withdrawal 或 both');
+      }
+      
+      // 检查是否已存在相同配置
+      const existingChannels = await strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+        filters: {
+          walletAddress: address,
+          asset: asset
+        }
+      });
+      
+      if (existingChannels && existingChannels.length > 0) {
+        // 更新现有配置
+        const channel = existingChannels[0];
+        await strapi.entityService.update('api::recharge-channel.recharge-channel' as any, channel.id, {
+          data: {
+            channelType: type,
+            walletPrivateKey: privateKey,
+            status: 'active'
+          }
+        });
+        
+        ctx.body = {
+          success: true,
+          data: {
+            id: channel.id,
+            action: 'updated',
+            message: `已更新${asset}的${type}钱包配置`
+          },
+          message: '钱包配置更新成功'
+        };
+      } else {
+        // 创建新配置
+        const newChannel = await strapi.entityService.create('api::recharge-channel.recharge-channel' as any, {
+          data: {
+            name: `${asset} ${type} 通道`,
+            channelType: type,
+            status: 'active',
+            walletAddress: address,
+            walletPrivateKey: privateKey,
+            network: 'BSC',
+            asset: asset,
+            minAmount: '10.00',
+            maxAmount: '10000.00',
+            dailyLimit: '50000.00',
+            feeRate: '0.001',
+            fixedFee: '1.00'
+          }
+        });
+        
+        ctx.body = {
+          success: true,
+          data: {
+            id: newChannel.id,
+            action: 'created',
+            message: `已创建${asset}的${type}钱包配置`
+          },
+          message: '钱包配置创建成功'
+        };
+      }
+    } catch (error) {
+      console.error('快速配置钱包失败:', error);
+      ctx.throw(500, `快速配置钱包失败: ${error.message}`);
     }
   },
 })); 

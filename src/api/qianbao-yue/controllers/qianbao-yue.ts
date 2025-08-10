@@ -201,7 +201,7 @@ export default factories.createCoreController(
       }
     },
 
-    // 充值钱包
+    // 充值钱包 - 支持动态钱包配置
     async rechargeWallet(ctx) {
       try {
         const { data } = ctx.request.body;
@@ -275,6 +275,8 @@ export default factories.createCoreController(
         ctx.throw(500, `充值钱包失败: ${error.message}`);
       }
     },
+
+
 
     // 重写create方法，添加数据验证
     async create(ctx) {
