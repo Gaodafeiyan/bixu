@@ -1,5 +1,9 @@
 import cron from 'node-cron';
 
+let jobsStarted = false;
+let scanning = false;
+let processingWithdrawals = false;
+
 export default {
   /**
    * An asynchronous register function that runs before
@@ -19,59 +23,52 @@ export default {
    * This gives you an opportunity to set up your data model,
    * run jobs, or perform some special logic.
    */
-  bootstrap({ strapi }) {
-    // 启动定时任务
+  async bootstrap({ strapi }) {
+    if (jobsStarted) return;
+    jobsStarted = true;
+
+    // 可用环境开关：不想跑就不跑
+    if (process.env.ENABLE_CHAIN_JOBS !== 'true') {
+      strapi.log.info('Chain jobs disabled by env');
+      return;
+    }
+
     console.log('🚀 启动定时任务...');
 
-    // 监控钱包交易 - 每30秒执行一次
-    cron.schedule('*/30 * * * * *', async () => {
+    // 获取区块链服务
+    const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
+    
+    // 只初始化一次
+    try {
+      await blockchainService?.init?.();
+      console.log('✅ 区块链服务初始化完成');
+    } catch (error) {
+      strapi.log.warn(`chain init error: ${error}`);
+    }
+
+    // 互斥+递增窗口扫描，避免每次扫上万区块
+    cron.schedule('*/20 * * * * *', async () => {   // 每 20 秒
+      if (scanning) return;
+      scanning = true;
       try {
-        console.log('🔄 开始监控钱包交易...');
-
-        // 获取区块链服务
-        const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
-
-        // 初始化区块链服务（如果未初始化）
-        if (!blockchainService.web3) {
-          await blockchainService.initialize();
-        }
-
-        // 监控钱包交易
-        const transactionCount = await blockchainService.monitorWalletTransactions();
-
-        if (transactionCount > 0) {
-          console.log(`✅ 处理了 ${transactionCount} 笔交易`);
-        } else {
-          console.log('✅ 无新交易');
-        }
-      } catch (error) {
-        console.error('❌ 钱包交易监控失败:', error);
+        await blockchainService?.scanNextWindow?.();
+      } catch (e) {
+        strapi.log.warn(`scanNextWindow error: ${e}`);
+      } finally {
+        scanning = false;
       }
     });
 
-    // 处理提现订单 - 每60秒执行一次
+    // 处理提现订单 - 每60秒执行一次，也加互斥
     cron.schedule('0 * * * * *', async () => {
+      if (processingWithdrawals) return;
+      processingWithdrawals = true;
       try {
-        console.log('🔄 开始处理提现订单...');
-
-        // 获取区块链服务
-        const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
-
-        // 初始化区块链服务（如果未初始化）
-        if (!blockchainService.web3) {
-          await blockchainService.initialize();
-        }
-
-        // 处理待处理的提现订单
-        const processedCount = await blockchainService.processPendingWithdrawals();
-
-        if (processedCount > 0) {
-          console.log(`✅ 处理了 ${processedCount} 个提现订单`);
-        } else {
-          console.log('✅ 无待处理提现订单');
-        }
-      } catch (error) {
-        console.error('❌ 处理提现订单失败:', error);
+        await blockchainService?.processWithdrawals?.();
+      } catch (e) {
+        strapi.log.warn(`processWithdrawals error: ${e}`);
+      } finally {
+        processingWithdrawals = false;
       }
     });
 
@@ -79,7 +76,6 @@ export default {
     cron.schedule('*/5 * * * *', async () => {
       try {
         console.log('🔄 开始检查到期投资...');
-        
         // 这里可以添加检查到期投资的逻辑
         console.log('✅ 到期投资检查完成');
       } catch (error) {

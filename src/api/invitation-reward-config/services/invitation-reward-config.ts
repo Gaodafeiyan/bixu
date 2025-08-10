@@ -42,62 +42,45 @@ const REWARD_TIERS: RewardTier[] = [
   }
 ];
 
+// 调试开关
+const VERBOSE = process.env.DEBUG_VERBOSE === '1';
+
 export default ({ strapi }: { strapi: Strapi }) => ({
-  // 获取用户当前最高有效档位（修复版：考虑所有有效状态）
+  // 获取用户当前最高有效档位（优化版：使用聚合查询）
   async getUserCurrentTier(userId: number): Promise<RewardTier | null> {
     try {
-      console.log(`🔍 开始获取用户 ${userId} 的当前档位...`);
+      if (VERBOSE) console.log(`🔍 开始获取用户 ${userId} 的当前档位...`);
       
-      // 🔥 修复：只考虑进行中的订单（running状态）
-      const activeOrders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
-        filters: { 
-          user: { id: userId },
-          status: 'running'  // 只考虑进行中的订单
-        },
-        populate: ['jihua']
-      }) as any[];
+      // 使用聚合查询获取最高金额，避免遍历所有订单
+      const result = await strapi.db.connection('dinggou_dingdans')
+        .where({ 
+          user_id: userId, 
+          status: 'running' 
+        })
+        .max('principal as max_principal')
+        .first();
 
-      console.log(`用户 ${userId} 的有效订单数量: ${activeOrders.length}`);
-      console.log('有效订单详情:');
-      activeOrders.forEach((order, index) => {
-        console.log(`  订单 ${index + 1}: ID=${order.id}, 状态=${order.status}, 金额=${order.principal || order.amount}, 计划=${order.jihua?.name}`);
-      });
+      const maxPrincipal = result?.max_principal ? Number(result.max_principal) : 0;
 
-      if (!activeOrders || activeOrders.length === 0) {
-        console.log(`用户 ${userId} 没有有效的订单`);
+      if (VERBOSE) {
+        console.log(`用户 ${userId} 的最高有效订单金额: ${maxPrincipal}`);
+      }
+
+      if (maxPrincipal === 0) {
+        if (VERBOSE) console.log(`用户 ${userId} 没有有效的订单`);
         return null;
       }
 
-      // 找到最高档位的订单
-      let maxTier: RewardTier | null = null;
-      let maxPrincipal = 0;
-
-      for (const order of activeOrders) {
-        // 尝试多种字段名获取金额
-        const orderPrincipal = new Decimal(order.principal || order.amount || 0);
-        const principalValue = orderPrincipal.toNumber();
-
-        console.log(`订单 ${order.id}: 状态=${order.status}, 金额=${principalValue}`);
-
-        // 根据本金找到对应的档位
-        const tier = REWARD_TIERS.find(t => t.principal === principalValue);
-        
-        if (tier && principalValue > maxPrincipal) {
-          maxTier = tier;
-          maxPrincipal = principalValue;
-          console.log(`找到档位: ${tier.name}, 金额: ${principalValue}`);
-        } else if (!tier) {
-          console.log(`⚠️ 订单金额 ${principalValue} 没有对应的档位配置`);
-        }
-      }
-
-      if (maxTier) {
-        console.log(`用户 ${userId} 的最终档位: ${maxTier.name}`);
+      // 根据最高金额找到对应的档位
+      const tier = REWARD_TIERS.find(t => t.principal === maxPrincipal);
+      
+      if (tier) {
+        if (VERBOSE) console.log(`用户 ${userId} 的最终档位: ${tier.name}`);
+        return tier;
       } else {
-        console.log(`用户 ${userId} 未找到匹配的档位`);
+        if (VERBOSE) console.log(`⚠️ 订单金额 ${maxPrincipal} 没有对应的档位配置`);
+        return null;
       }
-
-      return maxTier;
     } catch (error) {
       console.error('获取用户当前档位失败:', error);
       return null;

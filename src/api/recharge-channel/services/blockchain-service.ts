@@ -38,6 +38,13 @@ const ADA_CONTRACT_ADDRESS = '0x3ee2200efb3400fabb9aacf31297cbdd1d435d47';
 const LINK_CONTRACT_ADDRESS = '0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd';
 const SHIB_CONTRACT_ADDRESS = '0x2859e4544c4bb03966803b044a93563bd2d0dd4d';
 
+// 小窗口扫描配置
+const SCAN_STEP = 400; // 每次扫描400个区块
+let lastProcessedBlock = 0;
+
+// 调试开关
+const VERBOSE = process.env.DEBUG_VERBOSE === '1';
+
 export default ({ strapi }) => {
   let web3: Web3 | null = null;
   let usdtContract: any = null;
@@ -51,8 +58,46 @@ export default ({ strapi }) => {
     // 保存strapi实例
     strapi,
     
-    // 初始化Web3连接
-    async initialize() {
+    // 加载检查点
+    async _loadCheckpoint(): Promise<number> {
+      try {
+        const config = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+          filters: { key: 'last_processed_block' },
+          fields: ['value'],
+          limit: 1
+        });
+        return config && config.length > 0 ? parseInt(config[0].value) : 0;
+      } catch (error) {
+        console.warn('⚠️ 加载检查点失败:', error);
+        return 0;
+      }
+    },
+
+    // 保存检查点
+    async _saveCheckpoint(blockNumber: number): Promise<void> {
+      try {
+        const existing = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+          filters: { key: 'last_processed_block' },
+          fields: ['id'],
+          limit: 1
+        });
+
+        if (existing && existing.length > 0) {
+          await strapi.entityService.update('api::system-config.system-config' as any, existing[0].id, {
+            data: { value: blockNumber.toString() }
+          });
+        } else {
+          await strapi.entityService.create('api::system-config.system-config' as any, {
+            data: { key: 'last_processed_block', value: blockNumber.toString() }
+          });
+        }
+      } catch (error) {
+        console.warn('⚠️ 保存检查点失败:', error);
+      }
+    },
+    
+    // 初始化Web3连接 - 重命名为init
+    async init() {
       try {
         // 强制使用Ankr付费节点
         const rpcUrl = 'https://rpc.ankr.com/bsc/0cc28cc1d2308734e5535767191f325256d627fee791f33b30b8a9e9f53d02fb';
@@ -72,15 +117,89 @@ export default ({ strapi }) => {
         linkContract = new web3.eth.Contract(TOKEN_ABI, LINK_CONTRACT_ADDRESS);
         shibContract = new web3.eth.Contract(TOKEN_ABI, SHIB_CONTRACT_ADDRESS);
         
+        // 从数据库恢复检查点
+        lastProcessedBlock = await this._loadCheckpoint();
+        if (lastProcessedBlock === 0) {
+          // 如果没有检查点，从当前区块减去扫描步长开始
+          const currentBlock = await web3.eth.getBlockNumber();
+          lastProcessedBlock = Math.max(0, currentBlock - SCAN_STEP);
+        }
+        
         console.log('✅ 区块链服务初始化成功');
         console.log(`📧 钱包地址: ${walletAddress}`);
         console.log(`🌐 RPC节点: Ankr付费节点`);
         console.log(`💰 支持的代币: USDT, ADA, LINK, SHIB`);
+        console.log(`🔍 扫描起始区块: ${lastProcessedBlock}`);
         
         return true;
       } catch (error) {
         console.error('❌ 区块链服务初始化失败:', error);
         return false;
+      }
+    },
+
+    // 小窗口扫描方法
+    async scanNextWindow() {
+      try {
+        if (!web3) {
+          console.warn('⚠️ Web3未初始化，跳过扫描');
+          return;
+        }
+
+        const currentBlock = await web3.eth.getBlockNumber();
+        if (lastProcessedBlock >= currentBlock) {
+          return; // 没有新区块
+        }
+
+        const fromBlock = lastProcessedBlock + 1;
+        const toBlock = Math.min(currentBlock, fromBlock + SCAN_STEP - 1);
+
+        if (VERBOSE) {
+          console.log(`🔍 扫描区块范围: ${fromBlock} - ${toBlock} (共${toBlock - fromBlock + 1}个区块)`);
+        }
+        
+        await this.scanRange(fromBlock, toBlock);
+        lastProcessedBlock = toBlock;
+        await this._saveCheckpoint(lastProcessedBlock);
+        
+      } catch (error) {
+        console.error('❌ 扫描区块失败:', error);
+      }
+    },
+
+    // 扫描指定范围的区块
+    async scanRange(fromBlock: number, toBlock: number) {
+      try {
+        // 获取活跃的充值渠道
+        const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
+          filters: { isActive: true }
+        });
+
+        if (!activeChannels || activeChannels.length === 0) {
+          if (VERBOSE) console.log('⚠️ 没有活跃的充值渠道');
+          return;
+        }
+
+        // 扫描每个区块
+        for (let blockNumber = fromBlock; blockNumber <= toBlock; blockNumber++) {
+          try {
+            const block = await web3!.eth.getBlock(blockNumber, true);
+            if (!block || !block.transactions) continue;
+
+            // 检查每个交易
+            for (const tx of block.transactions) {
+              if (typeof tx === 'object' && tx.to && activeChannels.some((ch: any) => ch.walletAddress.toLowerCase() === tx.to.toLowerCase())) {
+                if (VERBOSE) console.log(`🎯 发现充值交易: ${tx.hash}`);
+                await this.processIncomingTransaction(tx);
+              }
+            }
+          } catch (blockError) {
+            if (VERBOSE) console.warn(`⚠️ 扫描区块 ${blockNumber} 失败:`, blockError);
+            continue;
+          }
+        }
+      } catch (error) {
+        console.error('❌ 扫描区块范围失败:', error);
       }
     },
 
@@ -172,92 +291,10 @@ export default ({ strapi }) => {
       return prices[tokenSymbol.toUpperCase()] || 0;
     },
 
-    // 监控钱包交易
+    // 监控钱包交易 - 已废弃，使用scanNextWindow替代
     async monitorWalletTransactions() {
-      try {
-        if (!web3) {
-          throw new Error('区块链服务未初始化');
-        }
-
-        console.log('🔄 开始监控钱包交易...');
-
-        // 获取所有活跃的充值通道
-        const activeChannels = await this.strapi.entityService.findMany('api::recharge-channel.recharge-channel' as any, {
-          filters: {
-            status: 'active',
-            channelType: { $in: ['recharge', 'both'] }
-          }
-        }) as any[];
-
-        if (!activeChannels || activeChannels.length === 0) {
-          console.log('⚠️ 没有找到活跃的充值通道');
-          return;
-        }
-
-        // 获取所有待处理的充值订单
-        const pendingOrders = await this.strapi.entityService.findMany('api::recharge-order.recharge-order' as any, {
-          filters: {
-            status: 'pending',
-            receiveAddress: { $in: activeChannels.map(ch => ch.walletAddress) }
-          }
-        });
-
-        console.log(`📊 找到 ${pendingOrders.length} 个待处理充值订单`);
-
-        // 获取当前区块号
-        const currentBlock = await web3.eth.getBlockNumber();
-        console.log(`📦 当前区块号: ${currentBlock}`);
-
-        // 获取上次检查的区块号
-        let lastCheckedBlock = Math.max(Number(currentBlock) - 1000, 0); // 默认检查最近1000个区块
-
-        // 尝试从数据库获取上次检查的区块号
-        try {
-          const config = await this.strapi.entityService.findMany('api::system-config.system-config' as any, {
-            filters: { key: 'last_checked_block' }
-          });
-          if (config && config.length > 0) {
-            lastCheckedBlock = Math.max(parseInt(config[0].value) || lastCheckedBlock, 0);
-          }
-        } catch (error) {
-          console.log('⚠️ 无法获取上次检查的区块号，使用默认值');
-        }
-
-        console.log(`🔍 检查区块范围: ${lastCheckedBlock + 1} - ${currentBlock}`);
-
-        // 检查每个区块的交易
-        for (let blockNumber = lastCheckedBlock + 1; blockNumber <= currentBlock; blockNumber++) {
-          try {
-            const block = await web3.eth.getBlock(blockNumber, true);
-            
-            if (!block || !block.transactions) {
-              continue;
-            }
-
-            // 检查每个交易
-            for (const tx of block.transactions) {
-              // 确保tx是交易对象而不是字符串
-              if (typeof tx === 'object' && tx.to && activeChannels.some(ch => ch.walletAddress.toLowerCase() === tx.to.toLowerCase())) {
-                console.log(`🎯 发现充值交易: ${tx.hash}`);
-                await this.processIncomingTransaction(tx);
-              }
-            }
-
-            // 更新最后检查的区块号
-            await this.updateLastCheckedBlock(blockNumber);
-          } catch (error) {
-            console.error(`❌ 检查区块 ${blockNumber} 失败:`, error);
-            
-            // 记录跳过的区块
-            await this.recordSkippedBlock(blockNumber, blockNumber, error.message);
-          }
-        }
-
-        console.log('✅ 钱包交易监控完成');
-      } catch (error) {
-        console.error('❌ 监控钱包交易失败:', error);
-        throw error;
-      }
+      console.log('⚠️ monitorWalletTransactions已废弃，使用scanNextWindow替代');
+      return 0;
     },
 
     // 更新最后检查的区块号
@@ -429,47 +466,38 @@ export default ({ strapi }) => {
       }
     },
 
-    // 处理待处理的提现订单
-    async processPendingWithdrawals() {
+    // 处理待处理的提现订单 - 重命名为processWithdrawals
+    async processWithdrawals() {
       try {
-        console.log('🔄 开始处理待处理的提现订单...');
+        if (!web3) {
+          console.warn('⚠️ Web3未初始化，跳过提现处理');
+          return;
+        }
 
-        // 获取所有待处理的提现订单
-        const pendingOrders = await this.strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
-          filters: {
-            status: 'pending'
-          },
-          populate: ['user'],
-          sort: { createdAt: 'asc' }
+        // 获取待处理的提现订单
+        const pendingWithdrawals = await this.strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
+          filters: { status: 'pending' },
+          populate: { user: true }
         });
 
-        console.log(`📊 找到 ${pendingOrders.length} 个待处理提现订单`);
+        if (!pendingWithdrawals || pendingWithdrawals.length === 0) {
+          if (VERBOSE) console.log('✅ 无待处理提现订单');
+          return;
+        }
 
-        for (const order of pendingOrders) {
+        if (VERBOSE) console.log(`📊 找到 ${pendingWithdrawals.length} 个待处理提现订单`);
+
+        for (const order of pendingWithdrawals) {
           try {
-            console.log(`🔄 处理提现订单: ${order.orderNo}`);
             await this.executeWithdrawal(order);
-            
-            // 添加延迟避免请求过于频繁
-            await new Promise(resolve => setTimeout(resolve, 2000));
           } catch (error) {
-            console.error(`❌ 处理提现订单 ${order.orderNo} 失败:`, error);
-            
-            // 更新订单状态为失败
-            await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
-              data: {
-                status: 'failed',
-                processTime: new Date(),
-                remark: error.message
-              }
-            });
+            console.error(`❌ 处理提现订单 ${order.id} 失败:`, error);
           }
         }
 
-        console.log('✅ 提现订单处理完成');
+        if (VERBOSE) console.log('✅ 提现订单处理完成');
       } catch (error) {
         console.error('❌ 处理提现订单失败:', error);
-        throw error;
       }
     },
 

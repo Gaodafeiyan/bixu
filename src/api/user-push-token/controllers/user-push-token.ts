@@ -1,11 +1,10 @@
 import { Strapi } from '@strapi/strapi';
-import { HybridPushService } from '../../../services/push/hybrid-push';
 
 export default ({ strapi }: { strapi: Strapi }) => ({
   /**
-   * 注册用户的推送token
+   * 注册用户的推送token - 幂等实现
    */
-  async registerToken(ctx) {
+  async register(ctx) {
     try {
       const { pushToken, serviceType, deviceType = 'android' } = ctx.request.body;
       
@@ -24,17 +23,42 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         return ctx.badRequest('serviceType必须是firebase或jpush');
       }
 
-      const hybridPushService = new HybridPushService(strapi);
-      const result = await hybridPushService.registerUserToken(userId, pushToken, serviceType, deviceType);
+      // 检查是否已存在相同的token
+      const existingToken = await strapi.entityService.findMany('api::user-push-token.user-push-token' as any, {
+        filters: { 
+          userId: userId,
+          pushToken: pushToken,
+          serviceType: serviceType
+        },
+        fields: ['id'],
+        limit: 1
+      });
 
-      if (result.success) {
+      // 如果已存在，直接返回成功
+      if (existingToken && existingToken.length > 0) {
         return ctx.send({
           success: true,
-          message: result.message,
+          message: 'Token已存在',
+          id: existingToken[0].id
         });
-      } else {
-        return ctx.badRequest(result.error);
       }
+
+      // 如果不存在，创建新的token记录
+      const created = await strapi.entityService.create('api::user-push-token.user-push-token' as any, {
+        data: {
+          userId,
+          pushToken,
+          serviceType,
+          deviceType,
+          isActive: true
+        }
+      });
+
+      return ctx.send({
+        success: true,
+        message: 'Token注册成功',
+        id: created.id
+      });
     } catch (error) {
       console.error('注册推送token失败:', error);
       return ctx.internalServerError('注册推送token失败');
@@ -44,7 +68,7 @@ export default ({ strapi }: { strapi: Strapi }) => ({
   /**
    * 注销用户的推送token
    */
-  async unregisterToken(ctx) {
+  async unregister(ctx) {
     try {
       const { pushToken, serviceType } = ctx.request.body;
       
@@ -63,17 +87,25 @@ export default ({ strapi }: { strapi: Strapi }) => ({
         return ctx.badRequest('serviceType必须是firebase或jpush');
       }
 
-      const hybridPushService = new HybridPushService(strapi);
-      const result = await hybridPushService.unregisterUserToken(userId, pushToken, serviceType);
+      // 查找并删除token
+      const existingToken = await strapi.entityService.findMany('api::user-push-token.user-push-token' as any, {
+        filters: { 
+          userId: userId,
+          pushToken: pushToken,
+          serviceType: serviceType
+        },
+        fields: ['id'],
+        limit: 1
+      });
 
-      if (result.success) {
-        return ctx.send({
-          success: true,
-          message: result.message,
-        });
-      } else {
-        return ctx.badRequest(result.error);
+      if (existingToken && existingToken.length > 0) {
+        await strapi.entityService.delete('api::user-push-token.user-push-token' as any, existingToken[0].id);
       }
+
+      return ctx.send({
+        success: true,
+        message: 'Token注销成功',
+      });
     } catch (error) {
       console.error('注销推送token失败:', error);
       return ctx.internalServerError('注销推送token失败');
@@ -92,8 +124,10 @@ export default ({ strapi }: { strapi: Strapi }) => ({
       
       const userId = ctx.state.user.id;
 
-      const hybridPushService = new HybridPushService(strapi);
-      const tokens = await hybridPushService.getUserPushTokens(userId);
+      const tokens = await strapi.entityService.findMany('api::user-push-token.user-push-token' as any, {
+        filters: { userId: userId },
+        fields: ['id', 'pushToken', 'serviceType', 'deviceType', 'isActive', 'createdAt']
+      });
 
       return ctx.send({
         success: true,

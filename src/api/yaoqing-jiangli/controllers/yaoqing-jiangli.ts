@@ -268,60 +268,51 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
     }
   },
 
-  // 获取用户团队统计（兼容性方法，复制V2版本逻辑）
+  // 获取用户团队统计（优化版：使用聚合查询）
   async getTeamStats(ctx) {
     try {
       // 检查用户认证状态
       if (!ctx.state.user) {
-        console.log('>>> ctx.state.user undefined');
-        console.log('>>> ctx.request.headers.authorization', ctx.request.headers.authorization);
-        console.log('>>> 用户未认证，返回401');
         return ctx.unauthorized('用户未认证');
       }
 
       const userId = ctx.state.user.id;
 
-      // 获取直接推荐人数
-      const directReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
-        filters: { invitedBy: userId }
-      }) as any[];
+      // 使用聚合查询获取直接推荐人数
+      const directReferralsResult = await strapi.db.connection('users')
+        .where({ invited_by_id: userId })
+        .count('* as count')
+        .first();
+      
+      const directReferralsCount = Number(directReferralsResult?.count || 0);
 
-      // 获取间接推荐人数
-      const indirectReferrals = await strapi.entityService.findMany('plugin::users-permissions.user', {
-        filters: { 
-          invitedBy: { $in: directReferrals.map(user => user.id) }
-        }
-      } as any) as any[];
+      // 使用聚合查询获取间接推荐人数
+      const indirectReferralsResult = await strapi.db.connection('users as u1')
+        .join('users as u2', 'u1.invited_by_id', 'u2.id')
+        .where('u2.invited_by_id', userId)
+        .count('u1.id as count')
+        .first();
+      
+      const indirectReferralsCount = Number(indirectReferralsResult?.count || 0);
 
-      // 获取总收益和奖励记录
-      const totalRewards = await strapi.entityService.findMany('api::yaoqing-jiangli.yaoqing-jiangli', {
-        filters: { tuijianRen: userId },
-        populate: ['tuijianRen', 'laiyuanRen', 'laiyuanDan']
-      }) as any[];
-
-      const totalEarnings = totalRewards.reduce((sum, reward) => {
-        return sum + new Decimal(reward.shouyiUSDT || 0).toNumber();
-      }, 0);
+      // 使用聚合查询获取总收益
+      const totalEarningsResult = await strapi.db.connection('yaoqing_jianglis')
+        .where({ tuijian_ren: userId })
+        .sum('shouyi_usdt as total')
+        .first();
+      
+      const totalEarnings = Number(totalEarningsResult?.total || 0);
 
       // 获取用户当前档位
       const rewardConfigService = strapi.service('api::invitation-reward-config.invitation-reward-config');
-      console.log(`开始获取用户 ${userId} 的当前档位...`);
       const currentTier = await rewardConfigService.getUserCurrentTier(userId);
-
-      console.log('API返回的currentTier:', currentTier); // 调试日志
-      console.log('currentTier详情:', {
-        name: currentTier?.name,
-        staticRate: currentTier?.staticRate,
-        referralRate: currentTier?.referralRate,
-        maxCommission: currentTier?.maxCommission
-      });
 
       ctx.body = {
         success: true,
         data: {
-          directReferrals: directReferrals.length,
-          indirectReferrals: indirectReferrals.length,
-          totalReferrals: directReferrals.length + indirectReferrals.length,
+          directReferrals: directReferralsCount,
+          indirectReferrals: indirectReferralsCount,
+          totalReferrals: directReferralsCount + indirectReferralsCount,
           totalEarnings: totalEarnings.toString(),
           currentTier: currentTier ? {
             name: currentTier.name,
@@ -333,8 +324,7 @@ export default factories.createCoreController('api::yaoqing-jiangli.yaoqing-jian
             staticRate: 0,
             referralRate: 0,
             maxCommission: 0
-          },
-          rewards: totalRewards // 添加奖励记录
+          }
         }
       };
     } catch (error) {
