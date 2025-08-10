@@ -39,7 +39,7 @@ const LINK_CONTRACT_ADDRESS = '0xf8a0bf9cf54bb92f17374d9e9a321e6a111a51bd';
 const SHIB_CONTRACT_ADDRESS = '0x2859e4544c4bb03966803b044a93563bd2d0dd4d';
 
 // 小窗口扫描配置
-const SCAN_STEP = 50; // 每次扫描400个区块
+const SCAN_STEP = 100; // 每次扫描100个区块，平衡性能和及时性
 let lastProcessedBlock = 0;
 
 // 调试开关
@@ -104,7 +104,7 @@ export default ({ strapi }) => {
         web3 = new Web3(rpcUrl);
         
         // 初始化所有代币合约
-        usdtContract = new web3.eth.Contract(TOKEN_ABI, USDT_CONTRACT_ADDRESS);
+        usdtContract = new web3.eth.Contract(TOKEN_ABI, DEFAULT_USDT_CONTRACT_ADDRESS);
         adaContract = new web3.eth.Contract(TOKEN_ABI, ADA_CONTRACT_ADDRESS);
         linkContract = new web3.eth.Contract(TOKEN_ABI, LINK_CONTRACT_ADDRESS);
         shibContract = new web3.eth.Contract(TOKEN_ABI, SHIB_CONTRACT_ADDRESS);
@@ -298,7 +298,7 @@ export default ({ strapi }) => {
         switch (tokenSymbol.toUpperCase()) {
           case 'USDT':
             contract = usdtContract;
-            contractAddress = USDT_CONTRACT_ADDRESS;
+            contractAddress = DEFAULT_USDT_CONTRACT_ADDRESS;
             break;
           case 'ADA':
             contract = adaContract;
@@ -1034,7 +1034,7 @@ export default ({ strapi }) => {
         // 创建转账交易
         const tx = {
           from: walletConfig.address,
-          to: USDT_CONTRACT_ADDRESS,
+          to: DEFAULT_USDT_CONTRACT_ADDRESS,
           data: usdtContract.methods.transfer(order.withdrawAddress, amountInSmallestUnit.toString()).encodeABI(),
           gas: '100000',
           gasPrice: await web3.eth.getGasPrice()
