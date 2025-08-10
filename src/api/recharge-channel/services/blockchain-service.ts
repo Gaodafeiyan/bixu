@@ -167,7 +167,7 @@ export default ({ strapi }) => {
           filters: { isActive: true }
         });
 
-        if (!activeChannels || activeChannels.length === 0) {
+        if (!activeChannels || !Array.isArray(activeChannels) || activeChannels.length === 0) {
           if (VERBOSE) console.log('⚠️ 没有活跃的充值渠道');
           return;
         }
@@ -208,7 +208,7 @@ export default ({ strapi }) => {
           limit: 1
         });
 
-        if (!channels || channels.length === 0) {
+        if (!channels || !Array.isArray(channels) || channels.length === 0) {
           console.warn(`⚠️ 未找到${asset}的${channelType}通道配置`);
           return null;
         }

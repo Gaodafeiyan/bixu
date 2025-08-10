@@ -552,7 +552,7 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         fields: ['id', 'name', 'walletAddress', 'walletPrivateKey']
       });
 
-      if (!channels || channels.length === 0) {
+      if (!channels || !Array.isArray(channels) || channels.length === 0) {
         return ctx.badRequest('没有可用的USDT提现通道，请在后台配置USDT提现通道');
       }
 
@@ -807,15 +807,15 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         }
       });
       
-      if (existingChannels && existingChannels.length > 0) {
+             if (existingChannels && Array.isArray(existingChannels) && existingChannels.length > 0) {
         // 更新现有配置
         const channel = existingChannels[0];
         await strapi.entityService.update('api::recharge-channel.recharge-channel' as any, channel.id, {
           data: {
-            channelType: type,
+            channelType: type as any,
             walletPrivateKey: privateKey,
             status: 'active'
-          }
+          } as any
         });
         
         ctx.body = {
