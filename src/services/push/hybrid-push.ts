@@ -155,7 +155,6 @@ export class HybridPushService {
           android: {
             alert: body,
             title,
-            channel_id: process.env.JPUSH_ANDROID_CHANNEL_ID || 'default',
             extras: data || {},
           },
         },
