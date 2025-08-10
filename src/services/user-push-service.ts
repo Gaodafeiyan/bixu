@@ -506,23 +506,27 @@ export class UserPushService {
   // ==================== 批量推送方法 ====================
 
   /**
-   * 批量发送认购到期提醒
+   * 批量发送认购到期提醒推送
    */
   async sendBatchSubscriptionReminders() {
     try {
-      console.log('📈 开始批量发送认购到期提醒...');
+      console.log('📅 开始批量发送认购到期提醒...');
       
-      // 获取即将到期的认购记录（3天内到期）
-      const expiringSubscriptions = await this.strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan' as any, {
+      // 查询3天内到期的认购订单
+      const threeDaysFromNow = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
+      
+      const expiringSubscriptions = await this.strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
         filters: {
           status: 'running',
           end_at: {
-            $gte: new Date(),
-            $lte: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000) // 3天内
+            $lte: threeDaysFromNow
           }
         },
-        populate: ['user', 'jihua']
-      });
+        populate: {
+          user: true,
+          jihua: true
+        }
+      }) as any[];
 
       console.log(`📈 找到${expiringSubscriptions.length}个即将到期的认购`);
 
@@ -531,15 +535,19 @@ export class UserPushService {
         
         await this.sendSubscriptionReminderPush(
           subscription.user.id,
-          subscription.jihua.name,
-          daysLeft,
-          subscription.jihua.id
+          subscription.jihua?.name || '未知计划',
+          daysLeft
         );
+        
+        // 避免发送过快
+        await new Promise(resolve => setTimeout(resolve, 1000));
       }
-
-      console.log('✅ 批量认购到期提醒发送完成');
+      
+      console.log(`✅ 批量认购到期提醒发送完成，共${expiringSubscriptions.length}条`);
+      return { success: true, count: expiringSubscriptions.length };
     } catch (error) {
       console.error('❌ 批量认购到期提醒发送失败:', error);
+      return { success: false, error: error.message };
     }
   }
 
