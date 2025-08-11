@@ -533,6 +533,28 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       const { amount, address } = ctx.request.body;
       const userId = ctx.state.user.id; // 获取当前登录用户ID
 
+      // 幂等与频控：5 秒内防重复提交（与AI兑换共享同一锁）
+      const acquireUserOpLock = async (opKey: string, ttlMs: number) => {
+        const key = `op_lock:${opKey}:${userId}`;
+        const existing = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+          filters: { key },
+          fields: ['id', 'value'],
+          limit: 1,
+        });
+        const now = Date.now();
+        if (existing && existing.length > 0) {
+          const ts = parseInt(existing[0].value || '0');
+          if (!isNaN(ts) && now - ts < ttlMs) return false;
+          await strapi.entityService.update('api::system-config.system-config' as any, existing[0].id, { data: { value: String(now) } });
+          return true;
+        }
+        await strapi.entityService.create('api::system-config.system-config' as any, { data: { key, value: String(now) } });
+        return true;
+      };
+
+      const locked = await acquireUserOpLock('withdraw_or_exchange', 5000);
+      if (!locked) return ctx.throw(429, '操作过于频繁，请稍后再试');
+
       if (!amount || !address) {
         return ctx.badRequest('缺少必要参数');
       }
@@ -601,6 +623,20 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       // 生成订单号
       const orderNo = `WD${Date.now()}${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
       
+      // 查重：短时间内同地址同金额的 pending 订单
+      const dup = await strapi.entityService.findMany('api::withdrawal-order.withdrawal-order' as any, {
+        filters: { user: { id: userId }, status: 'pending', amount: amount.toString(), withdrawAddress: address },
+        fields: ['id', 'createdAt'],
+        sort: { createdAt: 'desc' },
+        limit: 1,
+      });
+      if (Array.isArray(dup) && dup.length) {
+        const createdAt = new Date(dup[0].createdAt).getTime();
+        if (!isNaN(createdAt) && Date.now() - createdAt < 60_000) {
+          return ctx.throw(429, '检测到重复提交，请稍后再试');
+        }
+      }
+
       // 计算手续费
       const fee = new Decimal(amount).mul(0.001).add(1); // 0.1% + 1 USDT固定手续费
       const actualAmount = new Decimal(amount).sub(fee);
@@ -653,6 +689,28 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
     try {
       const userId = ctx.state.user.id;
       const { amount, address, network = 'BSC', tokenSymbol, isExchange = false } = ctx.request.body;
+
+      // 幂等与频控：5 秒内防重复提交（与USDT提现共享同一锁）
+      const acquireUserOpLock = async (opKey: string, ttlMs: number) => {
+        const key = `op_lock:${opKey}:${userId}`;
+        const existing = await strapi.entityService.findMany('api::system-config.system-config' as any, {
+          filters: { key },
+          fields: ['id', 'value'],
+          limit: 1,
+        });
+        const now = Date.now();
+        if (existing && existing.length > 0) {
+          const ts = parseInt(existing[0].value || '0');
+          if (!isNaN(ts) && now - ts < ttlMs) return false;
+          await strapi.entityService.update('api::system-config.system-config' as any, existing[0].id, { data: { value: String(now) } });
+          return true;
+        }
+        await strapi.entityService.create('api::system-config.system-config' as any, { data: { key, value: String(now) } });
+        return true;
+      };
+
+      const locked = await acquireUserOpLock('withdraw_or_exchange', 5000);
+      if (!locked) return ctx.throw(429, '操作过于频繁，请稍后再试');
 
       if (!amount || !tokenSymbol) {
         return ctx.badRequest('缺少必要参数');
