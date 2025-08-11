@@ -120,6 +120,18 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
       console.log(`📍 充值地址: ${rechargeOrder.receiveAddress}`);
       console.log(`💰 充值金额: ${rechargeOrder.amount} ${rechargeOrder.currency}`);
 
+      // 快速触发一次区块扫描，缩短入账延迟（仅扫描最近窗口）
+      try {
+        const blockchainService = strapi.service('api::recharge-channel.blockchain-service');
+        if (blockchainService?.scanNextWindow) {
+          // 异步触发，不阻塞接口返回
+          blockchainService.scanNextWindow();
+          console.log('⚡ 已触发一次快速扫描窗口');
+        }
+      } catch (e) {
+        console.warn('⚠️ 快速扫描触发失败:', e);
+      }
+
       ctx.body = {
         success: true,
         data: {
