@@ -361,7 +361,7 @@ export default ({ strapi }) => ({
   // 创建AI代币提现订单
   async createAiTokenWithdrawalOrder(userId: number, tokenSymbol: string, amount: string, address: string, network: string) {
     try {
-      // 验证用户AI代币余额
+      // 验证用户AI代币余额（按“代币数量”处理，不再按USDT价值）
       const wallets = await strapi.entityService.findMany('api::qianbao-yue.qianbao-yue', {
         filters: { user: { id: userId } }
       });
@@ -371,10 +371,15 @@ export default ({ strapi }) => ({
         throw new Error('用户钱包不存在');
       }
 
-      // 检查用户AI代币价值余额
-      const aiYueBalance = new Decimal(wallet.aiYue || '0');
-      if (aiYueBalance.lessThanOrEqualTo(0)) {
-        throw new Error('AI代币价值余额不足');
+      // 解析现有的 aiTokenBalances
+      let tokenBalances: Record<string, string | number> = {};
+      if (wallet.aiTokenBalances) {
+        try {
+          tokenBalances = JSON.parse(wallet.aiTokenBalances);
+        } catch (error) {
+          console.error('解析aiTokenBalances失败:', error);
+          tokenBalances = {};
+        }
       }
 
       // 获取可用的提现通道
@@ -405,7 +410,7 @@ export default ({ strapi }) => ({
 
       const channel = matchedChannels[0]; // 选择第一个匹配的通道
 
-      // 验证金额
+      // 验证金额（按代币数量）
       const amountDecimal = new Decimal(amount);
       const minAmount = new Decimal(channel.minAmount);
       const maxAmount = new Decimal(channel.maxAmount);
@@ -414,68 +419,30 @@ export default ({ strapi }) => ({
         throw new Error(`提现金额必须在 ${minAmount} - ${maxAmount} 之间`);
       }
 
-      // 计算手续费
+      // 计算手续费（基于代币数量）
       const feeRate = new Decimal(channel.feeRate);
       const fixedFee = new Decimal(channel.fixedFee);
       const fee = amountDecimal.mul(feeRate).add(fixedFee);
-      
-      // 获取实时价格并计算USDT价值
-      let usdtValue: Decimal;
-      let actualAmount: Decimal;
-      
-      if (tokenSymbol === 'USDT') {
-        // USDT直接使用数量作为价值
-        usdtValue = amountDecimal;
-        actualAmount = amountDecimal.sub(fee);
-      } else {
-        // 其他代币：用户输入的是USDT价值，需要计算代币数量
-        const tokenPrice = await getTokenPrice(tokenSymbol);
-        usdtValue = amountDecimal; // 用户输入的就是USDT价值
-        const tokenAmount = usdtValue.div(new Decimal(tokenPrice)); // 计算代币数量
-        console.log(`💰 ${tokenSymbol}实时价格: ${tokenPrice} USDT`);
-        console.log(`💰 用户输入${amount} USDT价值，转换为${tokenAmount.toString()} ${tokenSymbol}`);
-        
-        // 计算手续费（基于代币数量）
-        const feeRate = new Decimal(channel.feeRate);
-        const fixedFee = new Decimal(channel.fixedFee);
-        const fee = tokenAmount.mul(feeRate).add(fixedFee);
-        actualAmount = tokenAmount.sub(fee);
+      const actualAmount = amountDecimal.sub(fee);
+
+      if (actualAmount.lessThanOrEqualTo(0)) {
+        throw new Error(`${tokenSymbol}提现金额扣除手续费后不足，请提高金额或调整通道手续费/最小金额`);
       }
 
-      // 检查余额是否足够
-      if (aiYueBalance.lessThan(usdtValue)) {
-        throw new Error(`AI代币价值余额不足: 需要 ${usdtValue.toString()} USDT, 当前余额 ${aiYueBalance.toString()} USDT`);
-      }
-
-      // 立即扣除用户AI代币价值余额（扣除USDT价值）
-      const newAiYueBalance = aiYueBalance.sub(usdtValue);
-      
-      // 解析现有的aiTokenBalances
-      let tokenBalances = {};
-      if (wallet.aiTokenBalances) {
-        try {
-          tokenBalances = JSON.parse(wallet.aiTokenBalances);
-          console.log(`🔍 解析现有aiTokenBalances: ${wallet.aiTokenBalances}`);
-          console.log(`🔍 解析后的tokenBalances:`, tokenBalances);
-        } catch (error) {
-          console.error('解析aiTokenBalances失败:', error);
-          tokenBalances = {};
-        }
-      } else {
-        console.log(`🔍 用户钱包aiTokenBalances为空或null`);
-      }
-
-      // 将转换后的代币数量添加到aiTokenBalances中
+      // 检查代币余额是否足够（从 aiTokenBalances 中扣减）
       const currentTokenBalance = new Decimal(tokenBalances[tokenSymbol] || '0');
-      const newTokenBalance = currentTokenBalance.add(actualAmount);
+      if (currentTokenBalance.lessThan(amountDecimal)) {
+        throw new Error(`${tokenSymbol}余额不足: 需要 ${amountDecimal.toString()}, 当前余额 ${currentTokenBalance.toString()}`);
+      }
+
+      // 立即扣除代币余额（按提现的代币数量进行扣减）
+      const newTokenBalance = currentTokenBalance.sub(amountDecimal);
       tokenBalances[tokenSymbol] = newTokenBalance.toString();
-      
-      console.log(`🔍 更新${tokenSymbol}余额: 当前${currentTokenBalance.toString()} + 新增${actualAmount.toString()} = ${newTokenBalance.toString()}`);
+      console.log(`🔍 扣减${tokenSymbol}余额: 当前${currentTokenBalance.toString()} - 提现${amountDecimal.toString()} = ${newTokenBalance.toString()}`);
       console.log(`🔍 更新后的tokenBalances:`, tokenBalances);
 
-      // 更新钱包余额：扣除aiYue，添加代币余额
+      // 更新钱包余额：仅更新 aiTokenBalances，不动 aiYue
       const updateData = {
-        aiYue: newAiYueBalance.toString(),
         aiTokenBalances: JSON.stringify(tokenBalances)
       };
       
@@ -496,7 +463,7 @@ export default ({ strapi }) => ({
         throw new Error(`钱包更新失败: ${updateError.message}`);
       }
 
-      console.log(`💰 更新钱包余额: aiYue减少${usdtValue.toString()} USDT, ${tokenSymbol}增加${actualAmount.toString()}`);
+      console.log(`💰 更新钱包余额: ${tokenSymbol}减少${amountDecimal.toString()}，创建提现订单，实到 ${actualAmount.toString()} ${tokenSymbol}`);
 
       // 创建提现订单
       const orderNo = generateOrderNo('withdrawal');
@@ -512,12 +479,11 @@ export default ({ strapi }) => ({
           withdrawNetwork: network,
           requestTime: new Date(),
           fee: fee.toString(),
-          actualAmount: actualAmount.toString(),
-          deductedUsdtValue: usdtValue.toString(), // 记录扣除的USDT价值
+          actualAmount: actualAmount.toString()
         }
       });
 
-      console.log(`创建AI代币提现订单: ${orderNo}, 用户: ${userId}, 代币: ${tokenSymbol}, 数量: ${amount}, USDT价值: ${usdtValue.toString()}, 手续费: ${fee}`);
+      console.log(`创建AI代币提现订单: ${orderNo}, 用户: ${userId}, 代币: ${tokenSymbol}, 数量: ${amount}, 手续费: ${fee}`);
       return withdrawalOrder;
     } catch (error) {
       console.error('创建AI代币提现订单失败:', error);
