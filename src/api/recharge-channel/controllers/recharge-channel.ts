@@ -540,15 +540,15 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           filters: { key },
           fields: ['id', 'value'],
           limit: 1,
-        });
+        }) as any[];
         const now = Date.now();
-        if (existing && existing.length > 0) {
-          const ts = parseInt(existing[0].value || '0');
+        if (Array.isArray(existing) && existing.length > 0) {
+          const ts = parseInt((existing[0] as any).value || '0');
           if (!isNaN(ts) && now - ts < ttlMs) return false;
-          await strapi.entityService.update('api::system-config.system-config' as any, existing[0].id, { data: { value: String(now) } });
+          await strapi.entityService.update('api::system-config.system-config' as any, (existing[0] as any).id, { data: { value: String(now) } as any });
           return true;
         }
-        await strapi.entityService.create('api::system-config.system-config' as any, { data: { key, value: String(now) } });
+        await strapi.entityService.create('api::system-config.system-config' as any, { data: { key, value: String(now) } as any });
         return true;
       };
 
@@ -629,9 +629,9 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         fields: ['id', 'createdAt'],
         sort: { createdAt: 'desc' },
         limit: 1,
-      });
+      }) as any[];
       if (Array.isArray(dup) && dup.length) {
-        const createdAt = new Date(dup[0].createdAt).getTime();
+        const createdAt = new Date((dup[0] as any).createdAt).getTime();
         if (!isNaN(createdAt) && Date.now() - createdAt < 60_000) {
           return ctx.throw(429, '检测到重复提交，请稍后再试');
         }
@@ -697,15 +697,15 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
           filters: { key },
           fields: ['id', 'value'],
           limit: 1,
-        });
+        }) as any[];
         const now = Date.now();
-        if (existing && existing.length > 0) {
-          const ts = parseInt(existing[0].value || '0');
+        if (Array.isArray(existing) && existing.length > 0) {
+          const ts = parseInt((existing[0] as any).value || '0');
           if (!isNaN(ts) && now - ts < ttlMs) return false;
-          await strapi.entityService.update('api::system-config.system-config' as any, existing[0].id, { data: { value: String(now) } });
+          await strapi.entityService.update('api::system-config.system-config' as any, (existing[0] as any).id, { data: { value: String(now) } as any });
           return true;
         }
-        await strapi.entityService.create('api::system-config.system-config' as any, { data: { key, value: String(now) } });
+        await strapi.entityService.create('api::system-config.system-config' as any, { data: { key, value: String(now) } as any });
         return true;
       };
 
