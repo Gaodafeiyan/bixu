@@ -710,6 +710,19 @@ export default ({ strapi }) => {
     // 执行ADA提现
     async executeAdaWithdrawal(order: any) {
       try {
+        // 动态加载提现钱包配置（ADA）
+        const wc = await this.getWalletConfig('withdrawal', 'ADA');
+        if (!wc) {
+          const errorMsg = '未找到ADA提现钱包配置';
+          console.error(`❌ ${errorMsg}`);
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: { status: 'failed', processTime: new Date(), remark: errorMsg }
+          });
+          throw new Error(errorMsg);
+        }
+        walletAddress = wc.address;
+        privateKey = wc.privateKey;
+
         console.log(`🔄 执行ADA提现转账: ${order.orderNo}, 金额: ${order.actualAmount} ADA`);
 
         // 检查钱包余额
@@ -833,6 +846,20 @@ export default ({ strapi }) => {
     // 执行LINK提现
     async executeLinkWithdrawal(order: any) {
       try {
+        // 动态加载提现钱包配置（LINK）
+        const wc = await this.getWalletConfig('withdrawal', 'LINK');
+        if (!wc) {
+          const errorMsg = '未找到LINK提现钱包配置';
+          console.error(`❌ ${errorMsg}`);
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: { status: 'failed', processTime: new Date(), remark: errorMsg }
+          });
+        
+          throw new Error(errorMsg);
+        }
+        walletAddress = wc.address;
+        privateKey = wc.privateKey;
+
         console.log(`🔄 执行LINK提现转账: ${order.orderNo}, 金额: ${order.actualAmount} LINK`);
 
         // 检查钱包余额
@@ -956,6 +983,19 @@ export default ({ strapi }) => {
     // 执行SHIB提现
     async executeShibWithdrawal(order: any) {
       try {
+        // 动态加载提现钱包配置（SHIB）
+        const wc = await this.getWalletConfig('withdrawal', 'SHIB');
+        if (!wc) {
+          const errorMsg = '未找到SHIB提现钱包配置';
+          console.error(`❌ ${errorMsg}`);
+          await this.strapi.entityService.update('api::withdrawal-order.withdrawal-order' as any, order.id, {
+            data: { status: 'failed', processTime: new Date(), remark: errorMsg }
+          });
+          throw new Error(errorMsg);
+        }
+        walletAddress = wc.address;
+        privateKey = wc.privateKey;
+
         console.log(`🔄 执行SHIB提现转账: ${order.orderNo}, 金额: ${order.actualAmount} SHIB`);
 
         // 检查钱包余额
