@@ -637,9 +637,12 @@ export default factories.createCoreController('api::recharge-channel.recharge-ch
         }
       }
 
-      // 计算手续费
+      // 计算手续费并校验实到金额>0
       const fee = new Decimal(amount).mul(0.001).add(1); // 0.1% + 1 USDT固定手续费
       const actualAmount = new Decimal(amount).sub(fee);
+      if (actualAmount.lessThanOrEqualTo(0)) {
+        return ctx.badRequest('提现金额扣除手续费后不足，请增加提现金额');
+      }
 
       // 立即扣除用户余额
       const newBalance = walletBalance.sub(withdrawalAmount);
