@@ -661,6 +661,7 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       }
 
       console.log(`🔍 获取我的投资 - 用户ID: ${userId}, 页码: ${pageNum}, 分页大小: ${pageSizeNum}`);
+      console.log(`🔍 请求参数 - page: ${page}, pageSize: ${pageSize}`);
 
       const result = await strapi.entityService.findPage('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { user: { id: userId } },
@@ -672,10 +673,16 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         sort: { createdAt: 'desc' }
       });
 
-      // 添加调试日志
+      // 添加详细的调试日志
       const total = result.pagination?.total || 0;
       const results = result.results || [];
       console.log(`📊 查询结果 - 总记录数: ${total}, 当前页记录数: ${results.length}`);
+      console.log(`📊 分页信息 - pageSize设置: ${pageSizeNum}, 实际返回: ${results.length}`);
+      
+      // 如果实际返回数量少于请求数量，可能有问题
+      if (results.length === 10 && pageSizeNum > 10) {
+        console.log(`⚠️ 警告：请求${pageSizeNum}条，但只返回10条，可能存在限制！`);
+      }
       
       // 按状态统计
       const statusStats = {};

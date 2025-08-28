@@ -68,23 +68,25 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
         filters.status = status;
       }
 
-      const orders = await strapi.entityService.findMany('api::dinggou-dingdan.dinggou-dingdan', {
-        filters: { user: { id: userId } },
+      // 修复：使用findPage而不是findMany，确保分页正确工作
+      const result = await strapi.entityService.findPage('api::dinggou-dingdan.dinggou-dingdan', {
+        filters: filters,
         populate: ['jihua'],
         pagination: {
           page: parseInt(String(page)),
           pageSize: parseInt(String(pageSize))
-        }
-      }) as any[];
+        },
+        sort: { createdAt: 'desc' }
+      });
 
       ctx.body = {
         success: true,
         data: {
-          orders,
-          pagination: {
+          orders: result.results || [],
+          pagination: result.pagination || {
             page: parseInt(String(page)),
             pageSize: parseInt(String(pageSize)),
-            total: orders.length
+            total: 0
           }
         }
       };
