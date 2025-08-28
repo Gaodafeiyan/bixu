@@ -636,6 +636,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         return ctx.badRequest('无效的分页参数');
       }
 
+      console.log(`🔍 获取我的投资 - 用户ID: ${userId}, 页码: ${pageNum}, 分页大小: ${pageSizeNum}`);
+
       const result = await strapi.entityService.findPage('api::dinggou-dingdan.dinggou-dingdan', {
         filters: { user: { id: userId } },
         populate: ['jihua'],
@@ -645,6 +647,19 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
         },
         sort: { createdAt: 'desc' }
       });
+
+      // 添加调试日志
+      const total = result.pagination?.total || 0;
+      const results = result.results || [];
+      console.log(`📊 查询结果 - 总记录数: ${total}, 当前页记录数: ${results.length}`);
+      
+      // 按状态统计
+      const statusStats = {};
+      results.forEach(order => {
+        const status = order.status;
+        statusStats[status] = (statusStats[status] || 0) + 1;
+      });
+      console.log(`📊 状态统计:`, statusStats);
 
       ctx.body = {
         success: true,
