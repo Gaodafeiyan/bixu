@@ -85,13 +85,20 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
   // 投资认购计划
   async invest(ctx) {
     try {
+      console.log('🚀 开始处理投资请求...');
+      console.log('🔍 请求参数:', ctx.params);
+      console.log('🔍 请求体:', ctx.request.body);
+      
       // 检查用户是否已认证
       if (!ctx.state.user || !ctx.state.user.id) {
+        console.log('❌ 用户未认证');
         return ctx.unauthorized('用户未认证');
       }
       
       const { planId } = ctx.params;
       const userId = ctx.state.user.id;
+      
+      console.log('🔍 投资参数: planId=$planId, userId=$userId');
 
       // 输入验证
       if (!planId || isNaN(Number(planId))) {
@@ -185,6 +192,19 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
       const now = new Date(); // 使用UTC时间
       const endTime = new Date(now.getTime() + planData.zhouQiTian * 24 * 60 * 60 * 1000);
       
+      console.log('🔍 准备创建订单...');
+      console.log('🔍 订单数据:', {
+        user: userId,
+        jihua: planId,
+        amount: investmentAmount.toString(),
+        principal: investmentAmount.toString(),
+        yield_rate: planData.jingtaiBili,
+        cycle_days: planData.zhouQiTian,
+        start_at: now,
+        end_at: endTime,
+        status: 'running'
+      });
+      
       const order = await strapi.entityService.create('api::dinggou-dingdan.dinggou-dingdan', {
         data: {
           user: userId,
@@ -198,6 +218,8 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
           status: 'running' // 直接设置为running状态
         }
       });
+      
+      console.log('✅ 订单创建成功: ID=${order.id}');
 
       // 扣除钱包余额
       await strapi.entityService.update('api::qianbao-yue.qianbao-yue', userWallet.id, {
@@ -626,13 +648,15 @@ export default factories.createCoreController('api::dinggou-jihua.dinggou-jihua'
   async getMyInvestments(ctx) {
     try {
       const userId = ctx.state.user.id;
-      const { page = 1, pageSize = 10 } = ctx.query;
+      // 修复：增加默认分页大小到1000，确保返回所有订单
+      const { page = 1, pageSize = 1000 } = ctx.query;
 
       // 输入验证
       const pageNum = parseInt(String(page));
-      const pageSizeNum = parseInt(String(pageSize));
+      // 确保分页大小不会太小，最小100，最大2000
+      const pageSizeNum = Math.min(2000, Math.max(100, parseInt(String(pageSize))));
       
-      if (isNaN(pageNum) || isNaN(pageSizeNum) || pageNum < 1 || pageSizeNum < 1) {
+      if (isNaN(pageNum) || isNaN(pageSizeNum) || pageNum < 1) {
         return ctx.badRequest('无效的分页参数');
       }
 
