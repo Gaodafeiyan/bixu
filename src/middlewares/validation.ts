@@ -53,8 +53,9 @@ export default (config, { strapi }) => {
           throw new Error('分页参数必须是大于0的整数');
         }
         
-        if (pageSizeNum > 100) {
-          throw new Error('每页大小不能超过100');
+        // 修复：增加分页限制到2000，确保能显示所有订单
+        if (pageSizeNum > 2000) {
+          throw new Error('每页大小不能超过2000');
         }
         
         return true;

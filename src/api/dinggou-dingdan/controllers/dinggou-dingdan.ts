@@ -60,7 +60,8 @@ export default factories.createCoreController('api::dinggou-dingdan.dinggou-ding
   async getUserOrders(ctx) {
     try {
       const userId = ctx.state.user.id;
-      const { page = 1, pageSize = 10, status } = ctx.query;
+      // 修复：增加默认分页大小到1000
+      const { page = 1, pageSize = 1000, status } = ctx.query;
 
       const filters: any = { user: { id: userId } };
       if (status) {
